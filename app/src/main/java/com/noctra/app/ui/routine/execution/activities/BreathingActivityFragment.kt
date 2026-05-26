@@ -1,109 +1,75 @@
 package com.noctra.app.ui.routine.execution.activities
 
-import android.animation.AnimatorSet
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.animation.ObjectAnimator
-import android.animation.PropertyValuesHolder
+import android.animation.AnimatorSet
 import android.os.Bundle
 import android.os.CountDownTimer
-import android.os.Handler
-import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.core.content.ContextCompat
-import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.setFragmentResult
 import com.noctra.app.R
-import com.noctra.app.data.model.Activity
 import com.noctra.app.databinding.FragmentBreathingActivityBinding
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 /**
- * BreathingActivityFragment
+ * BreathingActivityFragment — Slow-Paced Breathing
  *
- * MVP Activity #1 — Slow-Paced Breathing
+ * Routed from RoutineExecutionFragment when activity.label == "Slow-Paced Breathing"
  *
- * Two distinct visual phases:
- *   1. PRE_COUNTDOWN  — Shleepy body + instruction + 15s green timer
- *   2. BREATHING      — Animated expanding/contracting circle + Inhale/Exhale text + main timer
+ * Flow:
+ *   1. PRE-COUNTDOWN panel — 15s green countdown, Shleepy body + instructions
+ *   2. BREATHING panel — animated circle pulses with 4-7-8 pattern:
+ *        Inhale  4s → circle expands  (scale 0.6 → 1.0)
+ *        Hold    7s → circle holds    (scale stays 1.0)
+ *        Exhale  8s → circle shrinks  (scale 1.0 → 0.6)
+ *      Main countdown timer runs from activity duration down to 0.
+ *   3. TIME'S UP overlay — alarm clock, "Time's Up!" shown.
+ *   4. COMPLETION overlay — green glow + motivational message.
+ *      Does NOT auto-advance — parent (RoutineExecutionFragment) manages that.
  *
- * Breathing pattern (4-7-8 simplified to inhale/exhale for visual clarity):
- *   Inhale  →  4 seconds  (circle expands from 0.5x to 1.0x)
- *   Hold    →  4 seconds  (circle stays at 1.0x, label shows "Hold")
- *   Exhale  →  8 seconds  (circle contracts from 1.0x to 0.5x)
- *   Repeat until main timer ends.
- *
- * Fragment Result: fires RESULT_COMPLETE when activity finishes.
- * RoutineExecutionFragment listens and advances to the next step.
+ * Notifies parent via ActivityCompletionListener when timer ends.
  */
 class BreathingActivityFragment : Fragment() {
-
-    // ── ViewBinding ───────────────────────────────────────────────────────────
 
     private var _binding: FragmentBreathingActivityBinding? = null
     private val binding get() = _binding!!
 
-    // ── State ─────────────────────────────────────────────────────────────────
-
-    private enum class ActivityState {
-        PRE_COUNTDOWN, BREATHING, WARNING, TIMES_UP, COMPLETE
-    }
-
-    private enum class BreathPhase { INHALE, HOLD, EXHALE }
-
-    private var state = ActivityState.PRE_COUNTDOWN
-    private var currentPhase = BreathPhase.INHALE
-
-    // ── Timers & Handlers ─────────────────────────────────────────────────────
-
+    // ── Timers ───────────────────────────────────────────────────────────────
     private var preCountdownTimer: CountDownTimer? = null
     private var mainTimer: CountDownTimer? = null
-    private val breathingHandler = Handler(Looper.getMainLooper())
-    private var breathingRunnable: Runnable? = null
+    private var remainingMainSeconds: Long = 0
 
-    // ── Data ──────────────────────────────────────────────────────────────────
+    // ── Breathing animation ──────────────────────────────────────────────────
+    private var breathingAnimatorSet: AnimatorSet? = null
+    private var isBreathingRunning = false
 
-    private lateinit var activityData: Activity
+    // 4-7-8 pattern in milliseconds
+    private val INHALE_MS  = 4_000L
+    private val HOLD_MS    = 7_000L
+    private val EXHALE_MS  = 8_000L
 
-    // ── Constants ─────────────────────────────────────────────────────────────
+    private val CIRCLE_MIN_SCALE = 0.6f
+    private val CIRCLE_MAX_SCALE = 1.0f
 
     companion object {
-        const val RESULT_COMPLETE = "breathing_complete"
+        const val ARG_DURATION_SECONDS = "arg_duration_seconds"
+        private const val PRE_COUNTDOWN_SECONDS = 15L
 
-        private const val ARG_ACTIVITY_JSON = "arg_activity_json"
-
-        private const val PRE_COUNTDOWN_MS  = 15_000L
-        private const val WARNING_MS        = 30_000L
-        private const val TICK_MS           = 1_000L
-        private const val TIMES_UP_LINGER   = 1_500L
-        private const val COMPLETE_LINGER   = 2_500L
-
-        // Breathing cycle durations (ms)
-        private const val INHALE_MS = 4_000L
-        private const val HOLD_MS   = 4_000L
-        private const val EXHALE_MS = 8_000L
-
-        // Circle scale bounds
-        private const val SCALE_MIN = 0.5f
-        private const val SCALE_MAX = 1.0f
-
-        fun newInstance(activity: Activity): BreathingActivityFragment =
-            BreathingActivityFragment().apply {
-                arguments = bundleOf(
-                    ARG_ACTIVITY_JSON to Json.encodeToString(activity)
-                )
+        fun newInstance(durationSeconds: Int): BreathingActivityFragment {
+            return BreathingActivityFragment().apply {
+                arguments = Bundle().apply {
+                    putInt(ARG_DURATION_SECONDS, durationSeconds)
+                }
             }
+        }
     }
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
-
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         _binding = FragmentBreathingActivityBinding.inflate(inflater, container, false)
         return binding.root
@@ -111,213 +77,202 @@ class BreathingActivityFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        activityData = Json.decodeFromString(
-            requireArguments().getString(ARG_ACTIVITY_JSON)!!
-        )
+        val durationSeconds = arguments?.getInt(ARG_DURATION_SECONDS, 300) ?: 300
+        remainingMainSeconds = durationSeconds.toLong()
+
+        showPreCountdownPanel()
         startPreCountdown()
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        cancelAll()
-        _binding = null
-    }
-
-    // ── State Machine ─────────────────────────────────────────────────────────
-
-    private fun transitionTo(newState: ActivityState) {
-        state = newState
-        when (newState) {
-            ActivityState.PRE_COUNTDOWN -> showPreCountdownPanel()
-            ActivityState.BREATHING,
-            ActivityState.WARNING       -> showBreathingPanel()
-            ActivityState.TIMES_UP      -> showTimesUp()
-            ActivityState.COMPLETE      -> showCompletion()
-        }
-    }
-
-    // ── Panel Visibility ──────────────────────────────────────────────────────
+    // ── Panel switches ────────────────────────────────────────────────────────
 
     private fun showPreCountdownPanel() {
         binding.preCountdownPanel.visibility = View.VISIBLE
         binding.breathingPanel.visibility    = View.GONE
         binding.timesUpOverlay.visibility    = View.GONE
         binding.completionOverlay.visibility = View.GONE
+        updatePreTimer(PRE_COUNTDOWN_SECONDS)
     }
 
     private fun showBreathingPanel() {
         binding.preCountdownPanel.visibility = View.GONE
+        binding.breathingPanel.visibility    = View.VISIBLE
         binding.timesUpOverlay.visibility    = View.GONE
         binding.completionOverlay.visibility = View.GONE
-
-        binding.breathingPanel.alpha = 0f
-        binding.breathingPanel.visibility = View.VISIBLE
-        binding.breathingPanel.animate().alpha(1f).setDuration(400).start()
+        updateMainTimer(remainingMainSeconds)
+        updateTimerColor(remainingMainSeconds)
+        startBreathingLoop()
+        startMainTimer()
     }
 
-    private fun showTimesUp() {
-        stopBreathingCycle()
+    private fun showTimesUpOverlay() {
+        stopBreathingAnimation()
         binding.preCountdownPanel.visibility = View.GONE
         binding.breathingPanel.visibility    = View.GONE
+        binding.timesUpOverlay.visibility    = View.VISIBLE
         binding.completionOverlay.visibility = View.GONE
 
-        binding.timesUpOverlay.alpha = 0f
-        binding.timesUpOverlay.visibility = View.VISIBLE
-        binding.timesUpOverlay.animate().alpha(1f).setDuration(300).start()
-
-        binding.root.postDelayed({ transitionTo(ActivityState.COMPLETE) }, TIMES_UP_LINGER)
+        // Brief pause then show completion
+        binding.root.postDelayed({ showCompletionOverlay() }, 1_500L)
     }
 
-    private fun showCompletion() {
-        binding.preCountdownPanel.visibility = View.GONE
-        binding.breathingPanel.visibility    = View.GONE
+    private fun showCompletionOverlay() {
         binding.timesUpOverlay.visibility    = View.GONE
-
-        binding.completionOverlay.alpha = 0f
         binding.completionOverlay.visibility = View.VISIBLE
-        binding.completionOverlay.animate().alpha(1f).setDuration(500).start()
 
-        pulseText(binding.tvCompletionMessage)
-
-        binding.root.postDelayed({
-            setFragmentResult(RESULT_COMPLETE, bundleOf())
-        }, COMPLETE_LINGER)
+        // Notify parent — it decides when to advance
+        (parentFragment as? ActivityCompletionListener)?.onActivityComplete()
     }
 
-    // ── Pre-Countdown Timer ───────────────────────────────────────────────────
+    // ── Pre-countdown (15s) ──────────────────────────────────────────────────
 
     private fun startPreCountdown() {
-        transitionTo(ActivityState.PRE_COUNTDOWN)
-        updatePreTimer(PRE_COUNTDOWN_MS)
-
-        preCountdownTimer = object : CountDownTimer(PRE_COUNTDOWN_MS, TICK_MS) {
-            override fun onTick(ms: Long) = updatePreTimer(ms)
+        preCountdownTimer = object : CountDownTimer(PRE_COUNTDOWN_SECONDS * 1000L, 1000L) {
+            override fun onTick(millisUntilFinished: Long) {
+                val secs = millisUntilFinished / 1000L
+                updatePreTimer(secs)
+                // Turn red in last 5s
+                val colorRes = if (secs <= 5) R.color.timer_red else R.color.timer_green
+                binding.tvPreTimer.setTextColor(
+                    ContextCompat.getColor(requireContext(), colorRes)
+                )
+            }
             override fun onFinish() {
-                transitionTo(ActivityState.BREATHING)
-                startMainTimer()
-                startBreathingCycle()
+                showBreathingPanel()
             }
         }.start()
     }
 
-    private fun updatePreTimer(ms: Long) {
-        val sec = (ms / 1000).toInt()
-        binding.tvPreTimer.text = String.format("%02d : %02d", sec / 60, sec % 60)
-        // Pre-countdown is always green
-        binding.tvPreTimer.setTextColor(
-            ContextCompat.getColor(requireContext(), R.color.timer_green)
-        )
+    private fun updatePreTimer(seconds: Long) {
+        val mins = seconds / 60
+        val secs = seconds % 60
+        binding.tvPreTimer.text = String.format("%02d : %02d", mins, secs)
     }
 
-    // ── Main Activity Timer ───────────────────────────────────────────────────
+    // ── Main countdown ────────────────────────────────────────────────────────
 
     private fun startMainTimer() {
-        val durationMs = activityData.defaultDurationMinutes * 60_000L
-        updateMainTimer(durationMs)
-
-        mainTimer = object : CountDownTimer(durationMs, TICK_MS) {
-            override fun onTick(ms: Long) {
-                if (ms <= WARNING_MS && state != ActivityState.WARNING) {
-                    transitionTo(ActivityState.WARNING)
-                }
-                updateMainTimer(ms)
+        mainTimer = object : CountDownTimer(remainingMainSeconds * 1000L, 1000L) {
+            override fun onTick(millisUntilFinished: Long) {
+                remainingMainSeconds = millisUntilFinished / 1000L
+                updateMainTimer(remainingMainSeconds)
+                updateTimerColor(remainingMainSeconds)
             }
-
-            override fun onFinish() = transitionTo(ActivityState.TIMES_UP)
+            override fun onFinish() {
+                remainingMainSeconds = 0
+                showTimesUpOverlay()
+            }
         }.start()
     }
 
-    private fun updateMainTimer(ms: Long) {
-        val sec = (ms / 1000).toInt()
-        binding.tvMainTimer.text = String.format("%02d : %02d", sec / 60, sec % 60)
-        binding.tvMainTimer.setTextColor(
-            ContextCompat.getColor(
-                requireContext(),
-                if (ms <= WARNING_MS) R.color.timer_red else R.color.timer_default
-            )
-        )
+    private fun updateMainTimer(seconds: Long) {
+        val mins = seconds / 60
+        val secs = seconds % 60
+        binding.tvMainTimer.text = String.format("%02d : %02d", mins, secs)
     }
 
-    // ── Breathing Cycle ───────────────────────────────────────────────────────
+    private fun updateTimerColor(seconds: Long) {
+        val colorRes = when {
+            seconds <= 5  -> R.color.timer_red
+            seconds <= 30 -> R.color.timer_green
+            else          -> R.color.timer_default
+        }
+        binding.tvMainTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
+    }
+
+    // ── Breathing circle animation (4-7-8 loop) ───────────────────────────────
 
     /**
-     * Starts the repeating inhale → hold → exhale cycle.
-     * Uses Handler.postDelayed to sequence the phases without blocking the thread.
+     * Pulses the breathingCircle view with the 4-7-8 pattern.
+     * Each cycle:
+     *   Inhale  4s — scale 0.6 → 1.0, label "Inhale", color green
+     *   Hold    7s — scale stays 1.0,  label "Hold",   color purple
+     *   Exhale  8s — scale 1.0 → 0.6, label "Exhale",  color blue-grey
+     * Loops indefinitely until stopBreathingAnimation() is called.
      */
-    private fun startBreathingCycle() {
-        runInhalePhase()
+    private fun startBreathingLoop() {
+        if (isBreathingRunning) return
+        isBreathingRunning = true
+        runNextBreathPhase(BreathPhase.INHALE)
     }
 
-    private fun runInhalePhase() {
-        if (state != ActivityState.BREATHING && state != ActivityState.WARNING) return
-        currentPhase = BreathPhase.INHALE
-        binding.tvBreathPhase.text = "Inhale"
-        animateCircle(from = SCALE_MIN, to = SCALE_MAX, durationMs = INHALE_MS)
-        scheduleNext(INHALE_MS) { runHoldPhase() }
+    private enum class BreathPhase { INHALE, HOLD, EXHALE }
+
+    private fun runNextBreathPhase(phase: BreathPhase) {
+        if (!isBreathingRunning || _binding == null) return
+
+        when (phase) {
+            BreathPhase.INHALE -> {
+                setPhaseLabel("Inhale", "#4CAF50")   // green
+                animateCircle(
+                    fromScale = CIRCLE_MIN_SCALE,
+                    toScale   = CIRCLE_MAX_SCALE,
+                    duration  = INHALE_MS
+                ) { runNextBreathPhase(BreathPhase.HOLD) }
+            }
+            BreathPhase.HOLD -> {
+                setPhaseLabel("Hold", "#7C4DFF")      // purple
+                // No scale animation — just hold and wait
+                binding.root.postDelayed({
+                    if (isBreathingRunning) runNextBreathPhase(BreathPhase.EXHALE)
+                }, HOLD_MS)
+            }
+            BreathPhase.EXHALE -> {
+                setPhaseLabel("Exhale", "#5C6BC0")    // blue-grey
+                animateCircle(
+                    fromScale = CIRCLE_MAX_SCALE,
+                    toScale   = CIRCLE_MIN_SCALE,
+                    duration  = EXHALE_MS
+                ) { runNextBreathPhase(BreathPhase.INHALE) }
+            }
+        }
     }
 
-    private fun runHoldPhase() {
-        if (state != ActivityState.BREATHING && state != ActivityState.WARNING) return
-        currentPhase = BreathPhase.HOLD
-        binding.tvBreathPhase.text = "Hold"
-        // Circle stays at max scale — no animation needed
-        scheduleNext(HOLD_MS) { runExhalePhase() }
-    }
+    private fun animateCircle(
+        fromScale: Float,
+        toScale: Float,
+        duration: Long,
+        onEnd: () -> Unit
+    ) {
+        val circle = binding.breathingCircle
 
-    private fun runExhalePhase() {
-        if (state != ActivityState.BREATHING && state != ActivityState.WARNING) return
-        currentPhase = BreathPhase.EXHALE
-        binding.tvBreathPhase.text = "Exhale"
-        animateCircle(from = SCALE_MAX, to = SCALE_MIN, durationMs = EXHALE_MS)
-        scheduleNext(EXHALE_MS) { runInhalePhase() }
-    }
+        val scaleX = ObjectAnimator.ofFloat(circle, "scaleX", fromScale, toScale)
+        val scaleY = ObjectAnimator.ofFloat(circle, "scaleY", fromScale, toScale)
 
-    private fun scheduleNext(delayMs: Long, action: () -> Unit) {
-        val runnable = Runnable { action() }
-        breathingRunnable = runnable
-        breathingHandler.postDelayed(runnable, delayMs)
-    }
-
-    private fun stopBreathingCycle() {
-        breathingRunnable?.let { breathingHandler.removeCallbacks(it) }
-        breathingRunnable = null
-    }
-
-    // ── Circle Animation ──────────────────────────────────────────────────────
-
-    /**
-     * Smoothly scales the breathing circle between [from] and [to] over [durationMs].
-     */
-    private fun animateCircle(from: Float, to: Float, durationMs: Long) {
-        ObjectAnimator.ofPropertyValuesHolder(
-            binding.breathingCircle,
-            PropertyValuesHolder.ofFloat("scaleX", from, to),
-            PropertyValuesHolder.ofFloat("scaleY", from, to)
-        ).apply {
-            duration = durationMs
+        breathingAnimatorSet = AnimatorSet().apply {
+            playTogether(scaleX, scaleY)
+            this.duration = duration
             interpolator = AccelerateDecelerateInterpolator()
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    if (isBreathingRunning) onEnd()
+                }
+            })
             start()
         }
     }
 
-    // ── Cleanup ───────────────────────────────────────────────────────────────
+    private fun setPhaseLabel(text: String, hexColor: String) {
+        if (_binding == null) return
+        binding.tvBreathPhase.text = text
+        binding.tvBreathPhase.setTextColor(android.graphics.Color.parseColor(hexColor))
+    }
 
-    private fun cancelAll() {
+    private fun stopBreathingAnimation() {
+        isBreathingRunning = false
+        breathingAnimatorSet?.cancel()
+        breathingAnimatorSet = null
+    }
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
+
+    override fun onDestroyView() {
+        super.onDestroyView()
         preCountdownTimer?.cancel()
+        preCountdownTimer = null
         mainTimer?.cancel()
-        stopBreathingCycle()
-    }
-
-    // ── Pulse Animation (completion text) ────────────────────────────────────
-
-    private fun pulseText(target: View) {
-        AnimatorSet().apply {
-            playTogether(
-                ObjectAnimator.ofFloat(target, "scaleX", 1f, 1.08f, 1f),
-                ObjectAnimator.ofFloat(target, "scaleY", 1f, 1.08f, 1f)
-            )
-            duration = 600
-            start()
-        }
+        mainTimer = null
+        stopBreathingAnimation()
+        _binding = null
     }
 }

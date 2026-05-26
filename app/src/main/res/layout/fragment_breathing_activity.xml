@@ -13,8 +13,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
+
     android:layout_height="match_parent"
-    android:background="@drawable/bg_activity_screen">
+    android:background="@drawable/routinestatebackground">
 
     <!-- ═══════════════════════════════════════════════════
          PRE-COUNTDOWN PANEL
@@ -24,16 +25,39 @@
         android:id="@+id/preCountdownPanel"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_margin="10dp"
+        android:background="@drawable/routinewhitebg"
         android:visibility="visible">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/bg_activity_screen"
+            android:scaleType="centerCrop"
+            android:contentDescription="@null" />
+
+
+        <ImageView
+            android:id="@+id/idmgShleepyBody"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+
+            android:layout_marginTop="30dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/shleepylogo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
 
         <!-- Full Shleepy body illustration -->
         <ImageView
             android:id="@+id/imgShleepyBody"
-            android:layout_width="140dp"
-            android:layout_height="140dp"
-            android:layout_marginTop="80dp"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="190dp"
             android:scaleType="fitCenter"
-            android:src="@drawable/ic_shleepy_body"
+            android:src="@drawable/shleepybody"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -43,17 +67,19 @@
             android:id="@+id/tvPreTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="32dp"
             android:fontFamily="@font/poppinsbold"
             android:text="Slow-Paced Breathing"
-            android:textColor="#4B3FBF"
-            android:textSize="22sp"
+            android:textColor="#2c1769"
+            android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/imgShleepyBody" />
 
         <!-- Instruction card -->
+
+        <!-- Pre-countdown timer card (green) -->
         <TextView
             android:id="@+id/tvPreInstruction"
             android:layout_width="0dp"
@@ -67,13 +93,13 @@
             android:paddingHorizontal="20dp"
             android:paddingVertical="14dp"
             android:text="Follow the circle. Inhale as it grows,\nexhale as it shrinks."
-            android:textColor="#6B6B8A"
-            android:textSize="14sp"
+            android:textColor="#515251"
+            android:textSize="10sp"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvPreTitle" />
 
-        <!-- Pre-countdown timer card (green) -->
         <LinearLayout
             android:id="@+id/preTimerCard"
             android:layout_width="0dp"
@@ -83,19 +109,19 @@
             android:layout_marginEnd="48dp"
             android:background="@drawable/bg_timer_card"
             android:gravity="center"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:paddingHorizontal="24dp"
-            android:paddingVertical="16dp"
+            android:paddingVertical="8dp"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvPreInstruction">
 
             <ImageView
                 android:layout_width="20dp"
                 android:layout_height="20dp"
-                android:layout_marginEnd="10dp"
-                android:src="@drawable/ic_clock"
-                android:tint="#7B6FE0" />
+                android:layout_gravity="center"
+                android:src="@drawable/ic_clock" />
 
             <TextView
                 android:id="@+id/tvPreTimer"
@@ -105,7 +131,7 @@
                 android:letterSpacing="0.05"
                 android:text="00 : 15"
                 android:textColor="@color/timer_green"
-                android:textSize="28sp"
+                android:textSize="22sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -260,7 +286,7 @@
         android:id="@+id/completionOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@drawable/bg_completion_glow"
+        android:background="@drawable/bg_competion_glow"
         android:visibility="gone">
 
         <ImageView

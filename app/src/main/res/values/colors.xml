@@ -4,7 +4,7 @@
     <color name="white">#FFFFFFFF</color>
     <color name="noctra_purple_light">#5C25F0</color>
     <color name="noctra_purple_dark">#16056E</color>
-    <color name="timer_green">#4CAF50</color>
+    <color name="timer_green">#038745</color>
     <color name="timer_red">#E53935</color>
     <color name="timer_default">#1A1560</color>
 </resources>

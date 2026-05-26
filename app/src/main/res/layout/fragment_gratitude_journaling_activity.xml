@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F0FF"
+    android:padding="24dp">
+
+    <!-- Shleepy logo (hat / head graphic) -->
+    <ImageView
+        android:id="@+id/iv_shleepy_logo"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:src="@drawable/shleepylogo"
+        android:contentDescription="Shleepy"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="16dp" />
+
+    <!-- Shleepy body -->
+    <ImageView
+        android:id="@+id/iv_shleepy_body"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:src="@drawable/shleepybody"
+        android:contentDescription="Shleepy body"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/iv_shleepy_logo"
+        android:layout_marginTop="-8dp" />
+
+    <!-- Alarm clock — shown only on Time's Up state -->
+    <ImageView
+        android:id="@+id/iv_alarm_clock"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:src="@drawable/ic_alarm_clock"
+        android:contentDescription="Time's up"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="80dp"
+        tools:visibility="gone" />
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/tv_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/poppinsbold"
+        android:text="Gratitude Journaling"
+        android:textColor="#3B1FA8"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/iv_shleepy_body" />
+
+    <!-- Subtitle -->
+    <TextView
+        android:id="@+id/tv_subtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:fontFamily="@font/poppinsregular"
+        android:text="Share your thoughts."
+        android:textColor="#888888"
+        android:textSize="13sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_title" />
+
+    <!-- Large text input card — matches the big white card in wireframe -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_input"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="20dp"
+        app:cardBackgroundColor="#FFFFFF"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="2dp"
+        app:layout_constraintBottom_toTopOf="@id/card_timer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_subtitle">
+
+        <EditText
+            android:id="@+id/et_journal_entry"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@null"
+            android:fontFamily="@font/poppinsregular"
+            android:gravity="top|start"
+            android:hint="Releasing your thoughts is great for your well-being. Share your thoughts in this field"
+            android:inputType="textMultiLine|textCapSentences"
+            android:padding="20dp"
+            android:textColor="#333333"
+            android:textColorHint="#BBBBBB"
+            android:textSize="14sp" />
+    </androidx.cardview.widget.CardView>
+
+    <!-- Completion message — visible only after Time's Up -->
+    <TextView
+        android:id="@+id/tv_completion_message"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:fontFamily="@font/poppinsregular"
+        android:gravity="center"
+        android:lineSpacingMultiplier="1.5"
+        android:textColor="#444444"
+        android:textSize="14sp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/iv_alarm_clock"
+        tools:text="Great job.\nSuppressing your thoughts is bad for your health.\nThink of yourself for a second."
+        tools:visibility="visible" />
+
+    <!-- Timer card pinned at bottom -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_timer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        app:cardBackgroundColor="#EDE8FF"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Clock icon -->
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_clock"
+                android:contentDescription="Timer"
+                android:layout_marginBottom="4dp" />
+
+            <!-- Countdown — MM : SS -->
+            <TextView
+                android:id="@+id/tv_timer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppinsbold"
+                android:textColor="#3B1FA8"
+                android:textSize="36sp"
+                tools:text="10 : 00" />
+
+            <!-- "Time's Up!" label — shown only after timer ends -->
+            <TextView
+                android:id="@+id/tv_times_up"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppinsbold"
+                android:text="Time's Up!"
+                android:textColor="#E53935"
+                android:textSize="22sp"
+                android:visibility="gone"
+                tools:visibility="gone" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
