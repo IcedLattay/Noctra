@@ -41,6 +41,7 @@
             android:id="@+id/idmgShleepyBody"
             android:layout_width="40dp"
             android:layout_height="40dp"
+
             android:layout_marginTop="30dp"
             android:scaleType="fitCenter"
             android:src="@drawable/shleepylogo"
@@ -50,71 +51,41 @@
 
 
         <!-- Full Shleepy body illustration -->
-        <ImageView
-            android:id="@+id/imgShleepyBody"
-            android:layout_width="120dp"
-            android:layout_height="120dp"
-            android:layout_marginTop="200dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/shleepybody"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
 
         <!-- Activity title -->
-        <TextView
-            android:id="@+id/tvPreTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:fontFamily="@font/poppinsbold"
-            android:text="Slow-Paced Breathing"
-            android:textColor="#2c1769"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/imgShleepyBody" />
 
         <!-- Instruction card -->
 
         <!-- Pre-countdown timer card (green) -->
-        <TextView
-            android:id="@+id/tvPreInstruction"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="32dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="32dp"
-            android:background="@drawable/bg_instruction_card"
-            android:fontFamily="@font/poppinsregular"
-            android:gravity="center"
-            android:paddingHorizontal="20dp"
-            android:paddingVertical="14dp"
-            android:text="Follow the circle. Inhale as it grows,\nexhale as it shrinks."
-            android:textColor="#515251"
-            android:textSize="10sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
+
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/breathingAnimation"
+            android:layout_width="250dp"
+            android:layout_height="250dp"
+            android:layout_marginTop="120dp"
+            app:lottie_rawRes="@raw/timesupclock"
+            app:lottie_autoPlay="true"
+            app:lottie_loop="true"
+            app:layout_constraintTop_toBottomOf="@id/idmgShleepyBody"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvPreTitle" />
+            app:layout_constraintEnd_toEndOf="parent"/>
 
         <LinearLayout
             android:id="@+id/preTimerCard"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="48dp"
-            android:layout_marginTop="20dp"
             android:layout_marginEnd="48dp"
             android:background="@drawable/bg_timer_card"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingHorizontal="24dp"
-            android:paddingVertical="8dp"
+            android:paddingVertical="20dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvPreInstruction">
+            tools:layout_editor_absoluteY="506dp">
 
             <ImageView
                 android:layout_width="20dp"
@@ -128,8 +99,8 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/poppinsbold"
                 android:letterSpacing="0.05"
-                android:text="00 : 15"
-                android:textColor="@color/timer_green"
+                android:text="Time's Up"
+                android:textColor="@color/timer_red"
                 android:textSize="22sp"
                 android:textStyle="bold" />
         </LinearLayout>

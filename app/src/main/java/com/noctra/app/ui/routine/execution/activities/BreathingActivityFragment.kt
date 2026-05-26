@@ -77,7 +77,7 @@ class BreathingActivityFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val durationSeconds = arguments?.getInt(ARG_DURATION_SECONDS, 300) ?: 300
+        val durationSeconds = arguments?.getInt(ARG_DURATION_SECONDS, 10) ?: 10
         remainingMainSeconds = durationSeconds.toLong()
 
         showPreCountdownPanel()
@@ -127,17 +127,28 @@ class BreathingActivityFragment : Fragment() {
     // ── Pre-countdown (15s) ──────────────────────────────────────────────────
 
     private fun startPreCountdown() {
-        preCountdownTimer = object : CountDownTimer(PRE_COUNTDOWN_SECONDS * 1000L, 1000L) {
+        // Fix: Add a 500ms safety cushion buffer so the first tick calculation evaluates to exactly 15
+        val totalDurationMillis = (PRE_COUNTDOWN_SECONDS * 1000L) + 500L
+
+        preCountdownTimer = object : CountDownTimer(totalDurationMillis, 1000L) {
             override fun onTick(millisUntilFinished: Long) {
+                // Fix: Divide the raw milliseconds to calculate the current true second step
                 val secs = millisUntilFinished / 1000L
-                updatePreTimer(secs)
+
+                // Prevent overflow display edge-case if the safety cushion is checked too quickly
+                val displaySecs = if (secs > PRE_COUNTDOWN_SECONDS) PRE_COUNTDOWN_SECONDS else secs
+
+                updatePreTimer(displaySecs)
+
                 // Turn red in last 5s
-                val colorRes = if (secs <= 5) R.color.timer_red else R.color.timer_green
+                val colorRes = if (displaySecs <= 5) R.color.timer_red else R.color.timer_green
                 binding.tvPreTimer.setTextColor(
                     ContextCompat.getColor(requireContext(), colorRes)
                 )
             }
             override fun onFinish() {
+                // Hardcode final precision clean up before switching states
+                updatePreTimer(0)
                 showBreathingPanel()
             }
         }.start()
@@ -274,5 +285,9 @@ class BreathingActivityFragment : Fragment() {
         mainTimer = null
         stopBreathingAnimation()
         _binding = null
+    }
+
+    interface ActivityCompletionListener {
+        fun onActivityComplete()
     }
 }

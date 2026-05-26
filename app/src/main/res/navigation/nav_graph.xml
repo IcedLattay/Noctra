@@ -2,7 +2,7 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/companionFragment">
+    app:startDestination="@id/breathingActivityFragment">
 
     <fragment
         android:id="@+id/routineHomeFragment"
@@ -23,5 +23,10 @@
         android:id="@+id/userProfileFragment"
         android:name="com.noctra.app.ui.profile.UserProfileFragment"
         android:label="Profile" />
+
+    <fragment
+        android:id="@+id/breathingActivityFragment"
+        android:name="com.noctra.app.ui.routine.execution.activities.BreathingActivityFragment"
+        android:label="Breathing" />
 
 </navigation>
