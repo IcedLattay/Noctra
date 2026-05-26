@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:orientation="vertical">
+
+    <!-- Top bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="16dp">
+
+        <ImageView
+            android:id="@+id/btn_back"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:contentDescription="Back"
+            android:src="@drawable/ic_back_arrow" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="Settings"
+            android:textColor="@color/noctra_purple_dark"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/noctra_purple_faint" />
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="32dp">
+
+            <!-- ACCOUNT MANAGEMENT -->
+            <TextView
+                style="@style/SettingsSectionLabel"
+                android:text="ACCOUNT MANAGEMENT" />
+
+            <LinearLayout
+                style="@style/SettingsCard"
+                android:layout_marginTop="8dp">
+
+                <!-- Display Name row -->
+                <LinearLayout style="@style/SettingsRow">
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="Display Name" />
+                        <TextView
+                            android:id="@+id/value_display_name"
+                            style="@style/SettingsRowSubtitle"
+                            tools:text="mesha" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <!-- Email row -->
+                <LinearLayout style="@style/SettingsRow">
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="Email" />
+                        <TextView
+                            android:id="@+id/value_email"
+                            style="@style/SettingsRowSubtitle"
+                            android:text="(demo mode)" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ROUTINE MANAGEMENT -->
+            <TextView
+                style="@style/SettingsSectionLabel"
+                android:layout_marginTop="24dp"
+                android:text="ROUTINE MANAGEMENT" />
+
+            <LinearLayout
+                style="@style/SettingsCard"
+                android:layout_marginTop="8dp">
+
+                <LinearLayout style="@style/SettingsRow">
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_clock" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="Target Bedtime" />
+                        <TextView
+                            style="@style/SettingsRowSubtitle"
+                            android:text="Time you want to be asleep by" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/btn_bedtime_pill"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/bedtime_pill_background"
+                    android:paddingHorizontal="20dp"
+                    android:paddingVertical="10dp"
+                    android:textColor="@color/noctra_purple_light"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    tools:text="10:00 PM" />
+            </LinearLayout>
+
+            <!-- SLEEP MONITORING -->
+            <TextView
+                style="@style/SettingsSectionLabel"
+                android:layout_marginTop="24dp"
+                android:text="SLEEP MONITORING" />
+
+            <LinearLayout
+                style="@style/SettingsCard"
+                android:layout_marginTop="8dp">
+
+                <LinearLayout style="@style/SettingsRow">
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_health_pulse" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="Health Connect Permissions" />
+                        <TextView
+                            style="@style/SettingsRowSubtitle"
+                            android:text="Demo Mode" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:background="@color/noctra_health_yellow" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <LinearLayout style="@style/SettingsRow">
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_watch" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="Connected Device" />
+                        <TextView
+                            style="@style/SettingsRowSubtitle"
+                            android:text="No device connected" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- NOTIFICATIONS -->
+            <TextView
+                style="@style/SettingsSectionLabel"
+                android:layout_marginTop="24dp"
+                android:text="NOTIFICATIONS" />
+
+            <LinearLayout
+                style="@style/SettingsCard"
+                android:layout_marginTop="8dp">
+
+                <LinearLayout style="@style/SettingsRow">
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_bell" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="Wind-Down Reminders" />
+                        <TextView
+                            style="@style/SettingsRowSubtitle"
+                            android:text="Notify me to start my routine" />
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switch_wind_down"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:thumbTint="@color/noctra_purple_light"
+                        app:trackTint="@color/noctra_purple_faint" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <LinearLayout style="@style/SettingsRow">
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_bell" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="Morning Sleep Score" />
+                        <TextView
+                            style="@style/SettingsRowSubtitle"
+                            android:text="Get my sleep score notification" />
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switch_morning_score"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:thumbTint="@color/noctra_purple_light"
+                        app:trackTint="@color/noctra_purple_faint" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ABOUT -->
+            <TextView
+                style="@style/SettingsSectionLabel"
+                android:layout_marginTop="24dp"
+                android:text="ABOUT" />
+
+            <LinearLayout
+                style="@style/SettingsCard"
+                android:layout_marginTop="8dp">
+
+                <LinearLayout style="@style/SettingsRow">
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_info_circle" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="App Version" />
+                        <TextView
+                            android:id="@+id/value_app_version"
+                            style="@style/SettingsRowSubtitle"
+                            tools:text="1.0.0" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <LinearLayout
+                    android:id="@+id/row_privacy_policy"
+                    style="@style/SettingsRow"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_document" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Privacy Policy"
+                        android:textColor="@color/noctra_purple_dark"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <LinearLayout
+                    android:id="@+id/row_terms_of_use"
+                    style="@style/SettingsRow"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_document" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Terms of Use"
+                        android:textColor="@color/noctra_purple_dark"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right" />
+                </LinearLayout>
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

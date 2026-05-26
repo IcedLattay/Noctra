@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:fillViewport="true">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="32dp">
+
+        <!-- Top bar: trophy (left) + add friend + settings (right) -->
+        <ImageView
+            android:id="@+id/icon_trophy"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/circle_outline_grey"
+            android:padding="11dp"
+            android:src="@drawable/ic_trophy"
+            android:contentDescription="Achievements"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/icon_settings"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/circle_outline_grey"
+            android:padding="11dp"
+            android:src="@drawable/ic_settings"
+            android:contentDescription="Settings"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/icon_add_friend"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="12dp"
+            android:background="@drawable/circle_outline_grey"
+            android:padding="11dp"
+            android:src="@drawable/ic_add_friend"
+            android:contentDescription="Add Friend"
+            app:layout_constraintEnd_toStartOf="@id/icon_settings"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Avatar -->
+        <ImageView
+            android:id="@+id/avatar_shleepy"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_marginTop="24dp"
+            android:src="@drawable/ic_shleepy_placeholder"
+            android:contentDescription="Shleepy avatar"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/icon_trophy" />
+
+        <!-- Display name row -->
+        <LinearLayout
+            android:id="@+id/row_display_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/avatar_shleepy">
+
+            <TextView
+                android:id="@+id/text_display_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/black"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                tools:text="shleepy" />
+
+            <ImageView
+                android:id="@+id/icon_edit_name"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="8dp"
+                android:src="@drawable/ic_edit_pencil"
+                android:contentDescription="Edit display name" />
+        </LinearLayout>
+
+        <!-- Email -->
+        <TextView
+            android:id="@+id/text_email"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/noctra_purple_dark"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/row_display_name"
+            tools:text="(demo mode)" />
+
+        <!-- Stat row -->
+        <LinearLayout
+            android:id="@+id/stat_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:orientation="horizontal"
+            android:weightSum="3"
+            app:layout_constraintTop_toBottomOf="@id/text_email">
+
+            <!-- Current Streak -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_flame"
+                        android:contentDescription="Current streak" />
+
+                    <TextView
+                        android:id="@+id/stat_current_streak"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:textColor="@color/noctra_purple_dark"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        tools:text="0" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Current Streak"
+                    android:textColor="@color/noctra_text_muted"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- Longest Streak -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:src="@drawable/ic_star_streak"
+                        android:contentDescription="Longest streak" />
+
+                    <TextView
+                        android:id="@+id/stat_longest_streak"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:textColor="@color/noctra_purple_dark"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        tools:text="0" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:gravity="center"
+                    android:text="Longest Streak\nall-time"
+                    android:textColor="@color/noctra_text_muted"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- Total Routines Completed -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:src="@drawable/ic_checklist"
+                        android:contentDescription="Routines completed" />
+
+                    <TextView
+                        android:id="@+id/stat_routines_completed"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:textColor="@color/noctra_purple_dark"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        tools:text="0" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:gravity="center"
+                    android:text="Total Routines\nCompleted"
+                    android:textColor="@color/noctra_text_muted"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- "Your Shleepy's Status" label -->
+        <TextView
+            android:id="@+id/label_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Your Shleepy's Status"
+            android:textColor="@color/black"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/stat_row" />
+
+        <!-- Status card -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/status_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:layout_constraintTop_toBottomOf="@id/label_status">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/card_status_outline"
+                android:padding="20dp">
+
+                <ImageView
+                    android:id="@+id/status_avatar"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:src="@drawable/ic_shleepy_placeholder"
+                    android:contentDescription="Shleepy at current stage"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/status_stage_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:textColor="@color/noctra_purple_dark"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    app:layout_constraintStart_toEndOf="@id/status_avatar"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:text="The Depleted" />
+
+                <TextView
+                    android:id="@+id/status_stage_number"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/noctra_purple_dark"
+                    android:textSize="16sp"
+                    app:layout_constraintStart_toEndOf="@id/status_avatar"
+                    app:layout_constraintTop_toBottomOf="@id/status_stage_label"
+                    tools:text="Stage 1" />
+
+                <TextView
+                    android:id="@+id/status_xp_message"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="12dp"
+                    android:textColor="@color/noctra_purple_dark"
+                    android:textSize="13sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/status_avatar"
+                    app:layout_constraintTop_toBottomOf="@id/status_stage_number"
+                    tools:text="You need 1,500 XP for your Shleepy to evolve" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.cardview.widget.CardView>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.core.widget.NestedScrollView>

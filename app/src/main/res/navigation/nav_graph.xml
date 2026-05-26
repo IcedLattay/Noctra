@@ -22,6 +22,15 @@
     <fragment
         android:id="@+id/userProfileFragment"
         android:name="com.noctra.app.ui.profile.UserProfileFragment"
-        android:label="Profile" />
+        android:label="Profile" >
+        <action
+            android:id="@+id/action_profile_to_settings"
+            app:destination="@id/settingsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.noctra.app.ui.profile.SettingsFragment"
+        android:label="Settings" />
 
 </navigation>

@@ -1,6 +1,7 @@
 package com.noctra.app
 
 import android.os.Bundle
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
@@ -11,13 +12,23 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Get the NavController from the NavHostFragment
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.nav_host) as NavHostFragment
         val navController = navHostFragment.navController
 
-        // Wire up the bottom nav so tapping each tab navigates to its fragment
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
         bottomNav.setupWithNavController(navController)
+
+        // Hide the bottom nav on certain destinations (Settings, etc.)
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            bottomNav.visibility = when (destination.id) {
+                R.id.settingsFragment -> View.GONE
+                // add more destination IDs here later as needed
+                // e.g., R.id.routineExecutionFragment, R.id.onboardingGraph, etc.
+                else -> View.VISIBLE
+            }
+        }
+
+
     }
 }
