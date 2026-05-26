@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ic_shleepy_body.xml
+    PLACEHOLDER — replace with the actual Shleepy full-body illustration asset
+    from your design team. Used on Breathing, Audio, and Journaling pre-countdown panels.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- Body -->
+    <path
+        android:fillColor="#F0EEFF"
+        android:pathData="M60,90 C35,90 20,75 20,55 C20,35 35,20 60,20 C85,20 100,35 100,55 C100,75 85,90 60,90 Z" />
+    <!-- Head/hat — purple dome -->
+    <path
+        android:fillColor="#4B3FBF"
+        android:pathData="M60,15 C42,15 30,27 30,42 L90,42 C90,27 78,15 60,15 Z" />
+    <!-- Gold accent on hat -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M45,42 C48,35 55,30 60,30 C65,30 72,35 75,42 Z" />
+</vector>
