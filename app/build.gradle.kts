@@ -10,6 +10,7 @@ val localProperties = Properties().apply {
 
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -101,4 +102,6 @@ dependencies {
 
     // Coroutines
     implementation(libs.coroutines.android)
+
+    implementation(libs.kotlinx.serialization.json)
 }

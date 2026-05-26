@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/routineHomeFragment"
+        android:icon="@drawable/ic_nav_routine"
+        android:title="Routines" />
+
+    <item
+        android:id="@+id/companionFragment"
+        android:icon="@drawable/ic_nav_companion"
+        android:title="Companion" />
+
+    <item
+        android:id="@+id/analyticsDashboardFragment"
+        android:icon="@drawable/ic_nav_performance"
+        android:title="Performance" />
+
+    <item
+        android:id="@+id/userProfileFragment"
+        android:icon="@drawable/ic_nav_profile"
+        android:title="Profile" />
+
+</menu>
