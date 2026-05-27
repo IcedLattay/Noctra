@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#EDE9FB">
+
+    <!-- Top Bar: X button + Title -->
+    <ImageButton
+        android:id="@+id/btn_exit"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:tint="@color/noctra_purple_dark"
+        android:contentDescription="Exit routine"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tv_toolbar_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tonight's Routine"
+        android:textColor="@color/noctra_purple_dark"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:fontFamily="@font/poppinsbold"
+        app:layout_constraintBottom_toBottomOf="@id/btn_exit"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/btn_exit" />
+
+    <!-- Moon illustration -->
+    <ImageView
+        android:id="@+id/iv_moon"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginTop="24dp"
+        android:src="@drawable/shleepylogo"
+        android:contentDescription="moon illustration"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_exit" />
+
+    <!-- Heading: Ready for Tonight's Routine? -->
+    <TextView
+        android:id="@+id/tv_heading"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:text="Ready for Tonight's\nRoutine?"
+        android:textColor="@color/noctra_purple_dark"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:fontFamily="@font/poppinsbold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/iv_moon" />
+
+    <!-- Subtitle: 3 activities • 23 minutes total -->
+    <TextView
+        android:id="@+id/tv_start_subtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:textColor="#555555"
+        android:textSize="13sp"
+        android:fontFamily="@font/poppinsregular"
+        tools:text="3 activities • 23 minutes total"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_heading" />
+
+    <!-- Activity Step Rows -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_activity_steps"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="20dp"
+        android:nestedScrollingEnabled="false"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_start_subtitle"
+        tools:listitem="@layout/item_routine_step_row" />
+
+    <!-- Start Routine Button -->
+    <Button
+        android:id="@+id/btn_start_routine"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="32dp"
+        android:background="@drawable/bg_primary_button"
+        android:drawableStart="@drawable/ic_alarm_clock"
+        android:drawablePadding="8dp"
+        android:text="Start Routine"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:fontFamily="@font/poppinsbold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

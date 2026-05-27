@@ -2,12 +2,18 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/breathingActivityFragment">
+    app:startDestination="@id/routineHomeFragment">
+
+    <!-- ── Bottom Nav Tabs ─────────────────────────────────────────── -->
 
     <fragment
         android:id="@+id/routineHomeFragment"
         android:name="com.noctra.app.ui.routine.home.RoutineHomeFragment"
-        android:label="Routine" />
+        android:label="Routine">
+        <action
+            android:id="@+id/action_routineHomeFragment_to_routineStartFragment"
+            app:destination="@id/routineStartFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/analyticsDashboardFragment"
@@ -24,9 +30,117 @@
         android:name="com.noctra.app.ui.profile.UserProfileFragment"
         android:label="Profile" />
 
+    <!-- ── Routine Flow ────────────────────────────────────────────── -->
+
+    <fragment
+        android:id="@+id/routineStartFragment"
+        android:name="com.noctra.app.ui.routine.home.RoutineStartFragment"
+        android:label="Start Routine">
+        <action
+            android:id="@+id/action_routineStartFragment_to_breathingActivityFragment"
+            app:destination="@id/breathingActivityFragment" />
+        <action
+            android:id="@+id/action_routineStartFragment_to_audioscapeActivityFragment"
+            app:destination="@id/audioscapeActivityFragment" />
+        <action
+            android:id="@+id/action_routineStartFragment_to_gratitudeJournalingActivityFragment"
+            app:destination="@id/gratitudeJournalingActivityFragment" />
+        <action
+            android:id="@+id/action_routineStartFragment_to_genericTimerActivityFragment"
+            app:destination="@id/genericTimerActivityFragment" />
+    </fragment>
+
+    <!-- ── Execution Activity Screens ─────────────────────────────── -->
+
     <fragment
         android:id="@+id/breathingActivityFragment"
         android:name="com.noctra.app.ui.routine.execution.activities.BreathingActivityFragment"
-        android:label="Breathing" />
+        android:label="Breathing">
+        <action
+            android:id="@+id/action_breathingActivityFragment_to_audioscapeActivityFragment"
+            app:destination="@id/audioscapeActivityFragment" />
+        <action
+            android:id="@+id/action_breathingActivityFragment_to_gratitudeJournalingActivityFragment"
+            app:destination="@id/gratitudeJournalingActivityFragment" />
+        <action
+            android:id="@+id/action_breathingActivityFragment_to_genericTimerActivityFragment"
+            app:destination="@id/genericTimerActivityFragment" />
+        <action
+            android:id="@+id/action_breathingActivityFragment_to_routineCompletionOverlayFragment"
+            app:destination="@id/routineCompletionOverlayFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/audioscapeActivityFragment"
+        android:name="com.noctra.app.ui.routine.execution.activities.AudioscapeActivityFragment"
+        android:label="Audio">
+        <action
+            android:id="@+id/action_audioscapeActivityFragment_to_breathingActivityFragment"
+            app:destination="@id/breathingActivityFragment" />
+        <action
+            android:id="@+id/action_audioscapeActivityFragment_to_gratitudeJournalingActivityFragment"
+            app:destination="@id/gratitudeJournalingActivityFragment" />
+        <action
+            android:id="@+id/action_audioscapeActivityFragment_to_genericTimerActivityFragment"
+            app:destination="@id/genericTimerActivityFragment" />
+        <action
+            android:id="@+id/action_audioscapeActivityFragment_to_routineCompletionOverlayFragment"
+            app:destination="@id/routineCompletionOverlayFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/gratitudeJournalingActivityFragment"
+        android:name="com.noctra.app.ui.routine.execution.activities.GratitudeJournalingActivityFragment"
+        android:label="Journaling">
+        <action
+            android:id="@+id/action_gratitudeJournalingActivityFragment_to_breathingActivityFragment"
+            app:destination="@id/breathingActivityFragment" />
+        <action
+            android:id="@+id/action_gratitudeJournalingActivityFragment_to_audioscapeActivityFragment"
+            app:destination="@id/audioscapeActivityFragment" />
+        <action
+            android:id="@+id/action_gratitudeJournalingActivityFragment_to_genericTimerActivityFragment"
+            app:destination="@id/genericTimerActivityFragment" />
+        <action
+            android:id="@+id/action_gratitudeJournalingActivityFragment_to_routineCompletionOverlayFragment"
+            app:destination="@id/routineCompletionOverlayFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/genericTimerActivityFragment"
+        android:name="com.noctra.app.ui.routine.execution.activities.GenericTimerActivityFragment"
+        android:label="Activity">
+        <action
+            android:id="@+id/action_genericTimerActivityFragment_to_breathingActivityFragment"
+            app:destination="@id/breathingActivityFragment" />
+        <action
+            android:id="@+id/action_genericTimerActivityFragment_to_audioscapeActivityFragment"
+            app:destination="@id/audioscapeActivityFragment" />
+        <action
+            android:id="@+id/action_genericTimerActivityFragment_to_gratitudeJournalingActivityFragment"
+            app:destination="@id/gratitudeJournalingActivityFragment" />
+        <action
+            android:id="@+id/action_genericTimerActivityFragment_to_routineCompletionOverlayFragment"
+            app:destination="@id/routineCompletionOverlayFragment" />
+    </fragment>
+
+    <!-- ── Completion Overlay ──────────────────────────────────────── -->
+
+    <fragment
+        android:id="@+id/routineCompletionOverlayFragment"
+        android:name="com.noctra.app.ui.routine.home.RoutineCompletionOverlayFragment"
+        android:label="Complete">
+        <action
+            android:id="@+id/action_routineCompletionOverlayFragment_to_companionFragment"
+            app:destination="@id/companionFragment" />
+    </fragment>
+
+    <!-- ── Global Actions ──────────────────────────────────────────── -->
+
+    <action
+        android:id="@+id/action_global_routineHomeFragment"
+        app:destination="@id/routineHomeFragment"
+        app:popUpTo="@id/routineHomeFragment"
+        app:popUpToInclusive="true" />
 
 </navigation>
