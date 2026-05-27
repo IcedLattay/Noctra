@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/companionFragment">
+
+    <fragment
+        android:id="@+id/routineHomeFragment"
+        android:name="com.noctra.app.ui.routine.home.RoutineHomeFragment"
+        android:label="Routine" />
+
+    <fragment
+        android:id="@+id/analyticsDashboardFragment"
+        android:name="com.noctra.app.ui.analytics.AnalyticsDashboardFragment"
+        android:label="Progress" />
+
+    <fragment
+        android:id="@+id/companionFragment"
+        android:name="com.noctra.app.ui.companion.CompanionFragment"
+        android:label="Companion" >
+        <fragment
+            android:id="@+id/companionFragment"
+            android:name="com.noctra.app.ui.companion.CompanionFragment"
+            android:label="Companion">
+            <action
+                android:id="@+id/action_companion_to_settings"
+                app:destination="@id/settingsFragment" />
+        </fragment>
+    </fragment>
+
+    <fragment
+        android:id="@+id/userProfileFragment"
+        android:name="com.noctra.app.ui.profile.UserProfileFragment"
+        android:label="Profile" >
+        <action
+            android:id="@+id/action_profile_to_settings"
+            app:destination="@id/settingsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.noctra.app.ui.profile.SettingsFragment"
+        android:label="Settings" />
+
+</navigation>

@@ -1,0 +1,35 @@
+# Built application files
+*.apk
+*.aab
+*.ap_
+
+# Build directories
+build/
+app/build/
+
+# Local configuration
+local.properties
+
+# Gradle
+.gradle/
+gradle-wrapper.jar
+
+# Android Studio
+.idea/
+*.iml
+*.iws
+*.ipr
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Keystore files
+*.jks
+*.keystore
+
+# Google services (security - dont commit this)
+google-services.json
+
+# Mac/Windows junk
+.DS_Store
+Thumbs.db
