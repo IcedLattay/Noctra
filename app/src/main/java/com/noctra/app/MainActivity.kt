@@ -19,5 +19,12 @@ class MainActivity : AppCompatActivity() {
         // Wire up the bottom nav so tapping each tab navigates to its fragment
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
         bottomNav.setupWithNavController(navController)
+
+        // Ensure "Companion" stays selected when in Customization
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            if (destination.id == R.id.customizationFragment) {
+                bottomNav.menu.findItem(R.id.companionFragment).isChecked = true
+            }
+        }
     }
 }

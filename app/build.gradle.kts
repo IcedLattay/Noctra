@@ -40,6 +40,7 @@ android {
 
     buildFeatures {
         buildConfig = true
+        viewBinding = true
     }
 
     buildTypes {
@@ -93,6 +94,7 @@ dependencies {
 
     // Lottie
     implementation(libs.lottie)
+    implementation("com.airbnb.android:lottie:6.4.0")
 
     // MPAndroidChart
     implementation(libs.mpandroidchart)

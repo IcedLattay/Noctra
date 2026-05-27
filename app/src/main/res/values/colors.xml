@@ -4,4 +4,11 @@
     <color name="white">#FFFFFFFF</color>
     <color name="noctra_purple_light">#5C25F0</color>
     <color name="noctra_purple_dark">#16056E</color>
+    <color name="noctra_purple_soft">#B097FF</color>
+    <color name="noctra_lavender_start">#F4F2FF</color>
+    <color name="noctra_lavender_end">#E4DFFF</color>
+    <color name="noctra_yellow">#FFCB21</color>
+    <color name="noctra_gray_track">#E0E0E0</color>
+    <color name="noctra_card_bg">#FFFFFF</color>
+    <color name="noctra_text_dark">#16056E</color>
 </resources>
