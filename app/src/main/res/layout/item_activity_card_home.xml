@@ -1,110 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/white">
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp">
 
-    <!-- Title: My Routines -->
-    <TextView
-        android:id="@+id/tv_routine_title"
-        android:layout_width="0dp"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="32dp"
-        android:text="My Routines"
-        android:textColor="@color/noctra_purple_dark"
-        android:textSize="26sp"
-        android:textStyle="bold"
-        android:fontFamily="@font/poppinsbold"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <!-- Subtitle: 3 activities • 23 minutes total -->
-    <TextView
-        android:id="@+id/tv_routine_subtitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="6dp"
-        android:textColor="#666666"
-        android:textSize="13sp"
-        android:fontFamily="@font/poppinsregular"
-        tools:text="3 activities • 23 minutes total"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_routine_title" />
-
-    <!-- Streak Badge: flame icon + "0 day streak" -->
-    <LinearLayout
-        android:id="@+id/ll_streak_badge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="24dp"
-        android:background="@drawable/bg_streak_badge"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="6dp"
-        android:paddingBottom="6dp"
-        app:layout_constraintBottom_toBottomOf="@id/tv_routine_subtitle"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/tv_routine_subtitle">
-
-        <ImageView
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:src="@drawable/ic_alarm_clock"
-            android:contentDescription="streak"
-            android:tint="#FF6B2C" />
+        android:padding="16dp">
 
         <TextView
-            android:id="@+id/tv_streak_count"
-            android:layout_width="wrap_content"
+            android:id="@+id/tv_step_number"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="@drawable/bg_activity_step_circle"
+            android:gravity="center"
+            android:textColor="@color/white"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="1" />
+
+        <ImageView
+            android:id="@+id/iv_activity_icon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_step_number"
+            tools:src="@drawable/ic_book" />
+
+        <TextView
+            android:id="@+id/tv_activity_label"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:textColor="#FF6B2C"
-            android:textSize="13sp"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:textColor="@color/noctra_purple_dark"
+            android:textSize="14sp"
             android:textStyle="bold"
             android:fontFamily="@font/poppinsbold"
-            tools:text="0 day streak" />
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/iv_activity_icon"
+            tools:text="Slow-Paced Breathing" />
 
-    </LinearLayout>
+        <TextView
+            android:id="@+id/tv_activity_duration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="#666666"
+            android:textSize="12sp"
+            android:fontFamily="@font/poppinsregular"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_activity_label"
+            tools:text="5 min" />
 
-    <!-- Activity Cards Grid -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_activity_cards"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="20dp"
-        android:clipToPadding="false"
-        android:paddingBottom="16dp"
-        app:layout_constraintTop_toBottomOf="@id/tv_routine_subtitle"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/btn_begin_routine"
-        tools:listitem="@layout/item_activity_card_home" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- Begin Routine Button -->
-    <Button
-        android:id="@+id/btn_begin_routine"
-        android:layout_width="0dp"
-        android:layout_height="56dp"
-        android:layout_marginStart="24dp"
-        android:layout_marginEnd="24dp"
-        android:layout_marginBottom="32dp"
-        android:background="@drawable/bg_primary_button"
-        android:text="Begin Routine"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:fontFamily="@font/poppinsbold"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.cardview.widget.CardView>

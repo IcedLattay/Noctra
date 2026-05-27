@@ -4,8 +4,7 @@
     android:id="@+id/nav_graph"
     app:startDestination="@id/routineHomeFragment">
 
-    <!-- ── Bottom Nav Tabs ─────────────────────────────────────────── -->
-
+    <!-- Bottom Nav Tabs -->
     <fragment
         android:id="@+id/routineHomeFragment"
         android:name="com.noctra.app.ui.routine.home.RoutineHomeFragment"
@@ -30,8 +29,7 @@
         android:name="com.noctra.app.ui.profile.UserProfileFragment"
         android:label="Profile" />
 
-    <!-- ── Routine Flow ────────────────────────────────────────────── -->
-
+    <!-- Routine Flow -->
     <fragment
         android:id="@+id/routineStartFragment"
         android:name="com.noctra.app.ui.routine.home.RoutineStartFragment"
@@ -50,93 +48,44 @@
             app:destination="@id/genericTimerActivityFragment" />
     </fragment>
 
-    <!-- ── Execution Activity Screens ─────────────────────────────── -->
-
+    <!-- Execution Screens (no inter-activity actions — direct nav by ID) -->
     <fragment
         android:id="@+id/breathingActivityFragment"
         android:name="com.noctra.app.ui.routine.execution.activities.BreathingActivityFragment"
-        android:label="Breathing">
-        <action
-            android:id="@+id/action_breathingActivityFragment_to_audioscapeActivityFragment"
-            app:destination="@id/audioscapeActivityFragment" />
-        <action
-            android:id="@+id/action_breathingActivityFragment_to_gratitudeJournalingActivityFragment"
-            app:destination="@id/gratitudeJournalingActivityFragment" />
-        <action
-            android:id="@+id/action_breathingActivityFragment_to_genericTimerActivityFragment"
-            app:destination="@id/genericTimerActivityFragment" />
-        <action
-            android:id="@+id/action_breathingActivityFragment_to_routineCompletionOverlayFragment"
-            app:destination="@id/routineCompletionOverlayFragment" />
-    </fragment>
+        android:label="Breathing" />
 
     <fragment
         android:id="@+id/audioscapeActivityFragment"
         android:name="com.noctra.app.ui.routine.execution.activities.AudioscapeActivityFragment"
-        android:label="Audio">
-        <action
-            android:id="@+id/action_audioscapeActivityFragment_to_breathingActivityFragment"
-            app:destination="@id/breathingActivityFragment" />
-        <action
-            android:id="@+id/action_audioscapeActivityFragment_to_gratitudeJournalingActivityFragment"
-            app:destination="@id/gratitudeJournalingActivityFragment" />
-        <action
-            android:id="@+id/action_audioscapeActivityFragment_to_genericTimerActivityFragment"
-            app:destination="@id/genericTimerActivityFragment" />
-        <action
-            android:id="@+id/action_audioscapeActivityFragment_to_routineCompletionOverlayFragment"
-            app:destination="@id/routineCompletionOverlayFragment" />
-    </fragment>
+        android:label="Audio" />
 
     <fragment
         android:id="@+id/gratitudeJournalingActivityFragment"
         android:name="com.noctra.app.ui.routine.execution.activities.GratitudeJournalingActivityFragment"
-        android:label="Journaling">
-        <action
-            android:id="@+id/action_gratitudeJournalingActivityFragment_to_breathingActivityFragment"
-            app:destination="@id/breathingActivityFragment" />
-        <action
-            android:id="@+id/action_gratitudeJournalingActivityFragment_to_audioscapeActivityFragment"
-            app:destination="@id/audioscapeActivityFragment" />
-        <action
-            android:id="@+id/action_gratitudeJournalingActivityFragment_to_genericTimerActivityFragment"
-            app:destination="@id/genericTimerActivityFragment" />
-        <action
-            android:id="@+id/action_gratitudeJournalingActivityFragment_to_routineCompletionOverlayFragment"
-            app:destination="@id/routineCompletionOverlayFragment" />
-    </fragment>
+        android:label="Journaling" />
 
     <fragment
         android:id="@+id/genericTimerActivityFragment"
         android:name="com.noctra.app.ui.routine.execution.activities.GenericTimerActivityFragment"
-        android:label="Activity">
-        <action
-            android:id="@+id/action_genericTimerActivityFragment_to_breathingActivityFragment"
-            app:destination="@id/breathingActivityFragment" />
-        <action
-            android:id="@+id/action_genericTimerActivityFragment_to_audioscapeActivityFragment"
-            app:destination="@id/audioscapeActivityFragment" />
-        <action
-            android:id="@+id/action_genericTimerActivityFragment_to_gratitudeJournalingActivityFragment"
-            app:destination="@id/gratitudeJournalingActivityFragment" />
-        <action
-            android:id="@+id/action_genericTimerActivityFragment_to_routineCompletionOverlayFragment"
-            app:destination="@id/routineCompletionOverlayFragment" />
-    </fragment>
+        android:label="Activity" />
 
-    <!-- ── Completion Overlay ──────────────────────────────────────── -->
+    <!-- 5-Second Transition -->
+    <fragment
+        android:id="@+id/timesUpTransitionFragment"
+        android:name="com.noctra.app.ui.routine.execution.TimesUpTransitionFragment"
+        android:label="Time's Up" />
 
+    <!-- Completion Overlay -->
     <fragment
         android:id="@+id/routineCompletionOverlayFragment"
-        android:name="com.noctra.app.ui.routine.home.RoutineCompletionOverlayFragment"
+        android:name="com.noctra.app.ui.routine.RoutineCompletionOverlayFragment"
         android:label="Complete">
         <action
             android:id="@+id/action_routineCompletionOverlayFragment_to_companionFragment"
             app:destination="@id/companionFragment" />
     </fragment>
 
-    <!-- ── Global Actions ──────────────────────────────────────────── -->
-
+    <!-- Global Actions -->
     <action
         android:id="@+id/action_global_routineHomeFragment"
         app:destination="@id/routineHomeFragment"

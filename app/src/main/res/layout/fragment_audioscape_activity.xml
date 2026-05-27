@@ -8,7 +8,6 @@
     android:background="#F5F0FF"
     android:padding="24dp">
 
-    <!-- Shleepy logo -->
     <ImageView
         android:id="@+id/iv_shleepy_logo"
         android:layout_width="64dp"
@@ -20,7 +19,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Shleepy body -->
     <ImageView
         android:id="@+id/iv_shleepy_body"
         android:layout_width="100dp"
@@ -31,21 +29,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/iv_shleepy_logo" />
 
-    <!-- Alarm clock — only on Time's Up -->
-    <ImageView
-        android:id="@+id/iv_alarm_clock"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:src="@drawable/ic_alarm_clock"
-        android:contentDescription="Time's up"
-        android:visibility="gone"
-        android:layout_marginTop="80dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:visibility="gone" />
-
-    <!-- Title -->
     <TextView
         android:id="@+id/tv_title"
         android:layout_width="wrap_content"
@@ -60,7 +43,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/iv_shleepy_body" />
 
-    <!-- Instruction text — matches wireframe copy exactly -->
     <TextView
         android:id="@+id/tv_instruction"
         android:layout_width="0dp"
@@ -76,25 +58,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_title" />
 
-    <!-- Completion message — shown after Time's Up -->
-    <TextView
-        android:id="@+id/tv_completion_message"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:fontFamily="@font/poppinsregular"
-        android:gravity="center"
-        android:lineSpacingMultiplier="1.5"
-        android:textColor="#444444"
-        android:textSize="14sp"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/iv_alarm_clock"
-        tools:text="You don't have to worry about\nmissing a task tomorrow. Great job!"
-        tools:visibility="visible" />
-
-    <!-- Timer card pinned at bottom -->
     <androidx.cardview.widget.CardView
         android:id="@+id/card_timer"
         android:layout_width="0dp"
@@ -114,7 +77,6 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Clock icon -->
             <ImageView
                 android:layout_width="20dp"
                 android:layout_height="20dp"
@@ -122,7 +84,6 @@
                 android:contentDescription="Timer"
                 android:layout_marginBottom="4dp" />
 
-            <!-- Countdown MM : SS -->
             <TextView
                 android:id="@+id/tv_timer"
                 android:layout_width="wrap_content"
@@ -131,18 +92,6 @@
                 android:textColor="#3B1FA8"
                 android:textSize="36sp"
                 tools:text="10 : 00" />
-
-            <!-- Time's Up label -->
-            <TextView
-                android:id="@+id/tv_times_up"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/poppinsbold"
-                android:text="Time's Up!"
-                android:textColor="#E53935"
-                android:textSize="22sp"
-                android:visibility="gone"
-                tools:visibility="gone" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 

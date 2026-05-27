@@ -87,6 +87,8 @@ dependencies {
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.postgrest)
 
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+
     // Ktor
     implementation(libs.ktor.android)
 

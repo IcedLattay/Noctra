@@ -119,25 +119,19 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
             _state.value = RoutineHomeState.Loading
 
             try {
-                // 1. Get user profile for target_bedtime
+                // 1. Get user profile for target_bedtime (default to 11 PM for demo)
                 val profile = userProfileRepository.getOrCreateProfile(userId)
-                val targetBedtimeRaw = profile.targetBedtime
-                    ?: return@launch run {
-                        _state.value = RoutineHomeState.NoRoutine
-                    }
+                val targetBedtimeRaw = profile.targetBedtime ?: "23:00:00"
 
-                // 2. Get active routine configuration
-                val routine = routineRepository.getActiveRoutine(userId)
-                    ?: return@launch run {
-                        _state.value = RoutineHomeState.NoRoutine
-                    }
-                _activeRoutine = routine
+                // 2. FOR DEMO: Load only implemented activities from the library
+                val allActivities = routineRepository.getActivityLibrary()
+                val activities = allActivities.filter { 
+                    val type = it.activityType.lowercase()
+                    type == "breathing" || type == "audio" || type == "audioscape" || type == "journaling"
+                }
+                val totalDuration = activities.sumOf { it.defaultDurationMinutes }
 
-                // 3. Hydrate activity sequence into full Activity objects
-                val entries = routineRepository.parseActivitySequence(routine.activitySequence)
-                val activities = routineRepository.hydrateActivitySequence(entries)
-
-                // 4. Check if already completed tonight
+                // 3. Check if already completed tonight
                 val todayDate = routineSessionRepository.getTodayDateString()
                 val alreadyCompleted = routineSessionRepository
                     .hasCompletedSessionForDate(userId, todayDate)
@@ -148,35 +142,23 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
                     return@launch
                 }
 
-                // 5. Compute routine window
+                // 4. Compute routine window
                 val targetBedtime = parseTime(targetBedtimeRaw)
-                val totalDuration = routine.totalDurationMinutes
                 val windowOpen    = targetBedtime.minusMinutes(totalDuration.toLong())
-                val windowClose   = targetBedtime.plusMinutes(60)
-                val now           = LocalTime.now()
 
                 val streak = routineSessionRepository.getCurrentStreak(userId)
 
                 val targetBedtimeFormatted  = formatTime(targetBedtime)
                 val routineStartFormatted   = formatTime(windowOpen)
 
-                _state.value = if (now.isAfter(windowOpen) && now.isBefore(windowClose)) {
-                    RoutineHomeState.InWindow(
-                        activities           = activities,
-                        totalDurationMinutes = totalDuration,
-                        targetBedtime        = targetBedtimeFormatted,
-                        routineStartTime     = routineStartFormatted,
-                        currentStreak        = streak
-                    )
-                } else {
-                    RoutineHomeState.BeforeWindow(
-                        activities           = activities,
-                        totalDurationMinutes = totalDuration,
-                        targetBedtime        = targetBedtimeFormatted,
-                        routineStartTime     = routineStartFormatted,
-                        currentStreak        = streak
-                    )
-                }
+                // For demo/testing: Always show activities and always enable the "Begin" button.
+                _state.value = RoutineHomeState.InWindow(
+                    activities           = activities,
+                    totalDurationMinutes = totalDuration,
+                    targetBedtime        = targetBedtimeFormatted,
+                    routineStartTime     = routineStartFormatted,
+                    currentStreak        = streak
+                )
 
             } catch (e: Exception) {
                 _state.value = RoutineHomeState.Error(
