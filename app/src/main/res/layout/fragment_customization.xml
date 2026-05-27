@@ -41,7 +41,7 @@
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:contentDescription="@null"
-            android:src="@drawable/ic_star" />
+            android:src="@drawable/dream_token_icon" />
 
         <TextView
             android:id="@+id/tvTokenBalance"
@@ -64,8 +64,8 @@
         <!-- Shleepy Preview Area -->
         <FrameLayout
             android:id="@+id/shleepyPreviewFrame"
-            android:layout_width="220dp"
-            android:layout_height="220dp"
+            android:layout_width="260dp"
+            android:layout_height="260dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -80,34 +80,40 @@
                 android:alpha="0.15"
                 android:background="@drawable/bg_token_pill" />
 
-            <!-- Base Shleepy -->
+            <!-- Base Shleepy - Added padding to handle "big" PNGs -->
             <ImageView
                 android:id="@+id/ivShleepyBase"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:contentDescription="@string/content_description_shleepy"
+                android:padding="40dp"
                 android:scaleType="centerInside"
-                android:src="@drawable/shleepy" />
+                android:src="@drawable/shleepy_depleted" />
 
-            <!-- Customization Layers -->
+            <!-- Customization Layers - Matching padding exactly -->
             <ImageView
                 android:id="@+id/ivEquippedOutfit"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:padding="40dp"
                 android:scaleType="centerInside"
+                android:translationY="10dp"
                 android:visibility="gone" />
 
             <ImageView
                 android:id="@+id/ivEquippedHat"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:padding="40dp"
                 android:scaleType="centerInside"
+                android:translationY="-55dp"
                 android:visibility="gone" />
 
             <ImageView
                 android:id="@+id/ivEquippedAccessory"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:padding="40dp"
                 android:scaleType="centerInside"
                 android:visibility="gone" />
 

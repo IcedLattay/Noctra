@@ -15,11 +15,11 @@ class InventoryRepository {
     }
 
     suspend fun purchaseItem(userId: String, itemId: String) {
-        val newItem = mapOf(
-            "user_id" to userId,
-            "item_id" to itemId,
-            "purchased_at" to OffsetDateTime.now().toString(),
-            "is_equipped" to false
+        val newItem = UserInventoryItem(
+            userId = userId,
+            itemId = itemId,
+            purchasedAt = OffsetDateTime.now().toString(),
+            isEquipped = false
         )
         client.from("user_inventory").insert(newItem)
     }
@@ -38,6 +38,17 @@ class InventoryRepository {
         // 2. Equip the target item
         client.from("user_inventory").update({
             set("is_equipped", true)
+        }) {
+            filter {
+                eq("user_id", userId)
+                eq("item_id", itemId)
+            }
+        }
+    }
+
+    suspend fun unequipItem(userId: String, itemId: String) {
+        client.from("user_inventory").update({
+            set("is_equipped", false)
         }) {
             filter {
                 eq("user_id", userId)

@@ -1,8 +1,12 @@
 package com.noctra.app.ui.companion
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.noctra.app.data.model.ShopItem
+import com.noctra.app.data.repository.InventoryRepository
 import com.noctra.app.data.repository.RewardLedgerRepository
+import com.noctra.app.data.repository.ShopRepository
 import com.noctra.app.data.repository.SleepRecordRepository
 import com.noctra.app.data.repository.UserProfileRepository
 import com.noctra.app.domain.usecase.CompanionEvolutionUseCase
@@ -21,6 +25,8 @@ class CompanionViewModel(
     private val userProfileRepository: UserProfileRepository = UserProfileRepository(),
     private val rewardRepository: RewardLedgerRepository = RewardLedgerRepository(),
     private val sleepRecordRepository: SleepRecordRepository = SleepRecordRepository(),
+    private val shopRepository: ShopRepository = ShopRepository(),
+    private val inventoryRepository: InventoryRepository = InventoryRepository(),
     private val evolutionUseCase: CompanionEvolutionUseCase = CompanionEvolutionUseCase(),
     private val seedingUseCase: DataSeedingUseCase = DataSeedingUseCase()
 ) : ViewModel() {
@@ -31,7 +37,7 @@ class CompanionViewModel(
         val evolutionState: CompanionEvolutionUseCase.EvolutionState? = null,
         val tokenBalance: Int = 0,
         val lastSleepScore: Int? = null,
-        val devolutionPending: Boolean = false,
+        val equippedItems: Map<String, ShopItem> = emptyMap(),
         val error: String? = null
     )
 
@@ -44,36 +50,57 @@ class CompanionViewModel(
     private val _showEvolutionPopup = MutableSharedFlow<CompanionEvolutionUseCase.EvolutionState>()
     val showEvolutionPopup: SharedFlow<CompanionEvolutionUseCase.EvolutionState> = _showEvolutionPopup.asSharedFlow()
 
+    private val _showDevolutionPopup = MutableSharedFlow<Unit>()
+    val showDevolutionPopup: SharedFlow<Unit> = _showDevolutionPopup.asSharedFlow()
+
     private var previousStageLevel: Int? = null
+    
+    // session flag to prevent dialog loop
+    private var devolutionHandledThisSession = false
 
     fun loadData(userId: String, lastShownSleepDate: String?) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                // Ensure profile exists
                 userProfileRepository.getOrCreateProfile(userId)
-                refreshData(userId, lastShownSleepDate)
+                refreshData(userId, lastShownSleepDate, triggerMorningPopup = true, checkDevolution = true)
             } catch (e: Exception) {
+                Log.e("CompanionVM", "Load failed", e)
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
         }
     }
 
-    private suspend fun refreshData(userId: String, lastShownSleepDate: String?, triggerMorningPopup: Boolean = true) {
+    private suspend fun refreshData(
+        userId: String, 
+        lastShownSleepDate: String?, 
+        triggerMorningPopup: Boolean = true,
+        checkDevolution: Boolean = false
+    ) {
         try {
             val profile = userProfileRepository.getOrCreateProfile(userId)
             val latestSleep = sleepRecordRepository.getLatestSleepRecord(userId)
             val ledger = rewardRepository.getRewardLedger(userId)
             
+            // 1. Get equipment
+            val inventory = inventoryRepository.getUserInventory(userId)
+            val equippedItemIds = inventory.filter { it.isEquipped }.map { it.itemId }.toSet()
+            val allShopItems = shopRepository.getAllShopItems()
+            val equippedMap = allShopItems.filter { equippedItemIds.contains(it.itemId) }
+                .associateBy { it.category }
+            
+            Log.d("CompanionVM", "Equipped Items: ${equippedMap.keys}")
+
             if (ledger != null) {
                 val evolution = evolutionUseCase.execute(ledger.totalXp)
                 
-                // Evolution milestone check - ALWAYS check this when data refreshes
+                // 2. Milestone check
                 if (previousStageLevel != null && evolution.stageLevel > previousStageLevel!!) {
                     _showEvolutionPopup.emit(evolution)
                 }
                 previousStageLevel = evolution.stageLevel
 
+                // 3. Update State
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -81,28 +108,29 @@ class CompanionViewModel(
                         evolutionState = evolution,
                         tokenBalance = ledger.tokenBalance,
                         lastSleepScore = latestSleep?.compositeScore,
-                        devolutionPending = ledger.devolutionPending,
+                        equippedItems = equippedMap,
                         error = null
                     )
                 }
 
-                // If devolution was detected, clear the flag in DB so it only shows once
-                if (ledger.devolutionPending) {
+                // 4. One-time devolution check
+                if (checkDevolution && !devolutionHandledThisSession && ledger.devolutionPending) {
+                    devolutionHandledThisSession = true
+                    _showDevolutionPopup.emit(Unit)
                     rewardRepository.updateRewardLedger(ledger.copy(devolutionPending = false))
                 }
 
-                // Check for morning popup specifically
+                // 5. Morning Popup check
                 if (triggerMorningPopup) {
                     val today = java.time.LocalDate.now().toString()
                     if (latestSleep != null && latestSleep.sessionDate == today && lastShownSleepDate != today) {
                         _showMorningPopup.emit(Pair(latestSleep.compositeScore ?: 0, 7))
                     }
                 }
-            } else {
-                _uiState.update { it.copy(isLoading = false, error = "Reward ledger not found") }
             }
         } catch (e: Exception) {
-            _uiState.update { it.copy(isLoading = false, error = "Refresh failed: ${e.message}") }
+            Log.e("CompanionVM", "Refresh failed", e)
+            _uiState.update { it.copy(isLoading = false, error = e.message) }
         }
     }
 
@@ -111,7 +139,8 @@ class CompanionViewModel(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 seedingUseCase.seedMockData(userId)
-                refreshData(userId, null, triggerMorningPopup = true)
+                devolutionHandledThisSession = false // allow for re-testing
+                refreshData(userId, null, triggerMorningPopup = true, checkDevolution = true)
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = "Seeding failed: ${e.message}") }
             }
@@ -125,31 +154,18 @@ class CompanionViewModel(
                 if (ledger != null) {
                     val newXp = (ledger.totalXp + amount).coerceAtLeast(0)
                     
-                    // Optimistic update
-                    val newEvolution = evolutionUseCase.execute(newXp)
-                    
-                    // Check for evolution immediately in the optimistic step
-                    if (previousStageLevel != null && newEvolution.stageLevel > previousStageLevel!!) {
-                        _showEvolutionPopup.emit(newEvolution)
-                    }
-                    // Note: previousStageLevel will be updated again in refreshData
-                    
-                    _uiState.update { 
-                        it.copy(evolutionState = newEvolution)
-                    }
-
                     val updatedLedger = ledger.copy(
                         totalXp = newXp,
+                        devolutionPending = false, // xp tweak silences devolution
                         lastUpdated = OffsetDateTime.now().toString()
                     )
                     rewardRepository.updateRewardLedger(updatedLedger)
                     
-                    // Final background refresh, but don't re-trigger morning popup
-                    refreshData(userId, null, triggerMorningPopup = false)
+                    // Force refresh without triggering the morning/tired popups
+                    refreshData(userId, null, triggerMorningPopup = false, checkDevolution = false)
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Update XP failed: ${e.message}") }
-                refreshData(userId, null, triggerMorningPopup = false)
+                Log.e("CompanionVM", "XP tweak failed", e)
             }
         }
     }

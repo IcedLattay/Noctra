@@ -23,7 +23,11 @@ class DataSeedingUseCase(
         try {
             SupabaseClient.client.from("sleep_records").delete { filter { eq("user_id", userId) } }
             SupabaseClient.client.from("user_inventory").delete { filter { eq("user_id", userId) } }
-        } catch (e: Exception) {}
+            // Clear existing shop items to ensure only demo items exist
+            SupabaseClient.client.from("shop_items").delete { filter { gte("token_cost", 0) } }
+        } catch (e: Exception) {
+            android.util.Log.e("DataSeeding", "Cleanup failed: ${e.message}")
+        }
 
         val today = LocalDate.now()
         
@@ -32,27 +36,25 @@ class DataSeedingUseCase(
         if (ledger != null) {
             rewardRepository.updateRewardLedger(ledger.copy(
                 tokenBalance = 2500,
-                totalXp = 1600, 
-                currentStreak = 5,
+                totalXp = 0, // Reset to 0 so they can test evolution from scratch
+                currentStreak = 0,
                 devolutionPending = false,
-                lastSessionDate = today.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
+                lastSessionDate = today.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE),
+                lastUpdated = java.time.OffsetDateTime.now().toString()
             ))
         }
 
-        // 3. Seed some Shop Items if the table is empty
-        val items = shopRepository.getAllShopItems()
-        if (items.isEmpty()) {
+        // 3. Re-seed Shop Items with valid UUIDs and exact names requested
+        try {
             val mockItems = listOf(
-                ShopItem("h1", "Yellow Beanie", "A cozy hat", "HAT", 200, "shleepyicon", "shleepyicon", 1),
-                ShopItem("h2", "Cool Shades", "Sun protection", "ACCESSORY", 500, "shleepyicon", "shleepyicon", 2),
-                ShopItem("o1", "Space Suit", "To the moon!", "OUTFIT", 1000, "shleepyicon", "shleepyicon", 3),
-                ShopItem("f1", "Sleepy Slippers", "Soft feet", "FOOTWEAR", 300, "shleepyicon", "shleepyicon", 4)
+                ShopItem("550e8400-e29b-41d4-a716-446655440001", "Yellow Beanie", "A cozy yellow hat", "HAT", 0, "hat_default_icon", "hat_default", 1),
+                ShopItem("550e8400-e29b-41d4-a716-446655440002", "Clouds", "Soft and dreamy", "HAT", 1000, "hat_cloud_icon", "hat_cloud", 2),
+                ShopItem("550e8400-e29b-41d4-a716-446655440003", "Flower Garland", "Garden fresh", "HAT", 800, "hat_garland_icon", "hat_garland", 3),
+                ShopItem("550e8400-e29b-41d4-a716-446655440004", "Propeller Hat", "Fun and fast", "HAT", 500, "hat_propeller_icon", "hat_propeller", 4)
             )
-            mockItems.forEach { 
-                try {
-                    SupabaseClient.client.from("shop_items").insert(it)
-                } catch (e: Exception) {}
-            }
+            SupabaseClient.client.from("shop_items").insert(mockItems)
+        } catch (e: Exception) {
+            android.util.Log.e("DataSeeding", "Shop seeding failed: ${e.message}")
         }
 
         // 4. Seed 7 days of sleep data

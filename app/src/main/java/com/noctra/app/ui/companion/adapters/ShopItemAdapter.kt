@@ -40,8 +40,19 @@ class ShopItemAdapter(
                 binding.btnItemCard.alpha = if (model.canAfford) 1.0f else 0.5f
             }
 
-            // TODO: Load image from model.item.previewAsset
-            // binding.ivItemPreview.setImageResource(...) or use Coil
+            // Robust Icon Loading
+            val context = binding.root.context
+            val assetName = model.item.previewAsset.removeSuffix(".png").removeSuffix(".jpg").removeSuffix(".webp")
+            val resId = context.resources.getIdentifier(
+                assetName, "drawable", context.packageName
+            )
+            
+            if (resId != 0) {
+                binding.ivItemPreview.setImageResource(resId)
+            } else {
+                // Set a placeholder if the specific icon is missing to avoid a blank card
+                binding.ivItemPreview.setImageResource(android.R.drawable.ic_menu_help)
+            }
 
             binding.root.setOnClickListener { onItemClick(model) }
         }

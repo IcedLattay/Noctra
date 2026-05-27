@@ -60,7 +60,10 @@ class CustomizationViewModel(
                         }
                         currentState.copy(
                             tokenBalance = newBalance,
-                            items = updatedItems
+                            items = updatedItems,
+                            equippedItems = currentState.equippedItems.toMutableMap().apply {
+                                put(item.category, item)
+                            }
                         )
                     }
 
@@ -87,23 +90,40 @@ class CustomizationViewModel(
     }
 
     fun equipItem(userId: String, item: ShopItem) {
+        val isCurrentlyEquipped = _uiState.value.items.find { it.item.itemId == item.itemId }?.isEquipped ?: false
+        
         viewModelScope.launch {
             try {
-                // Optimistic equip
+                // Optimistic UI update (Toggle)
                 _uiState.update { currentState ->
                     val updatedItems = currentState.items.map { model ->
                         if (model.item.itemId == item.itemId) {
-                            model.copy(isEquipped = true)
+                            model.copy(isEquipped = !isCurrentlyEquipped)
                         } else if (model.item.category == item.category) {
                             model.copy(isEquipped = false)
                         } else {
                             model
                         }
                     }
-                    currentState.copy(items = updatedItems)
+                    
+                    val newEquippedMap = currentState.equippedItems.toMutableMap()
+                    if (isCurrentlyEquipped) {
+                        newEquippedMap.remove(item.category)
+                    } else {
+                        newEquippedMap[item.category] = item
+                    }
+
+                    currentState.copy(
+                        items = updatedItems,
+                        equippedItems = newEquippedMap
+                    )
                 }
                 
-                performEquip(userId, item)
+                if (isCurrentlyEquipped) {
+                    inventoryRepository.unequipItem(userId, item.itemId)
+                } else {
+                    performEquip(userId, item)
+                }
                 loadDataInternal(userId, showLoading = false)
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = "Equip failed: ${e.message}") }

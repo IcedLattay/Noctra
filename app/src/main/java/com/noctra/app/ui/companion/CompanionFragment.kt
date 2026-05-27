@@ -65,6 +65,11 @@ class CompanionFragment : Fragment() {
                         showEvolutionPopup(evolution.stageName)
                     }
                 }
+                launch {
+                    viewModel.showDevolutionPopup.collectLatest {
+                        showDevolutionPenalty()
+                    }
+                }
             }
         }
     }
@@ -73,7 +78,6 @@ class CompanionFragment : Fragment() {
         val dialog = MorningSleepPopupDialog.newInstance(score, xp)
         dialog.show(childFragmentManager, "MorningSleepPopup")
         
-        // Save today as the last shown date to prevent repeated popups today
         val today = java.time.LocalDate.now().toString()
         requireContext().getSharedPreferences("noctra_prefs", Context.MODE_PRIVATE)
             .edit(commit = false) {
@@ -103,25 +107,69 @@ class CompanionFragment : Fragment() {
                 tvXpValue.text = getString(R.string.companion_xp_unit, evolution.totalXp)
                 pbXpProgress.progress = (evolution.progressPercent * 100).toInt()
 
-                // Update Shleepy image based on stage level
+                // 1. Update Shleepy Base
                 val shleepyResId = when (evolution.stageLevel) {
-                    1 -> R.drawable.shleepydepleted
-                    2 -> R.drawable.shleepyawakening
-                    3 -> R.drawable.shleepycharged
-                    4 -> R.drawable.shleepyoverdrive
-                    5 -> R.drawable.shleepyzenmaster
-                    else -> R.drawable.shleepy
+                    1 -> R.drawable.shleepy_depleted
+                    2 -> R.drawable.shleepy_awakening
+                    3 -> R.drawable.shleepy_charged
+                    4 -> R.drawable.shleepy_overdrive
+                    5 -> R.drawable.shleepy_zenmaster
+                    else -> R.drawable.shleepy_depleted
                 }
                 ivShleepy.setImageResource(shleepyResId)
+
+                // 2. Update Equipped Items (Hats, Outfits, Accessories)
+                val categories = mapOf(
+                    "HAT" to ivEquippedHatCompanion,
+                    "OUTFIT" to ivEquippedOutfitCompanion,
+                    "ACCESSORY" to ivEquippedAccessoryCompanion
+                )
+
+                val stageSuffix = when (evolution.stageLevel) {
+                    1 -> "depleted"
+                    2 -> "awakening"
+                    3 -> "charged"
+                    4 -> "overdrive"
+                    5 -> "zenmaster"
+                    else -> "depleted"
+                }
+
+                categories.forEach { (category, imageView) ->
+                    val item = state.equippedItems[category]
+                    if (item != null) {
+                        val cleanAsset = item.itemAsset.removeSuffix(".png").removeSuffix(".jpg").removeSuffix(".webp")
+                        val assetName = "${cleanAsset}_$stageSuffix"
+                        val resId = requireContext().resources.getIdentifier(
+                            assetName, "drawable", requireContext().packageName
+                        )
+                        
+                        if (resId != 0) {
+                            imageView.setImageResource(resId)
+                            imageView.visibility = View.VISIBLE
+                        } else {
+                            // Fallback to base asset if stage variant missing
+                            val fallbackId = requireContext().resources.getIdentifier(
+                                cleanAsset, "drawable", requireContext().packageName
+                            )
+                            if (fallbackId != 0) {
+                                imageView.setImageResource(fallbackId)
+                                imageView.visibility = View.VISIBLE
+                            } else {
+                                imageView.visibility = View.GONE
+                            }
+                        }
+                    } else {
+                        imageView.visibility = View.GONE
+                    }
+                }
             }
 
-            // Sleep Quality Card Logic
+            // Sleep Quality Card
             if (state.lastSleepScore != null) {
                 groupSleepQualitySuccess.visibility = View.VISIBLE
                 tvSleepQualityNoData.visibility = View.GONE
                 tvSleepScoreMini.text = state.lastSleepScore.toString()
                 pbSleepGaugeMini.progress = state.lastSleepScore
-                // Update status text based on score
                 tvSleepQualityStatus.text = when {
                     state.lastSleepScore >= 75 -> getString(R.string.companion_good_sleep_quality)
                     state.lastSleepScore >= 50 -> "Fair Sleep Quality"
@@ -131,15 +179,6 @@ class CompanionFragment : Fragment() {
                 groupSleepQualitySuccess.visibility = View.GONE
                 tvSleepQualityNoData.visibility = View.VISIBLE
             }
-
-            if (state.devolutionPending) {
-                showDevolutionPenalty()
-            }
-
-            // TODO: Update Shleepy Lottie based on stage
-            
-            // isLoading state handled here
-            // binding.loadingOverlay.visibility = if (state.isLoading) View.VISIBLE else View.GONE
         }
     }
 

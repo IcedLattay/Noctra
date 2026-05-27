@@ -80,7 +80,7 @@
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:contentDescription="@null"
-            android:src="@drawable/ic_star" />
+            android:src="@drawable/dream_token_icon" />
 
         <TextView
             android:id="@+id/tvTokenBalance"
@@ -93,7 +93,7 @@
             tools:text="50" />
     </LinearLayout>
 
-    <!-- Main Content Container shifted upwards to make space at bottom -->
+    <!-- Main Content Container shifted upwards -->
     <LinearLayout
         android:id="@+id/mainContent"
         android:layout_width="match_parent"
@@ -107,24 +107,54 @@
         <!-- Shleepy Display Area -->
         <FrameLayout
             android:id="@+id/shleepyFrame"
-            android:layout_width="240dp"
-            android:layout_height="240dp">
+            android:layout_width="260dp"
+            android:layout_height="260dp">
 
             <!-- Shleepy Shadow -->
             <View
-                android:layout_width="100dp"
-                android:layout_height="16dp"
+                android:layout_width="120dp"
+                android:layout_height="20dp"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="24dp"
                 android:alpha="0.15"
                 android:background="@drawable/bg_token_pill" />
 
+            <!-- Base Shleepy - Fixed size via padding -->
             <ImageView
                 android:id="@+id/ivShleepy"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:contentDescription="@string/content_description_shleepy"
-                android:src="@drawable/shleepy" />
+                android:padding="40dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/shleepy_depleted" />
+
+            <!-- Equipped Layers -->
+            <ImageView
+                android:id="@+id/ivEquippedOutfitCompanion"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="40dp"
+                android:scaleType="centerInside"
+                android:translationY="10dp"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/ivEquippedHatCompanion"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="40dp"
+                android:scaleType="centerInside"
+                android:translationY="-55dp"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/ivEquippedAccessoryCompanion"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="40dp"
+                android:scaleType="centerInside"
+                android:visibility="gone" />
         </FrameLayout>
 
         <!-- Evolution Stage Pill -->
@@ -132,7 +162,7 @@
             android:id="@+id/tvStageLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="0dp"
             android:background="@drawable/bg_stage_pill"
             android:fontFamily="sans-serif-black"
             android:paddingStart="24dp"
@@ -143,7 +173,7 @@
             android:textSize="18sp"
             tools:text="Energized" />
 
-        <!-- Sleep Quality Card (Compact) -->
+        <!-- Sleep Quality Card -->
         <androidx.cardview.widget.CardView
             android:id="@+id/cvSleepQualityCard"
             android:layout_width="match_parent"
@@ -159,7 +189,6 @@
                 android:layout_height="wrap_content"
                 android:padding="12dp">
 
-                <!-- No Data State -->
                 <TextView
                     android:id="@+id/tvSleepQualityNoData"
                     android:layout_width="wrap_content"
@@ -172,7 +201,6 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <!-- Success State -->
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/groupSleepQualitySuccess"
                     android:layout_width="match_parent"
@@ -234,7 +262,6 @@
                         app:layout_constraintBottom_toBottomOf="@+id/miniGaugeContainer"
                         app:layout_constraintStart_toStartOf="@+id/tvSleepScoreLabel"
                         app:layout_constraintTop_toBottomOf="@+id/tvSleepScoreLabel" />
-
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.cardview.widget.CardView>

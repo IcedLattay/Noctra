@@ -130,44 +130,67 @@ class CustomizationFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
+                    if (state.error != null) {
+                        android.widget.Toast.makeText(requireContext(), state.error, android.widget.Toast.LENGTH_LONG).show()
+                    }
                     binding.tvTokenBalance.text = state.tokenBalance.toString()
                     filterItems()
                     
-                    // Update base Shleepy image based on stage
+                    // Update base Shleepy image
                     val shleepyResId = when (state.stageLevel) {
-                        1 -> R.drawable.shleepydepleted
-                        2 -> R.drawable.shleepyawakening
-                        3 -> R.drawable.shleepycharged
-                        4 -> R.drawable.shleepyoverdrive
-                        5 -> R.drawable.shleepyzenmaster
-                        else -> R.drawable.shleepy
+                        1 -> R.drawable.shleepy_depleted
+                        2 -> R.drawable.shleepy_awakening
+                        3 -> R.drawable.shleepy_charged
+                        4 -> R.drawable.shleepy_overdrive
+                        5 -> R.drawable.shleepy_zenmaster
+                        else -> R.drawable.shleepy_depleted
                     }
                     binding.ivShleepyBase.setImageResource(shleepyResId)
 
-                    updateShleepyPreview(state.equippedItems)
+                    updateShleepyPreview(state.equippedItems, state.stageLevel)
                 }
             }
         }
     }
 
-    private fun updateShleepyPreview(equippedItems: Map<String, com.noctra.app.data.model.ShopItem>) {
+    private fun updateShleepyPreview(equippedItems: Map<String, com.noctra.app.data.model.ShopItem>, stageLevel: Int) {
         val categories = mapOf(
             "HAT" to binding.ivEquippedHat,
             "OUTFIT" to binding.ivEquippedOutfit,
             "ACCESSORY" to binding.ivEquippedAccessory
         )
 
+        val stageSuffix = when (stageLevel) {
+            1 -> "depleted"
+            2 -> "awakening"
+            3 -> "charged"
+            4 -> "overdrive"
+            5 -> "zenmaster"
+            else -> "depleted"
+        }
+
         categories.forEach { (category, imageView) ->
             val item = equippedItems[category]
             if (item != null) {
+                val cleanAsset = item.itemAsset.removeSuffix(".png").removeSuffix(".jpg").removeSuffix(".webp")
+                val assetName = "${cleanAsset}_$stageSuffix"
                 val resId = requireContext().resources.getIdentifier(
-                    item.itemAsset, "drawable", requireContext().packageName
+                    assetName, "drawable", requireContext().packageName
                 )
                 if (resId != 0) {
                     imageView.setImageResource(resId)
                     imageView.visibility = View.VISIBLE
                 } else {
-                    imageView.visibility = View.GONE
+                    // fallback to base asset
+                    val fallbackId = requireContext().resources.getIdentifier(
+                        cleanAsset, "drawable", requireContext().packageName
+                    )
+                    if (fallbackId != 0) {
+                        imageView.setImageResource(fallbackId)
+                        imageView.visibility = View.VISIBLE
+                    } else {
+                        imageView.visibility = View.GONE
+                    }
                 }
             } else {
                 imageView.visibility = View.GONE
