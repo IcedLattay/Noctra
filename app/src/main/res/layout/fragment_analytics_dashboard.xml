@@ -1,0 +1,471 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="32dp">
+
+        <!-- Screen header -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Performance"
+            android:textColor="@color/noctra_purple_dark"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <!-- ─── LAST NIGHT CARD ──────────────────────────────────────── -->
+        <LinearLayout
+            android:id="@+id/card_last_night"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/card_status_outline"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Top row: "LAST NIGHT" label (left) + date (right) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:letterSpacing="0.05"
+                    android:text="LAST NIGHT"
+                    android:textColor="@color/black"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/last_night_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/black"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    tools:text="May 24, 2026" />
+            </LinearLayout>
+
+            <!-- Composite score -->
+            <TextView
+                android:id="@+id/last_night_score"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textSize="48sp"
+                android:textStyle="bold"
+                tools:text="82"
+                tools:textColor="#2E9F66" />
+
+            <!-- Quality label -->
+            <TextView
+                android:id="@+id/last_night_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/noctra_purple_dark"
+                android:textSize="15sp"
+                tools:text="Good sleep quality" />
+
+            <!-- 2x2 stat grid -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:orientation="horizontal">
+
+                <!-- Duration (top-left) -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/StatTileLabel"
+                        android:text="Duration" />
+
+                    <TextView
+                        android:id="@+id/stat_duration"
+                        style="@style/StatTileValue"
+                        tools:text="7h 20m" />
+                </LinearLayout>
+
+                <!-- Sleep onset time (top-right) -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/StatTileLabel"
+                        android:text="Sleep onset time" />
+
+                    <TextView
+                        android:id="@+id/stat_sleep_onset"
+                        style="@style/StatTileValue"
+                        tools:text="11:03 PM" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="horizontal">
+
+                <!-- Avg heart rate (bottom-left) -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/StatTileLabel"
+                        android:text="Avg heart rate" />
+
+                    <TextView
+                        android:id="@+id/stat_avg_hr"
+                        style="@style/StatTileValue"
+                        tools:text="62 bpm" />
+                </LinearLayout>
+
+                <!-- Restlessness (bottom-right) -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/StatTileLabel"
+                        android:text="Restlessness" />
+
+                    <TextView
+                        android:id="@+id/stat_restlessness"
+                        style="@style/StatTileValue"
+                        tools:text="Low" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ─── WEEK NAVIGATION ──────────────────────────────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/btn_week_prev"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:contentDescription="Previous week"
+                android:padding="4dp"
+                android:rotation="180"
+                android:src="@drawable/ic_chevron_right" />
+
+            <TextView
+                android:id="@+id/text_week_range"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:textColor="@color/noctra_label_grey"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                tools:text="May 19 - May 25, 2026" />
+
+            <ImageView
+                android:id="@+id/btn_week_next"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:contentDescription="Next week"
+                android:padding="4dp"
+                android:src="@drawable/ic_chevron_right" />
+        </LinearLayout>
+
+        <!-- ─── BEDTIME ADHERENCE & SLEEP ONSET ──────────────────────── -->
+        <TextView
+            style="@style/AnalyticsSectionLabel"
+            android:layout_marginTop="24dp"
+            android:text="BEDTIME ADHERENCE &amp; SLEEP ONSET" />
+
+        <!-- Custom chart view (placeholder for now, real implementation Day 3) -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/chart_lavender_background"
+            android:padding="12dp">
+
+            <com.noctra.app.ui.analytics.BedtimeAdherenceChartView
+                android:id="@+id/chart_bedtime_adherence"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </FrameLayout>
+
+        <!-- Legend row 1: Target / On-time / Slight delay -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <View
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:background="@drawable/legend_dot_target" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="Target"
+                android:textColor="@color/noctra_purple_dark"
+                android:textSize="12sp" />
+
+            <View
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginStart="14dp"
+                android:background="@drawable/legend_dot_on_time" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="On-time"
+                android:textColor="@color/noctra_purple_dark"
+                android:textSize="12sp" />
+
+            <View
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginStart="14dp"
+                android:background="@drawable/legend_dot_slight_delay" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="Slight delay"
+                android:textColor="@color/noctra_purple_dark"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- Legend row 2: Late / No data -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <View
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:background="@drawable/legend_dot_late" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="Late"
+                android:textColor="@color/noctra_purple_dark"
+                android:textSize="12sp" />
+
+            <View
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginStart="14dp"
+                android:background="@drawable/legend_dot_no_data_adherence" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="No data"
+                android:textColor="@color/noctra_purple_dark"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- ─── SLEEP QUALITY SCORE ──────────────────────────────────── -->
+        <TextView
+            style="@style/AnalyticsSectionLabel"
+            android:layout_marginTop="24dp"
+            android:text="SLEEP QUALITY SCORE" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/card_status_outline"
+            android:padding="12dp">
+
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/chart_sleep_quality"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <View
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:background="@drawable/legend_dot_good" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="Good (≥75)"
+                android:textColor="@color/noctra_purple_dark"
+                android:textSize="12sp" />
+
+            <View
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginStart="14dp"
+                android:background="@drawable/legend_dot_moderate" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="Moderate (50-74)"
+                android:textColor="@color/noctra_purple_dark"
+                android:textSize="12sp" />
+
+            <View
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginStart="14dp"
+                android:background="@drawable/legend_dot_poor" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="Poor (&lt;50)"
+                android:textColor="@color/noctra_purple_dark"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- ─── ROUTINE COMPLETION ───────────────────────────────────── -->
+        <TextView
+            android:id="@+id/label_routine_completion"
+            style="@style/AnalyticsSectionLabel"
+            android:layout_marginTop="24dp"
+            tools:text="ROUTINE COMPLETION - 5 OF 7 NIGHTS (71%)" />
+
+        <com.noctra.app.ui.analytics.RoutineCompletionRowView
+            android:id="@+id/routine_completion_chart"
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:layout_marginTop="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <View
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:background="@drawable/legend_dot_completed" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="Completed"
+                android:textColor="@color/black"
+                android:textSize="12sp" />
+
+            <View
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginStart="16dp"
+                android:background="@drawable/legend_dot_incomplete" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="Incomplete"
+                android:textColor="@color/black"
+                android:textSize="12sp" />
+
+            <View
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginStart="16dp"
+                android:background="@drawable/legend_dot_no_data" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="No data"
+                android:textColor="@color/black"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- ─── INSIGHT CARD ─────────────────────────────────────────── -->
+        <LinearLayout
+            android:id="@+id/card_insight"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/insight_card_background"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="16dp">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginEnd="12dp"
+                android:padding="6dp"
+                android:src="@drawable/ic_lightbulb" />
+
+            <TextView
+                android:id="@+id/insight_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/noctra_purple_dark"
+                android:textSize="14sp"
+                tools:text="Your sleep quality was 18% higher on nights you completed your routine. Try to maintain your routine every night this week for better sleep quality!" />
+        </LinearLayout>
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

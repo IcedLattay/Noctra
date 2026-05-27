@@ -8,6 +8,8 @@ import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import androidx.annotation.DrawableRes
+import com.noctra.app.R
 
 class UserProfileViewModel : ViewModel() {
 
@@ -30,6 +32,7 @@ class UserProfileViewModel : ViewModel() {
                 val routinesCompleted = 0
 
                 val (stageNumber, stageName, xpMessage) = computeStageInfo(totalXp)
+                val stageAvatarRes = getAvatarResForStage(stageNumber)
 
                 _profileData.value = ProfileUiState(
                     displayName = profile.displayName,
@@ -39,7 +42,9 @@ class UserProfileViewModel : ViewModel() {
                     routinesCompleted = routinesCompleted,
                     stageNumber = stageNumber,
                     stageName = stageName,
-                    xpToNextStageMessage = xpMessage
+                    xpToNextStageMessage = xpMessage,
+                    stageAvatarRes = stageAvatarRes,
+                    mainAvatarRes = R.drawable.ic_shleepy_avatar // Detailed artwork
                 )
             } catch (e: Exception) {
                 // Log and keep default empty state
@@ -82,6 +87,31 @@ class UserProfileViewModel : ViewModel() {
             )
         }
     }
+
+    @DrawableRes
+    private fun getAvatarResForStage(stageNumber: Int): Int {
+        return when (stageNumber) {
+            1 -> R.drawable.ic_shleepy_stage_1  // The Depleted
+            2 -> R.drawable.ic_shleepy_stage_2  // The Awakening
+            3 -> R.drawable.ic_shleepy_stage_3  // The Charged
+            4 -> R.drawable.ic_shleepy_stage_4  // The Peak Overdrive
+            5 -> R.drawable.ic_shleepy_stage_5  // The Zen Master
+            else -> R.drawable.ic_shleepy_stage_1
+        }
+    }
+
+    fun updateDisplayName(context: Context, newName: String) {
+        viewModelScope.launch {
+            try {
+                val userId = UserSession.getUserId(context)
+                userProfileRepository.updateDisplayName(userId, newName)
+                // Update local state so the UI reflects the change immediately
+                _profileData.value = _profileData.value.copy(displayName = newName)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 }
 
 data class ProfileUiState(
@@ -92,5 +122,7 @@ data class ProfileUiState(
     val routinesCompleted: Int = 0,
     val stageNumber: Int = 1,
     val stageName: String = "The Depleted",
-    val xpToNextStageMessage: String = ""
+    val xpToNextStageMessage: String = "",
+    @DrawableRes val stageAvatarRes: Int = R.drawable.ic_shleepy_stage_1,
+    @DrawableRes val mainAvatarRes: Int = R.drawable.ic_shleepy_avatar
 )

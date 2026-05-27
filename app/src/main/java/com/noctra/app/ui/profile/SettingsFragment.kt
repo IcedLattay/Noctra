@@ -1,12 +1,13 @@
 package com.noctra.app.ui.profile
 
-import android.app.TimePickerDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -14,6 +15,7 @@ import androidx.navigation.fragment.findNavController
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.noctra.app.BuildConfig
 import com.noctra.app.R
+import com.noctra.app.ui.common.BedtimePickerBottomSheet
 import com.noctra.app.utils.NotificationPreferences
 import kotlinx.coroutines.launch
 import java.time.LocalTime
@@ -81,6 +83,52 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
 
         viewModel.loadProfile(ctx)
+
+        // Dev-only: seed demo data button
+        val seedButton = view.findViewById<TextView>(R.id.btn_seed_demo_data)
+        val clearButton = view.findViewById<TextView>(R.id.btn_clear_demo_data)
+
+        if (BuildConfig.DEBUG) {
+            seedButton.visibility = View.VISIBLE
+            seedButton.setOnClickListener {
+                seedButton.isEnabled = false
+                seedButton.text = "Seeding…"
+                viewModel.seedDemoData(requireContext()) { success ->
+                    seedButton.isEnabled = true
+                    seedButton.text = if (success) "Seed Demo Sleep Data" else "Seed failed — try again"
+                    Toast.makeText(
+                        requireContext(),
+                        if (success) "Seeded 7 nights of demo data" else "Seed failed",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
+            clearButton.visibility = View.VISIBLE
+            clearButton.setOnClickListener {
+                AlertDialog.Builder(requireContext())
+                    .setTitle("Clear all analytics data?")
+                    .setMessage(
+                        "This will delete all routine sessions and sleep records " +
+                                "for the current user. Profile, inventory, and routine " +
+                                "config will be preserved. Continue?"
+                    )
+                    .setPositiveButton("Clear") { _, _ ->
+                        clearButton.isEnabled = false
+                        viewModel.clearAnalyticsData(requireContext()) { success ->
+                            clearButton.isEnabled = true
+                            Toast.makeText(
+                                requireContext(),
+                                if (success) "Data cleared. Navigate to Performance to verify empty states." else "Failed to clear data",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+        }
+
     }
 
     private fun formatBedtime(raw: String?): String {
@@ -94,45 +142,21 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     }
 
     private fun showBedtimePicker(current: String?) {
-        val defaultTime = try {
-            current?.let { LocalTime.parse(it) }
-        } catch (e: Exception) { null } ?: LocalTime.of(22, 0)
-
-        TimePickerDialog(
-            requireContext(),
-            { _, hour, minute ->
-                if (isInBedtimeRange(hour)) {
-                    val formatted = String.format("%02d:%02d:00", hour, minute)
-                    viewModel.updateTargetBedtime(requireContext(), formatted)
-                } else {
-                    android.widget.Toast.makeText(
-                        requireContext(),
-                        "Bedtime must be between 8:00 PM and 2:00 AM",
-                        android.widget.Toast.LENGTH_SHORT
-                    ).show()
-                }
-            },
-            defaultTime.hour,
-            defaultTime.minute,
-            false  // false = 12-hour clock
-        ).show()
+        BedtimePickerBottomSheet()
+            .configure(currentBedtime = current) { newBedtime ->
+                viewModel.updateTargetBedtime(requireContext(), newBedtime)
+            }
+            .show(parentFragmentManager, "bedtime_picker")
     }
-
-    /**
-     * Bedtime is valid if it's between 20:00 (8 PM) and 02:00 (2 AM).
-     * So either hour >= 20 OR hour <= 2.
-     */
-    private fun isInBedtimeRange(hour: Int): Boolean =
-        hour >= 20 || hour <= 2
 
     private fun openUrl(url: String) {
         try {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
         } catch (e: Exception) {
-            android.widget.Toast.makeText(
+            Toast.makeText(
                 requireContext(),
                 "Cannot open link",
-                android.widget.Toast.LENGTH_SHORT
+                Toast.LENGTH_SHORT
             ).show()
         }
     }

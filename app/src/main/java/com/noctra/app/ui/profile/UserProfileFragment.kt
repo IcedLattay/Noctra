@@ -33,6 +33,9 @@ class UserProfileFragment : Fragment(R.layout.fragment_user_profile) {
         val settingsIcon = view.findViewById<ImageView>(R.id.icon_settings)
         val addFriendIcon = view.findViewById<ImageView>(R.id.icon_add_friend)
 
+        val avatarShleepy = view.findViewById<ImageView>(R.id.avatar_shleepy)
+        val statusAvatar = view.findViewById<ImageView>(R.id.status_avatar)
+
         // Observe profile data
         lifecycleScope.launch {
             viewModel.profileData.collect { state ->
@@ -44,12 +47,21 @@ class UserProfileFragment : Fragment(R.layout.fragment_user_profile) {
                 stageLabel.text = state.stageName
                 stageNumber.text = "Stage ${state.stageNumber}"
                 xpMessage.text = state.xpToNextStageMessage
+
+                // Update avatars
+                avatarShleepy.setImageResource(state.mainAvatarRes) // Detailed artwork
+                statusAvatar.setImageResource(state.stageAvatarRes) // Expression face
             }
         }
 
         // Click handlers - placeholders for now
         editIcon.setOnClickListener {
-            // TODO: Show display name edit dialog
+            val currentName = viewModel.profileData.value.displayName
+            EditDisplayNameDialog().apply {
+                configure(currentName) { newName ->
+                    viewModel.updateDisplayName(requireContext(), newName)
+                }
+            }.show(parentFragmentManager, "edit_display_name")
         }
 
         settingsIcon.setOnClickListener {
