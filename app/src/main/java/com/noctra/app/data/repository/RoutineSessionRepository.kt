@@ -10,7 +10,7 @@ class RoutineSessionRepository {
 
     /**
      * Returns all sessions for the user within the date range (inclusive).
-     * Person C uses this for the Routine Completion row in Analytics.
+     * Used for the Routine Completion row in Analytics.
      */
     suspend fun getSessionsInRange(
         userId: String,
@@ -29,6 +29,22 @@ class RoutineSessionRepository {
             .decodeList<RoutineSession>()
     }
 
+    suspend fun getSessionById(sessionId: String): RoutineSession? {
+        return client.from("routine_sessions")
+            .select { filter { eq("id", sessionId) } }
+            .decodeSingleOrNull<RoutineSession>()
+    }
+
+    suspend fun getSessionsByDate(userId: String, date: String): List<RoutineSession> {
+        return client.from("routine_sessions")
+            .select {
+                filter {
+                    eq("user_id", userId)
+                    eq("session_date", date)
+                }
+            }.decodeList<RoutineSession>()
+    }
+
     /**
      * Count of completed sessions for the user (used on Profile screen).
      */
@@ -45,7 +61,7 @@ class RoutineSessionRepository {
     }
 
     /**
-     * Insert a routine session row. Used by dev seed function and Person A's routine flow.
+     * Insert a routine session row.
      */
     suspend fun insertSession(session: RoutineSession) {
         client.from("routine_sessions").insert(session)
@@ -56,16 +72,11 @@ class RoutineSessionRepository {
     }
 
     /**
-     * Deletes all sessions for a user. Used by dev seed function (re-seed).
+     * Deletes all sessions for a user.
      */
     suspend fun deleteAllForUser(userId: String) {
         client.from("routine_sessions").delete {
             filter { eq("user_id", userId) }
         }
     }
-
-    // ─── Methods Person A will add for their slice (not built here) ──────────
-    // - updateSessionCompletion(sessionId, completionTimestamp, status, tokens, xp, ...)
-    // - getTodaysSession(userId, sessionDate)
-    // - getMostRecentCompletedSession(userId)
 }

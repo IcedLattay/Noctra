@@ -17,16 +17,19 @@
     <fragment
         android:id="@+id/companionFragment"
         android:name="com.noctra.app.ui.companion.CompanionFragment"
-        android:label="Companion" >
-        <fragment
-            android:id="@+id/companionFragment"
-            android:name="com.noctra.app.ui.companion.CompanionFragment"
-            android:label="Companion">
-            <action
-                android:id="@+id/action_companion_to_settings"
-                app:destination="@id/settingsFragment" />
-        </fragment>
+        android:label="Companion">
+        <action
+            android:id="@+id/action_companion_to_settings"
+            app:destination="@id/settingsFragment" />
+        <action
+            android:id="@+id/action_companion_to_customization"
+            app:destination="@id/customizationFragment" />
     </fragment>
+
+    <fragment
+        android:id="@+id/customizationFragment"
+        android:name="com.noctra.app.ui.companion.CustomizationFragment"
+        android:label="Customize" />
 
     <fragment
         android:id="@+id/userProfileFragment"

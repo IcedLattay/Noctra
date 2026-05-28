@@ -11,9 +11,16 @@ import kotlinx.coroutines.launch
 import androidx.annotation.DrawableRes
 import com.noctra.app.R
 
+import com.noctra.app.data.repository.RewardLedgerRepository
+import com.noctra.app.data.repository.RoutineSessionRepository
+import com.noctra.app.domain.usecase.CompanionEvolutionUseCase
+
 class UserProfileViewModel : ViewModel() {
 
     private val userProfileRepository = UserProfileRepository()
+    private val rewardLedgerRepository = RewardLedgerRepository()
+    private val routineSessionRepository = RoutineSessionRepository()
+    private val evolutionUseCase = CompanionEvolutionUseCase()
 
     private val _profileData = MutableStateFlow(ProfileUiState())
     val profileData = _profileData.asStateFlow()
@@ -23,16 +30,29 @@ class UserProfileViewModel : ViewModel() {
             try {
                 val userId = UserSession.getUserId(context)
                 val profile = userProfileRepository.getOrCreateProfile(userId)
+                val ledger = rewardLedgerRepository.getRewardLedger(userId)
 
-                // TODO: Once Person B's RewardLedgerRepository exists, read real values
-                // For now, use placeholder zeros for stats
-                val currentStreak = 0
-                val longestStreak = 0
-                val totalXp = 0
-                val routinesCompleted = 0
+                val currentStreak = ledger?.currentStreak ?: 0
+                val longestStreak = ledger?.longestStreak ?: 0
+                val totalXp = ledger?.totalXp ?: 0
+                val routinesCompleted = routineSessionRepository.countCompletedSessions(userId)
 
-                val (stageNumber, stageName, xpMessage) = computeStageInfo(totalXp)
-                val stageAvatarRes = getAvatarResForStage(stageNumber)
+                val evolution = evolutionUseCase.execute(totalXp)
+                val stageAvatarRes = getAvatarResForStage(evolution.stageLevel)
+                
+                val nextStageXp = when (evolution.stageLevel) {
+                    1 -> 1500
+                    2 -> 5000
+                    3 -> 15000
+                    4 -> 50000
+                    else -> 0
+                }
+                
+                val xpMessage = if (evolution.stageLevel < 5) {
+                    "You need ${nextStageXp - totalXp} XP for your Shleepy to evolve"
+                } else {
+                    "Your Shleepy has reached its peak form!"
+                }
 
                 _profileData.value = ProfileUiState(
                     displayName = profile.displayName,
@@ -40,8 +60,8 @@ class UserProfileViewModel : ViewModel() {
                     currentStreak = currentStreak,
                     longestStreak = longestStreak,
                     routinesCompleted = routinesCompleted,
-                    stageNumber = stageNumber,
-                    stageName = stageName,
+                    stageNumber = evolution.stageLevel,
+                    stageName = evolution.stageName,
                     xpToNextStageMessage = xpMessage,
                     stageAvatarRes = stageAvatarRes,
                     mainAvatarRes = R.drawable.ic_shleepy_avatar // Detailed artwork
@@ -50,41 +70,6 @@ class UserProfileViewModel : ViewModel() {
                 // Log and keep default empty state
                 e.printStackTrace()
             }
-        }
-    }
-
-    /**
-     * Computes evolution stage info from total XP.
-     * Mirrors Person B's CompanionEvolutionUseCase — duplicated here for now,
-     * will be replaced with a direct call once that use case is built.
-     */
-    private fun computeStageInfo(totalXp: Int): Triple<Int, String, String> {
-        return when {
-            totalXp < 1_500 -> Triple(
-                1,
-                "The Depleted",
-                "You need ${1_500 - totalXp} XP for your Shleepy to evolve"
-            )
-            totalXp < 5_000 -> Triple(
-                2,
-                "The Awakening",
-                "You need ${5_000 - totalXp} XP for your Shleepy to evolve"
-            )
-            totalXp < 15_000 -> Triple(
-                3,
-                "The Charged",
-                "You need ${15_000 - totalXp} XP for your Shleepy to evolve"
-            )
-            totalXp < 50_000 -> Triple(
-                4,
-                "The Peak Overdrive",
-                "You need ${50_000 - totalXp} XP for your Shleepy to evolve"
-            )
-            else -> Triple(
-                5,
-                "The Zen Master",
-                "Your Shleepy has reached its peak form!"
-            )
         }
     }
 

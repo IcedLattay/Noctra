@@ -19,16 +19,18 @@ class MainActivity : AppCompatActivity() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
         bottomNav.setupWithNavController(navController)
 
-        // Hide the bottom nav on certain destinations (Settings, etc.)
+        // Navigation UI Logic
         navController.addOnDestinationChangedListener { _, destination, _ ->
+            // 1. Hide bottom nav on certain destinations
             bottomNav.visibility = when (destination.id) {
                 R.id.settingsFragment -> View.GONE
-                // add more destination IDs here later as needed
-                // e.g., R.id.routineExecutionFragment, R.id.onboardingGraph, etc.
                 else -> View.VISIBLE
             }
+
+            // 2. Ensure "Companion" stays selected when in Customization
+            if (destination.id == R.id.customizationFragment) {
+                bottomNav.menu.findItem(R.id.companionFragment).isChecked = true
+            }
         }
-
-
     }
 }

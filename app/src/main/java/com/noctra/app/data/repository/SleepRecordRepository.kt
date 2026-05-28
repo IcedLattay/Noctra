@@ -4,6 +4,7 @@ import com.noctra.app.data.model.SleepRecord
 import com.noctra.app.data.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
+import java.time.LocalDate
 
 class SleepRecordRepository {
     private val client = SupabaseClient.client
@@ -43,11 +44,19 @@ class SleepRecordRepository {
             .decodeSingleOrNull<SleepRecord>()
     }
 
+    suspend fun getLatestSleepRecord(userId: String): SleepRecord? {
+        return getMostRecentRecord(userId)
+    }
+
     /**
-     * Inserts a single record. Used by dev seed function and Person B's MorningSyncWorker.
+     * Inserts a single record.
      */
     suspend fun insertRecord(record: SleepRecord) {
         client.from("sleep_records").insert(record)
+    }
+
+    suspend fun insertSleepRecord(record: SleepRecord) {
+        insertRecord(record)
     }
 
     /**

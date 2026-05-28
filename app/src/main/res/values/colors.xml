@@ -30,4 +30,11 @@
     <color name="adherence_late">#D4183D</color>
     <color name="adherence_no_data">#1A1342</color>
     <color name="adherence_connector">#A78BFA</color>
+    <color name="noctra_purple_soft">#B097FF</color>
+    <color name="noctra_lavender_start">#F4F2FF</color>
+    <color name="noctra_lavender_end">#E4DFFF</color>
+    <color name="noctra_yellow">#FFCB21</color>
+    <color name="noctra_gray_track">#E0E0E0</color>
+    <color name="noctra_card_bg">#FFFFFF</color>
+    <color name="noctra_text_dark">#16056E</color>
 </resources>
