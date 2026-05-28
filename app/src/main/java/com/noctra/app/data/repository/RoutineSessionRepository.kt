@@ -166,21 +166,22 @@ class RoutineSessionRepository {
     // ─── Streak ──────────────────────────────────────────────────────────────
 
     /**
-     * Computes the current streak by counting consecutive completed sessions
-     * working backwards from yesterday.
+     * Computes the current streak by counting consecutive completed sessions.
      *
      * Logic:
-     *   - Fetch all sessions ordered by session_date DESC.
-     *   - Walk back from yesterday; count consecutive completed dates.
-     *   - Stop the moment a date is missing or is_completed = false.
+     *   - If today has a completed session: start counting from today.
+     *   - Otherwise: start counting from yesterday (preserves "streak alive"
+     *     display for users who haven't done tonight's routine yet).
+     *   - Walk backwards day-by-day; stop at the first missing date.
      *
-     * NOTE: today's session is NOT counted here — streak_at_completion in the
-     * completed session row already reflects the correct streak including today.
-     * This function is used by RoutineHomeViewModel to display the pre-completion
-     * streak on the home screen.
+     * Examples:
+     *   - First night just completed         → 1
+     *   - Tonight + yesterday completed      → 2
+     *   - Yesterday done, today not yet      → 1  (streak still alive)
+     *   - Yesterday missed, day before done  → 0  (broken)
      *
      * @param userId    The anonymous user UUID.
-     * @return          Current streak count (0 if no completed sessions).
+     * @return          Current streak count (0 if no qualifying sessions).
      */
     suspend fun getCurrentStreak(userId: String): Int {
         val allSessions = client
@@ -194,21 +195,32 @@ class RoutineSessionRepository {
             }
             .decodeList<RoutineSession>()
 
-        if (allSessions.isEmpty()) return 0
+        if (allSessions.isEmpty()) {
+            android.util.Log.d("StreakDebug", "REPO: no completed sessions for userId=$userId")
+            return 0
+        }
+
+        // Deduplicate dates (handles multiple completed sessions on same date)
+        val completedDates: Set<String> = allSessions.map { it.sessionDate }.toSet()
+
+        // Start from today if today is completed; otherwise yesterday
+        val today = getTodayDateString()
+        var expectedDate = if (completedDates.contains(today)) {
+            today
+        } else {
+            getPreviousDateString(today)
+        }
 
         var streak = 0
-        var expectedDate = getPreviousDateString(getTodayDateString())
-
-        for (session in allSessions) {
-            if (session.sessionDate == expectedDate) {
-                streak++
-                expectedDate = getPreviousDateString(expectedDate)
-            } else if (session.sessionDate < expectedDate) {
-                // Gap found — streak is broken
-                break
-            }
-            // Skip duplicate dates (edge case)
+        while (completedDates.contains(expectedDate)) {
+            streak++
+            expectedDate = getPreviousDateString(expectedDate)
         }
+
+        android.util.Log.d(
+            "StreakDebug",
+            "REPO: userId=$userId today=$today completedDates=$completedDates streak=$streak"
+        )
 
         return streak
     }

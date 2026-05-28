@@ -2,6 +2,7 @@ package com.noctra.app.ui.routine.execution.activities
 
 import android.media.MediaPlayer
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -25,6 +26,9 @@ class AudioscapeActivityFragment : Fragment() {
     private val routineViewModel: RoutineViewModel by activityViewModels()
 
     private var mediaPlayer: MediaPlayer? = null
+    private var preCountdownTimer: CountDownTimer? = null
+
+    companion object { private const val PRE_COUNTDOWN_SECONDS = 15L }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -35,9 +39,42 @@ class AudioscapeActivityFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        showPreCountdownPanel()
         observeVm()
+        startPreCountdown()
+    }
+
+    private fun showPreCountdownPanel() {
+        binding.preCountdownPanel.visibility = View.VISIBLE
+        binding.audioPanel.visibility = View.GONE
+        updatePreTimer(PRE_COUNTDOWN_SECONDS)
+    }
+
+    private fun showAudioPanel() {
+        binding.preCountdownPanel.visibility = View.GONE
+        binding.audioPanel.visibility = View.VISIBLE
         startAudio()
         routineViewModel.startCurrentActivityTimer()
+    }
+
+    private fun startPreCountdown() {
+        preCountdownTimer = object : CountDownTimer((PRE_COUNTDOWN_SECONDS * 1000L) + 500L, 1000L) {
+            override fun onTick(millisUntilFinished: Long) {
+                val secs = (millisUntilFinished / 1000L).coerceAtMost(PRE_COUNTDOWN_SECONDS)
+                updatePreTimer(secs)
+                val colorRes = if (secs <= 5) R.color.timer_red else R.color.timer_green
+                binding.tvPreTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))            }
+            override fun onFinish() {
+                updatePreTimer(0)
+                showAudioPanel()
+            }
+        }.start()
+    }
+
+    private fun updatePreTimer(seconds: Long) {
+        val mins = seconds / 60
+        val secs = seconds % 60
+        binding.tvPreTimer.text = String.format("%02d : %02d", mins, secs)
     }
 
     private fun observeVm() {
@@ -45,8 +82,8 @@ class AudioscapeActivityFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     routineViewModel.activitySecondsRemaining.collect { secs ->
-                        updateTimerDisplay(secs.toLong())
-                        updateTimerColor(secs.toLong())
+                        updateMainTimerDisplay(secs.toLong())
+                        updateMainTimerColor(secs.toLong())
                     }
                 }
                 launch {
@@ -66,13 +103,13 @@ class AudioscapeActivityFragment : Fragment() {
                 stopAudio()
                 findNavController().navigate(R.id.routineCompletionOverlayFragment)
             }
-            else -> { /* not for us */ }
+            else -> {}
         }
     }
 
     private fun startAudio() {
         val resId = resources.getIdentifier("white_noise", "raw", requireContext().packageName)
-        if (resId == 0) return  // silent fallback until res/raw/white_noise.{ext} is added
+        if (resId == 0) return
         try {
             mediaPlayer = MediaPlayer.create(requireContext(), resId)?.apply {
                 isLooping = true
@@ -87,25 +124,27 @@ class AudioscapeActivityFragment : Fragment() {
         mediaPlayer = null
     }
 
-    private fun updateTimerDisplay(seconds: Long) {
+    private fun updateMainTimerDisplay(seconds: Long) {
         if (_binding == null) return
         val mins = seconds / 60
         val secs = seconds % 60
-        binding.tvTimer.text = String.format("%02d : %02d", mins, secs)
+        binding.tvMainTimer.text = String.format("%02d : %02d", mins, secs)
     }
 
-    private fun updateTimerColor(seconds: Long) {
+    private fun updateMainTimerColor(seconds: Long) {
         if (_binding == null) return
         val colorRes = when {
             seconds <= 5 -> R.color.timer_red
             seconds <= 10 -> R.color.timer_green
             else -> R.color.timer_default
         }
-        binding.tvTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
+        binding.tvMainTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        preCountdownTimer?.cancel()
+        preCountdownTimer = null
         stopAudio()
         _binding = null
     }

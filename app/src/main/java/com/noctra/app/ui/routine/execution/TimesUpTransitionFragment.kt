@@ -103,11 +103,11 @@ class TimesUpTransitionFragment : Fragment() {
 
     private fun navigateToActivity(index: Int) {
         val activity = routineViewModel.activities.getOrNull(index) ?: return
-        val destinationId = when (activity.activityType.lowercase()) {
-            "breathing"           -> R.id.breathingActivityFragment
-            "audio", "audioscape" -> R.id.audioscapeActivityFragment
-            "journaling"          -> R.id.gratitudeJournalingActivityFragment
-            else                  -> R.id.genericTimerActivityFragment
+        val destinationId = when (activity.label) {
+            "Slow-Paced Breathing" -> R.id.breathingActivityFragment
+            "White/Pink Noise"     -> R.id.audioscapeActivityFragment
+            "Gratitude Journaling" -> R.id.gratitudeJournalingActivityFragment
+            else                   -> R.id.genericTimerActivityFragment
         }
         findNavController().navigate(destinationId)
     }

@@ -2,6 +2,7 @@ package com.noctra.app.ui.routine.execution.activities
 
 import android.content.Context
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -25,6 +26,10 @@ class GratitudeJournalingActivityFragment : Fragment() {
 
     private val routineViewModel: RoutineViewModel by activityViewModels()
 
+    private var preCountdownTimer: CountDownTimer? = null
+
+    companion object { private const val PRE_COUNTDOWN_SECONDS = 15L }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
@@ -34,8 +39,46 @@ class GratitudeJournalingActivityFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        showPreCountdownPanel()
         observeVm()
+        startPreCountdown()
+    }
+
+    private fun showPreCountdownPanel() {
+        binding.preCountdownPanel.visibility = View.VISIBLE
+        binding.journalPanel.visibility = View.GONE
+        updatePreTimer(PRE_COUNTDOWN_SECONDS)
+    }
+
+    private fun showJournalPanel() {
+        binding.preCountdownPanel.visibility = View.GONE
+        binding.journalPanel.visibility = View.VISIBLE
+        // Auto-focus the EditText so keyboard comes up
+        binding.etJournalEntry.requestFocus()
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(binding.etJournalEntry, InputMethodManager.SHOW_IMPLICIT)
         routineViewModel.startCurrentActivityTimer()
+    }
+
+    private fun startPreCountdown() {
+        preCountdownTimer = object : CountDownTimer((PRE_COUNTDOWN_SECONDS * 1000L) + 500L, 1000L) {
+            override fun onTick(millisUntilFinished: Long) {
+                val secs = (millisUntilFinished / 1000L).coerceAtMost(PRE_COUNTDOWN_SECONDS)
+                updatePreTimer(secs)
+                val colorRes = if (secs <= 5) R.color.timer_red else R.color.timer_green
+                binding.tvPreTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
+            }
+            override fun onFinish() {
+                updatePreTimer(0)
+                showJournalPanel()
+            }
+        }.start()
+    }
+
+    private fun updatePreTimer(seconds: Long) {
+        val mins = seconds / 60
+        val secs = seconds % 60
+        binding.tvPreTimer.text = String.format("%02d : %02d", mins, secs)
     }
 
     private fun observeVm() {
@@ -64,14 +107,13 @@ class GratitudeJournalingActivityFragment : Fragment() {
                 clearEntryAndDismissKeyboard()
                 findNavController().navigate(R.id.routineCompletionOverlayFragment)
             }
-            else -> { /* not for us */ }
+            else -> {}
         }
     }
 
     private fun clearEntryAndDismissKeyboard() {
-        binding.etJournalEntry.setText("") // never persisted, per SDD
-        val imm = requireContext()
-            .getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        binding.etJournalEntry.setText("")
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(binding.etJournalEntry.windowToken, 0)
     }
 
@@ -94,6 +136,8 @@ class GratitudeJournalingActivityFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        preCountdownTimer?.cancel()
+        preCountdownTimer = null
         _binding = null
     }
 }

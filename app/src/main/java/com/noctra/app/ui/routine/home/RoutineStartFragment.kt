@@ -139,11 +139,11 @@ class RoutineStartFragment : Fragment() {
     private fun navigateToActivity(index: Int) {
         val activity = routineViewModel.activities.getOrNull(index) ?: return
 
-        val actionId = when (activity.activityType.lowercase()) {
-            "breathing"           -> R.id.action_routineStartFragment_to_breathingActivityFragment
-            "audio", "audioscape" -> R.id.action_routineStartFragment_to_audioscapeActivityFragment
-            "journaling"          -> R.id.action_routineStartFragment_to_gratitudeJournalingActivityFragment
-            else                  -> R.id.action_routineStartFragment_to_genericTimerActivityFragment
+        val actionId = when (activity.label) {
+            "Slow-Paced Breathing"  -> R.id.action_routineStartFragment_to_breathingActivityFragment
+            "White/Pink Noise"      -> R.id.action_routineStartFragment_to_audioscapeActivityFragment
+            "Gratitude Journaling"  -> R.id.action_routineStartFragment_to_gratitudeJournalingActivityFragment
+            else                    -> R.id.action_routineStartFragment_to_genericTimerActivityFragment
         }
 
         findNavController().navigate(actionId)

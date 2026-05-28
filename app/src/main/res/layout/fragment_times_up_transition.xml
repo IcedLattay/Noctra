@@ -8,18 +8,19 @@
     android:background="#EDE9FB"
     android:padding="32dp">
 
-    <ImageView
+    <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/iv_clock"
         android:layout_width="140dp"
         android:layout_height="140dp"
-        android:src="@drawable/ic_alarm_clock"
-        android:contentDescription="Time's up"
+        app:lottie_rawRes="@raw/timesupclock"
+        app:lottie_autoPlay="true"
+        android:layout_marginTop="200dp"
+        app:lottie_loop="true"
         app:layout_constraintBottom_toTopOf="@id/tv_times_up"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_chainStyle="packed" />
-
     <TextView
         android:id="@+id/tv_times_up"
         android:layout_width="wrap_content"
@@ -56,7 +57,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="48dp"
         android:fontFamily="@font/poppinsbold"
-        android:textColor="#3B1FA8"
+        android:textColor="@color/timer_red"
         android:textSize="48sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

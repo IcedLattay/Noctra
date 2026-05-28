@@ -130,6 +130,7 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
                 val alreadyCompleted = routineSessionRepository
                     .hasCompletedSessionForDate(userId, todayDate)
                 val streak = routineSessionRepository.getCurrentStreak(userId)
+                android.util.Log.d("StreakDebug", "HOME: reading as userId=$userId, got streak=$streak")
 
                 if (alreadyCompleted) {
                     _state.value = RoutineHomeState.Completed(currentStreak = streak)
