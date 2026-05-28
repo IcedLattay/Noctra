@@ -45,4 +45,11 @@ class UserProfileRepository {
         }) { filter { eq("user_id", userId) } }
     }
 
+    suspend fun resetOnboarding(userId: String) {
+        client.from("user_profiles").update({
+            set("onboarding_completed", false)
+            set("updated_at", "now()")
+        }) { filter { eq("user_id", userId) } }
+    }
+
 }

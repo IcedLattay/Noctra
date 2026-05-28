@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F8F9FA">
+
+    <!-- Header -->
+    <View
+        android:id="@+id/header_bg"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:background="@color/noctra_purple_dark"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tv_debug_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="48dp"
+        android:fontFamily="@font/poppinsbold"
+        android:text="Debug Panel"
+        android:textColor="@color/white"
+        android:textSize="28sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageButton
+        android:id="@+id/btn_close"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginEnd="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        app:layout_constraintBottom_toBottomOf="@id/tv_debug_title"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/tv_debug_title"
+        app:tint="@color/white" />
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:paddingBottom="32dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/header_bg">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Section 1: Onboarding -->
+            <TextView
+                style="@style/DebugSectionHeader"
+                android:text="Section 1 — Onboarding" />
+
+            <androidx.cardview.widget.CardView style="@style/DebugCard">
+                <LinearLayout style="@style/DebugCardContent">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_reset_onboarding"
+                        style="@style/DebugButton"
+                        android:text="Reset Onboarding" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Clears SharedPreferences onboarding completion flag so the first-launch flow plays again on next app open." />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Section 2: Routine -->
+            <TextView
+                style="@style/DebugSectionHeader"
+                android:layout_marginTop="24dp"
+                android:text="Section 2 — Routine" />
+
+            <androidx.cardview.widget.CardView style="@style/DebugCard">
+                <LinearLayout style="@style/DebugCardContent">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_force_window"
+                        style="@style/DebugButton"
+                        android:text="Force Show Routine Window" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Forces the Start My Routine button to appear on RoutineHomeFragment regardless of actual current time." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_fire_notif"
+                        style="@style/DebugButton"
+                        android:text="Fire Wind-Down Notification" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Immediately delivers the wind-down push notification without waiting for the scheduled time." />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Section 3: Sleep & Morning Sync -->
+            <TextView
+                style="@style/DebugSectionHeader"
+                android:layout_marginTop="24dp"
+                android:text="Section 3 — Sleep &amp; Morning Sync" />
+
+            <androidx.cardview.widget.CardView style="@style/DebugCard">
+                <LinearLayout style="@style/DebugCardContent">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_simulate_morning"
+                        style="@style/DebugButton"
+                        android:text="Simulate Morning Sync" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Runs sleep quality processing on the most recent mock sleep record, saves the result, and triggers the morning popup." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_simulate_missed"
+                        style="@style/DebugButton"
+                        android:text="Simulate Missed Night" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Records a missed routine session for the previous night, resets the streak to zero, and queues the missed routine in-app warning message." />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Section 4: Gamification -->
+            <TextView
+                style="@style/DebugSectionHeader"
+                android:layout_marginTop="24dp"
+                android:text="Section 4 — Gamification" />
+
+            <androidx.cardview.widget.CardView style="@style/DebugCard">
+                <LinearLayout style="@style/DebugCardContent">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_trigger_evolution"
+                        style="@style/DebugButton"
+                        android:text="Trigger Evolution Animation" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Temporarily pushes XP over the next evolution milestone to demonstrate the Shleepy evolution animation." />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Section 5: Data -->
+            <TextView
+                style="@style/DebugSectionHeader"
+                android:layout_marginTop="24dp"
+                android:text="Section 5 — Data" />
+
+            <androidx.cardview.widget.CardView style="@style/DebugCard">
+                <LinearLayout style="@style/DebugCardContent">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_seed_data"
+                        style="@style/DebugButton"
+                        android:text="Seed 7 Days of Demo Data" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Inserts 7 days of mock routine_sessions and sleep_records into Supabase with realistic varying scores and a mix of completed and missed nights." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_clear_data"
+                        style="@style/DebugButton.Destructive"
+                        android:text="Clear All Demo Data" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Deletes all seeded mock data from Supabase for the current anonymous user ID so the demo can be restarted cleanly." />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

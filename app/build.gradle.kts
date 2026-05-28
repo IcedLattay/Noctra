@@ -40,6 +40,7 @@ android {
 
     buildFeatures {
         buildConfig = true
+        viewBinding = true
     }
 
     buildTypes {
@@ -56,6 +57,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 }
+
 
 kotlin {
     compilerOptions {

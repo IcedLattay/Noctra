@@ -19,7 +19,7 @@ ktor = "2.3.10"
 firebase = "24.0.0"
 lottie = "6.4.0"
 mpandroidchart = "v3.1.0"
-workmanager = "2.9.0"
+workmanager = "2.11.2"
 coroutines = "1.8.0"
 
 [libraries]

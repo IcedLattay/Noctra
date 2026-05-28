@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#EDE9FB"
+    android:padding="32dp">
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/iv_clock"
+        android:layout_width="140dp"
+        android:layout_height="140dp"
+        app:lottie_rawRes="@raw/timesupclock"
+        app:lottie_autoPlay="true"
+        android:layout_marginTop="200dp"
+        app:lottie_loop="true"
+        app:layout_constraintBottom_toTopOf="@id/tv_times_up"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed" />
+    <TextView
+        android:id="@+id/tv_times_up"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:fontFamily="@font/poppinsbold"
+        android:text="Time's Up!"
+        android:textColor="#E53935"
+        android:textSize="36sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/iv_clock" />
+
+    <TextView
+        android:id="@+id/tv_encouragement"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="24dp"
+        android:fontFamily="@font/poppinsregular"
+        android:gravity="center"
+        android:lineSpacingMultiplier="1.4"
+        android:textColor="#444444"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_times_up"
+        tools:text="Nice work — next up: Low-Stimulus Audio" />
+
+    <TextView
+        android:id="@+id/tv_countdown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="48dp"
+        android:fontFamily="@font/poppinsbold"
+        android:textColor="@color/timer_red"
+        android:textSize="48sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:text="5" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

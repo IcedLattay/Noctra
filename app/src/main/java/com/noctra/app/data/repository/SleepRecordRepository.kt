@@ -4,6 +4,7 @@ import com.noctra.app.data.model.SleepRecord
 import com.noctra.app.data.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
+import java.time.LocalDate
 
 class SleepRecordRepository {
     private val client = SupabaseClient.client
@@ -43,18 +44,26 @@ class SleepRecordRepository {
             .decodeSingleOrNull<SleepRecord>()
     }
 
+    suspend fun getLatestSleepRecord(userId: String): SleepRecord? {
+        return getMostRecentRecord(userId)
+    }
+
     /**
-     * Inserts a single record. Used by dev seed function and Person B's MorningSyncWorker.
+     * Inserts a single record. Uses upsert to handle re-syncs or duplicate simulation.
      */
     suspend fun insertRecord(record: SleepRecord) {
-        client.from("sleep_records").insert(record)
+        client.from("sleep_records").upsert(record, onConflict = "user_id,session_date")
+    }
+
+    suspend fun insertSleepRecord(record: SleepRecord) {
+        insertRecord(record)
     }
 
     /**
      * Inserts multiple records in one call. Used by dev seed function.
      */
     suspend fun insertRecords(records: List<SleepRecord>) {
-        client.from("sleep_records").insert(records)
+        client.from("sleep_records").upsert(records, onConflict = "user_id,session_date")
     }
 
     /**

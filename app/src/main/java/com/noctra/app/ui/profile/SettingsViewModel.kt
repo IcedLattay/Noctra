@@ -11,6 +11,9 @@ import kotlinx.coroutines.launch
 import com.noctra.app.data.repository.SleepRecordRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.utils.DemoDataSeeder
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.noctra.app.workers.WindDownNotificationWorker
 
 class SettingsViewModel : ViewModel() {
 
@@ -92,6 +95,12 @@ class SettingsViewModel : ViewModel() {
                 onComplete(false)
             }
         }
+    }
+
+    fun triggerTestNotification(context: Context) {
+        val request = OneTimeWorkRequestBuilder<WindDownNotificationWorker>()
+            .build()
+        WorkManager.getInstance(context).enqueue(request)
     }
 }
 

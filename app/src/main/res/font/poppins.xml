@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<font-family xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <font
+        android:font="@font/poppinsregular"
+        android:fontWeight="400"
+        android:fontStyle="normal"
+        app:font="@font/poppinsregular"
+        app:fontWeight="400"
+        app:fontStyle="normal" />
+    <font
+        android:font="@font/poppinsitalic"
+        android:fontWeight="400"
+        android:fontStyle="italic"
+        app:font="@font/poppinsitalic"
+        app:fontWeight="400"
+        app:fontStyle="italic" />
+    <font
+        android:font="@font/poppinsmedium"
+        android:fontWeight="500"
+        android:fontStyle="normal"
+        app:font="@font/poppinsmedium"
+        app:fontWeight="500"
+        app:fontStyle="normal" />
+    <font
+        android:font="@font/poppinssemibold"
+        android:fontWeight="600"
+        android:fontStyle="normal"
+        app:font="@font/poppinssemibold"
+        app:fontWeight="600"
+        app:fontStyle="normal" />
+    <font
+        android:font="@font/poppinsbold"
+        android:fontWeight="700"
+        android:fontStyle="normal"
+        app:font="@font/poppinsbold"
+        app:fontWeight="700"
+        app:fontStyle="normal" />
+    <font
+        android:font="@font/poppinslight"
+        android:fontWeight="300"
+        android:fontStyle="normal"
+        app:font="@font/poppinslight"
+        app:fontWeight="300"
+        app:fontStyle="normal" />
+    <font
+        android:font="@font/poppinsthin"
+        android:fontWeight="100"
+        android:fontStyle="normal"
+        app:font="@font/poppinsthin"
+        app:fontWeight="100"
+        app:fontStyle="normal" />
+    <font
+        android:font="@font/poppinsextrabold"
+        android:fontWeight="800"
+        android:fontStyle="normal"
+        app:font="@font/poppinsextrabold"
+        app:fontWeight="800"
+        app:fontStyle="normal" />
+    <font
+        android:font="@font/poppinsextralight"
+        android:fontWeight="200"
+        android:fontStyle="normal"
+        app:font="@font/poppinsextralight"
+        app:fontWeight="200"
+        app:fontStyle="normal" />
+    <font
+        android:font="@font/poppinsblack"
+        android:fontWeight="900"
+        android:fontStyle="normal"
+        app:font="@font/poppinsblack"
+        app:fontWeight="900"
+        app:fontStyle="normal" />
+</font-family>

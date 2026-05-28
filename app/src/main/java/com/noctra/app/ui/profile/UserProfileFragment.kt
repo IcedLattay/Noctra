@@ -74,4 +74,9 @@ class UserProfileFragment : Fragment(R.layout.fragment_user_profile) {
 
         viewModel.loadProfile(requireContext())
     }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.loadProfile(requireContext())
+    }
 }
