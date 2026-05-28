@@ -48,7 +48,6 @@ class RoutineHomeFragment : Fragment() {
     private lateinit var rvActivityCards: RecyclerView
     private lateinit var btnBeginRoutine: Button
     private lateinit var btnEditRoutine: Button
-    private lateinit var btnForceResetDemo: Button
     private lateinit var layoutCompleted: LinearLayout
     private lateinit var layoutNoRoutine: LinearLayout
 
@@ -89,15 +88,11 @@ class RoutineHomeFragment : Fragment() {
         rvActivityCards   = view.findViewById(R.id.rv_activity_cards)
         btnBeginRoutine   = view.findViewById(R.id.btn_begin_routine)
         btnEditRoutine    = view.findViewById(R.id.btn_edit_routine)
-        btnForceResetDemo = view.findViewById(R.id.btn_force_reset_demo)
         layoutCompleted   = view.findViewById(R.id.layout_completed_state)
         layoutNoRoutine   = view.findViewById(R.id.layout_no_routine_state)
     }
 
     private fun setupListeners() {
-        btnForceResetDemo.setOnClickListener {
-            homeViewModel.forceResetForDemo()
-        }
     }
 
     private fun setupRecyclerView() {

@@ -179,4 +179,7 @@
         app:popUpTo="@id/routineHomeFragment"
         app:popUpToInclusive="true" />
 
+    <!-- Debug Graph -->
+    <include app:graph="@navigation/debug_graph" />
+
 </navigation>

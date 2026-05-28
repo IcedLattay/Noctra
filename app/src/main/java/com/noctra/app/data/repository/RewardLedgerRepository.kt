@@ -23,4 +23,10 @@ class RewardLedgerRepository {
             }
         }
     }
+
+    suspend fun addXp(userId: String, amount: Int) {
+        val ledger = getRewardLedger(userId) ?: return
+        val updated = ledger.copy(totalXp = ledger.totalXp + amount)
+        updateRewardLedger(updated)
+    }
 }

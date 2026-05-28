@@ -49,10 +49,10 @@ class SleepRecordRepository {
     }
 
     /**
-     * Inserts a single record.
+     * Inserts a single record. Uses upsert to handle re-syncs or duplicate simulation.
      */
     suspend fun insertRecord(record: SleepRecord) {
-        client.from("sleep_records").insert(record)
+        client.from("sleep_records").upsert(record, onConflict = "user_id,session_date")
     }
 
     suspend fun insertSleepRecord(record: SleepRecord) {
@@ -63,7 +63,7 @@ class SleepRecordRepository {
      * Inserts multiple records in one call. Used by dev seed function.
      */
     suspend fun insertRecords(records: List<SleepRecord>) {
-        client.from("sleep_records").insert(records)
+        client.from("sleep_records").upsert(records, onConflict = "user_id,session_date")
     }
 
     /**

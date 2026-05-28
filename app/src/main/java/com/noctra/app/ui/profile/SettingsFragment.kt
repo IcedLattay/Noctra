@@ -7,7 +7,6 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -43,8 +42,15 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         val bedtimePill = view.findViewById<TextView>(R.id.btn_bedtime_pill)
 
         // App Version
-        view.findViewById<TextView>(R.id.value_app_version).text =
-            BuildConfig.VERSION_NAME
+        val appVersion = view.findViewById<TextView>(R.id.value_app_version)
+        appVersion.text = BuildConfig.VERSION_NAME
+
+        if (BuildConfig.DEBUG) {
+            appVersion.setOnLongClickListener {
+                findNavController().navigate(R.id.debug_graph)
+                true
+            }
+        }
 
         // Notification switches
         val windDownSwitch = view.findViewById<MaterialSwitch>(R.id.switch_wind_down)
@@ -83,59 +89,6 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
 
         viewModel.loadProfile(ctx)
-
-        // Dev-only: seed demo data button
-        val testNotifButton = view.findViewById<TextView>(R.id.btn_test_notification)
-        val seedButton = view.findViewById<TextView>(R.id.btn_seed_demo_data)
-        val clearButton = view.findViewById<TextView>(R.id.btn_clear_demo_data)
-
-        if (BuildConfig.DEBUG) {
-            testNotifButton.visibility = View.VISIBLE
-            testNotifButton.setOnClickListener {
-                viewModel.triggerTestNotification(requireContext())
-                Toast.makeText(requireContext(), "Notification triggered!", Toast.LENGTH_SHORT).show()
-            }
-
-            seedButton.visibility = View.VISIBLE
-            seedButton.setOnClickListener {
-                seedButton.isEnabled = false
-                seedButton.text = "Seeding…"
-                viewModel.seedDemoData(requireContext()) { success ->
-                    seedButton.isEnabled = true
-                    seedButton.text = if (success) "Seed Demo Sleep Data" else "Seed failed — try again"
-                    Toast.makeText(
-                        requireContext(),
-                        if (success) "Seeded 7 nights of demo data" else "Seed failed",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-
-            clearButton.visibility = View.VISIBLE
-            clearButton.setOnClickListener {
-                AlertDialog.Builder(requireContext())
-                    .setTitle("Clear all analytics data?")
-                    .setMessage(
-                        "This will delete all routine sessions and sleep records " +
-                                "for the current user. Profile, inventory, and routine " +
-                                "config will be preserved. Continue?"
-                    )
-                    .setPositiveButton("Clear") { _, _ ->
-                        clearButton.isEnabled = false
-                        viewModel.clearAnalyticsData(requireContext()) { success ->
-                            clearButton.isEnabled = true
-                            Toast.makeText(
-                                requireContext(),
-                                if (success) "Data cleared. Navigate to Performance to verify empty states." else "Failed to clear data",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    }
-                    .setNegativeButton("Cancel", null)
-                    .show()
-            }
-        }
-
     }
 
     private fun formatBedtime(raw: String?): String {

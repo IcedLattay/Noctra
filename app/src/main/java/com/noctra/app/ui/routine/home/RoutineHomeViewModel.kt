@@ -8,10 +8,12 @@ import com.noctra.app.data.model.RoutineConfiguration
 import com.noctra.app.data.repository.RoutineRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.data.repository.UserProfileRepository
+import com.noctra.app.utils.DebugSettings
 import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -84,27 +86,20 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
     val activeRoutineConfigId: String?
         get() = _activeRoutine?.id
 
-    // ─── Demo override ───────────────────────────────────────────────────────
-
-    /**
-     * If true, the window check is bypassed and InWindow is forced regardless
-     * of real time. Useful for demoing the app at any time of day.
-     *
-     * Set this to false before release.
-     */
-    private val FORCE_IN_WINDOW_FOR_DEMO = true
-
-    /**
-     * If true, we ignore the database check for already completed sessions.
-     * This allows the user to re-run the routine execution screens multiple
-     * times in one day for demo purposes.
-     */
-    private var skipCompletionCheckForDemo = false
-
     // ─── Init ────────────────────────────────────────────────────────────────
 
     init {
         loadHomeState()
+        observeDebugSettings()
+    }
+
+    private fun observeDebugSettings() {
+        viewModelScope.launch {
+            DebugSettings.forceRoutineWindow.collectLatest { loadHomeState() }
+        }
+        viewModelScope.launch {
+            DebugSettings.skipCompletionCheck.collectLatest { loadHomeState() }
+        }
     }
 
     fun refresh() {
@@ -112,8 +107,7 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun forceResetForDemo() {
-        skipCompletionCheckForDemo = true
-        loadHomeState()
+        DebugSettings.setSkipCompletionCheck(true)
     }
 
     // ─── Core Load Logic ─────────────────────────────────────────────────────
@@ -139,7 +133,7 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
 
                 // Check tonight's completion BEFORE window logic — completion wins.
                 val todayDate = routineSessionRepository.getTodayDateString()
-                val alreadyCompleted = if (skipCompletionCheckForDemo) false else {
+                val alreadyCompleted = if (DebugSettings.skipCompletionCheck.value) false else {
                     routineSessionRepository.hasCompletedSessionForDate(userId, todayDate)
                 }
                 val streak = routineSessionRepository.getCurrentStreak(userId)
@@ -155,7 +149,7 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
                 val windowOpen    = targetBedtime.minusMinutes(totalDuration.toLong())
                 val windowClose   = targetBedtime.plusMinutes(60)
 
-                val inWindow = FORCE_IN_WINDOW_FOR_DEMO ||
+                val inWindow = DebugSettings.forceRoutineWindow.value ||
                         isTimeInWindow(LocalTime.now(), windowOpen, windowClose)
 
                 _state.value = if (inWindow) {

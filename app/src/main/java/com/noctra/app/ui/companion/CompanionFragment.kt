@@ -160,21 +160,6 @@ class CompanionFragment : Fragment() {
         binding.btnCustomize.setOnClickListener {
             findNavController().navigate(R.id.action_companion_to_customization)
         }
-
-        binding.btnSeedData.setOnClickListener {
-            val userId = UserSession.getUserId(requireContext())
-            viewModel.seedDemoData(userId)
-        }
-
-        binding.btnXpPlus.setOnClickListener {
-            val userId = UserSession.getUserId(requireContext())
-            viewModel.addXp(userId, 500)
-        }
-
-        binding.btnXpMinus.setOnClickListener {
-            val userId = UserSession.getUserId(requireContext())
-            viewModel.addXp(userId, -500)
-        }
     }
 
     override fun onDestroyView() {
