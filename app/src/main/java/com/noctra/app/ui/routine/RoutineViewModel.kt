@@ -113,10 +113,11 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
                     startTimestamp = sessionStartTimestamp
                 )
                 activeSessionId = session.id
+                android.util.Log.d("StreakDebug", "SESSION STARTED id=$activeSessionId")
             } catch (e: Exception) {
+                android.util.Log.e("StreakDebug", "START SESSION FAILED", e)
                 activeSessionId = null
             }
-
             // Pre-populate display so the first activity shows the right time before it starts ticking
             _activitySecondsRemaining.value = DEMO_ACTIVITY_DURATION_SECONDS
 
@@ -205,6 +206,7 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
             val reward = rewardCalculationUseCase.calculate(currentStreak)
             _rewardResult.value = reward
 
+            android.util.Log.d("StreakDebug", "COMPLETING sessionId=$activeSessionId")
             activeSessionId?.let { sessionId ->
                 try {
                     routineSessionRepository.completeSession(
@@ -215,8 +217,11 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
                         tokensEarned = reward.tokensEarned,
                         xpEarned = reward.xpEarned
                     )
-                } catch (e: Exception) { /* TODO: queue retry */ }
-            }
+                    android.util.Log.d("StreakDebug", "COMPLETE SESSION WROTE OK")
+                } catch (e: Exception) {
+                    android.util.Log.e("StreakDebug", "COMPLETE SESSION FAILED", e)
+                }
+            } ?: android.util.Log.e("StreakDebug", "NO SESSION ID — nothing to complete")
 
             _navigationEvent.emit(NavigationEvent.GoToCompletion)
         }

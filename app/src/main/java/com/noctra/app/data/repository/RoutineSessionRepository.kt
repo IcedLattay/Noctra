@@ -42,17 +42,14 @@ class RoutineSessionRepository {
         sessionDate: String,
         startTimestamp: String
     ): RoutineSession {
-        val newSession = mapOf(
-            "user_id"           to userId,
-            "routine_config_id" to routineConfigId,
-            "session_date"      to sessionDate,
-            "start_timestamp"   to startTimestamp,
-            "is_completed"      to false
-        )
-
         return client
             .from("routine_sessions")
-            .insert(newSession) {
+            .insert(NewSessionInsert(
+                userId = userId,
+                routineConfigId = routineConfigId,
+                sessionDate = sessionDate,
+                startTimestamp = startTimestamp
+            )) {
                 select()
             }
             .decodeSingle<RoutineSession>()
@@ -80,16 +77,13 @@ class RoutineSessionRepository {
     ) {
         client
             .from("routine_sessions")
-            .update(
-                mapOf(
-                    "is_completed"          to true,
-                    "completion_timestamp"  to completionTimestamp,
-                    "streak_at_completion"  to streakAtCompletion,
-                    "multiplier_applied"    to multiplierApplied,
-                    "tokens_earned"         to tokensEarned,
-                    "xp_earned"             to xpEarned
-                )
-            ) {
+            .update(SessionCompletion(
+                completionTimestamp = completionTimestamp,
+                streakAtCompletion = streakAtCompletion,
+                multiplierApplied = multiplierApplied,
+                tokensEarned = tokensEarned,
+                xpEarned = xpEarned
+            )) {
                 filter { eq("id", sessionId) }
             }
     }
@@ -242,7 +236,6 @@ class RoutineSessionRepository {
         userId: String,
         sessionDate: String
     ) {
-        // Only insert if a record doesn't already exist for that date
         val existing = client
             .from("routine_sessions")
             .select {
@@ -254,16 +247,13 @@ class RoutineSessionRepository {
             .decodeList<RoutineSession>()
 
         if (existing.isEmpty()) {
-            val missedSession = mapOf(
-                "user_id"      to userId,
-                "session_date" to sessionDate,
-                // start_timestamp is required by schema — use midnight of that date
-                "start_timestamp" to "${sessionDate}T00:00:00",
-                "is_completed" to false
-            )
             client
                 .from("routine_sessions")
-                .insert(missedSession)
+                .insert(MissedSessionInsert(
+                    userId = userId,
+                    sessionDate = sessionDate,
+                    startTimestamp = "${sessionDate}T00:00:00"
+                ))
         }
     }
 
@@ -310,4 +300,29 @@ class RoutineSessionRepository {
     private fun getPreviousDateString(dateString: String): String {
         return java.time.LocalDate.parse(dateString).minusDays(1).toString()
     }
+    @kotlinx.serialization.Serializable
+    private data class NewSessionInsert(
+        @kotlinx.serialization.SerialName("user_id") val userId: String,
+        @kotlinx.serialization.SerialName("routine_config_id") val routineConfigId: String,
+        @kotlinx.serialization.SerialName("session_date") val sessionDate: String,
+        @kotlinx.serialization.SerialName("start_timestamp") val startTimestamp: String,
+        @kotlinx.serialization.SerialName("is_completed") val isCompleted: Boolean = false
+    )
+
+    @kotlinx.serialization.Serializable
+    private data class MissedSessionInsert(
+        @kotlinx.serialization.SerialName("user_id") val userId: String,
+        @kotlinx.serialization.SerialName("session_date") val sessionDate: String,
+        @kotlinx.serialization.SerialName("start_timestamp") val startTimestamp: String,
+        @kotlinx.serialization.SerialName("is_completed") val isCompleted: Boolean = false
+    )
+    @kotlinx.serialization.Serializable
+    private data class SessionCompletion(
+        @kotlinx.serialization.SerialName("is_completed") val isCompleted: Boolean = true,
+        @kotlinx.serialization.SerialName("completion_timestamp") val completionTimestamp: String,
+        @kotlinx.serialization.SerialName("streak_at_completion") val streakAtCompletion: Int,
+        @kotlinx.serialization.SerialName("multiplier_applied") val multiplierApplied: Double,
+        @kotlinx.serialization.SerialName("tokens_earned") val tokensEarned: Int,
+        @kotlinx.serialization.SerialName("xp_earned") val xpEarned: Int
+    )
 }
