@@ -14,6 +14,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.noctra.app.R
 import com.noctra.app.databinding.FragmentCompanionBinding
+import com.noctra.app.utils.ShleepyAssetHelper
 import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -137,27 +138,8 @@ class CompanionFragment : Fragment() {
                 categories.forEach { (category, imageView) ->
                     val item = state.equippedItems[category]
                     if (item != null) {
-                        val cleanAsset = item.itemAsset.removeSuffix(".png").removeSuffix(".jpg").removeSuffix(".webp")
-                        val assetName = "${cleanAsset}_$stageSuffix"
-                        val resId = requireContext().resources.getIdentifier(
-                            assetName, "drawable", requireContext().packageName
-                        )
-                        
-                        if (resId != 0) {
-                            imageView.setImageResource(resId)
-                            imageView.visibility = View.VISIBLE
-                        } else {
-                            // Fallback to base asset if stage variant missing
-                            val fallbackId = requireContext().resources.getIdentifier(
-                                cleanAsset, "drawable", requireContext().packageName
-                            )
-                            if (fallbackId != 0) {
-                                imageView.setImageResource(fallbackId)
-                                imageView.visibility = View.VISIBLE
-                            } else {
-                                imageView.visibility = View.GONE
-                            }
-                        }
+                        // Using helper for ALL accessories now since they are full-frame
+                        ShleepyAssetHelper.applyAccessory(imageView, item, stageSuffix)
                     } else {
                         imageView.visibility = View.GONE
                     }

@@ -107,8 +107,8 @@
         <!-- Shleepy Display Area -->
         <FrameLayout
             android:id="@+id/shleepyFrame"
-            android:layout_width="260dp"
-            android:layout_height="260dp">
+            android:layout_width="280dp"
+            android:layout_height="280dp">
 
             <!-- Shleepy Shadow -->
             <View
@@ -125,8 +125,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:contentDescription="@string/content_description_shleepy"
-                android:padding="40dp"
-                android:scaleType="centerInside"
+                android:padding="0dp"
+                android:scaleType="fitCenter"
                 android:src="@drawable/shleepy_depleted" />
 
             <!-- Equipped Layers -->
@@ -134,26 +134,24 @@
                 android:id="@+id/ivEquippedOutfitCompanion"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="40dp"
-                android:scaleType="centerInside"
-                android:translationY="10dp"
+                android:padding="0dp"
+                android:scaleType="fitCenter"
                 android:visibility="gone" />
 
             <ImageView
                 android:id="@+id/ivEquippedHatCompanion"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="40dp"
-                android:scaleType="centerInside"
-                android:translationY="-55dp"
+                android:padding="0dp"
+                android:scaleType="fitCenter"
                 android:visibility="gone" />
 
             <ImageView
                 android:id="@+id/ivEquippedAccessoryCompanion"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="40dp"
-                android:scaleType="centerInside"
+                android:padding="0dp"
+                android:scaleType="fitCenter"
                 android:visibility="gone" />
         </FrameLayout>
 

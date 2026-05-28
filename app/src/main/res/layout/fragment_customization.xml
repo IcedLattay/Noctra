@@ -64,8 +64,8 @@
         <!-- Shleepy Preview Area -->
         <FrameLayout
             android:id="@+id/shleepyPreviewFrame"
-            android:layout_width="260dp"
-            android:layout_height="260dp"
+            android:layout_width="280dp"
+            android:layout_height="280dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -86,8 +86,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:contentDescription="@string/content_description_shleepy"
-                android:padding="40dp"
-                android:scaleType="centerInside"
+                android:padding="0dp"
+                android:scaleType="fitCenter"
                 android:src="@drawable/shleepy_depleted" />
 
             <!-- Customization Layers - Matching padding exactly -->
@@ -95,26 +95,24 @@
                 android:id="@+id/ivEquippedOutfit"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="40dp"
-                android:scaleType="centerInside"
-                android:translationY="10dp"
+                android:padding="0dp"
+                android:scaleType="fitCenter"
                 android:visibility="gone" />
 
             <ImageView
                 android:id="@+id/ivEquippedHat"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="40dp"
-                android:scaleType="centerInside"
-                android:translationY="-55dp"
+                android:padding="0dp"
+                android:scaleType="fitCenter"
                 android:visibility="gone" />
 
             <ImageView
                 android:id="@+id/ivEquippedAccessory"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="40dp"
-                android:scaleType="centerInside"
+                android:padding="0dp"
+                android:scaleType="fitCenter"
                 android:visibility="gone" />
 
         </FrameLayout>
