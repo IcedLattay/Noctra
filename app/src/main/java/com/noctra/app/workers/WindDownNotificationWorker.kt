@@ -40,7 +40,7 @@ class WindDownNotificationWorker(
             applicationContext,
             NoctraApplication.CHANNEL_WIND_DOWN
         )
-            .setSmallIcon(R.drawable.ic_launcher_foreground) // TODO: swap for proper wind-down icon
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Time to wind down 🌙")
             .setContentText("Your routine starts now. Tap to begin.")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
