@@ -85,10 +85,17 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         viewModel.loadProfile(ctx)
 
         // Dev-only: seed demo data button
+        val testNotifButton = view.findViewById<TextView>(R.id.btn_test_notification)
         val seedButton = view.findViewById<TextView>(R.id.btn_seed_demo_data)
         val clearButton = view.findViewById<TextView>(R.id.btn_clear_demo_data)
 
         if (BuildConfig.DEBUG) {
+            testNotifButton.visibility = View.VISIBLE
+            testNotifButton.setOnClickListener {
+                viewModel.triggerTestNotification(requireContext())
+                Toast.makeText(requireContext(), "Notification triggered!", Toast.LENGTH_SHORT).show()
+            }
+
             seedButton.visibility = View.VISIBLE
             seedButton.setOnClickListener {
                 seedButton.isEnabled = false

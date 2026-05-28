@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/routinestatebackground">
+
+    <!-- PRE-COUNTDOWN PANEL -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/preCountdownPanel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="10dp"
+        android:background="@drawable/routinewhitebg"
+        android:visibility="visible">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/bg_activity_screen"
+            android:scaleType="centerCrop"
+            android:contentDescription="@null" />
+
+        <ImageView
+            android:id="@+id/iv_shleepy_logo_pre"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="30dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/shleepylogo"
+            android:contentDescription="Shleepy"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/iv_shleepy_body_pre"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="200dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/shleepybody"
+            android:contentDescription="Shleepy body"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tv_pre_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:fontFamily="@font/poppinsbold"
+            android:text="Gratitude Journaling"
+            android:textColor="#2c1769"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/iv_shleepy_body_pre" />
+
+        <TextView
+            android:id="@+id/tv_pre_instruction"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="32dp"
+            android:background="@drawable/bg_instruction_card"
+            android:fontFamily="@font/poppinsregular"
+            android:gravity="center"
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="14dp"
+            android:text="Take a moment to reflect. What are you grateful for tonight?"
+            android:textColor="#515251"
+            android:textSize="10sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_pre_title" />
+
+        <LinearLayout
+            android:id="@+id/pre_timer_card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="48dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginEnd="48dp"
+            android:background="@drawable/bg_timer_card"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_pre_instruction">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_clock"
+                android:contentDescription="Timer" />
+
+            <TextView
+                android:id="@+id/tv_pre_timer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppinsbold"
+                android:letterSpacing="0.05"
+                android:textColor="@color/timer_green"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                tools:text="00 : 15" />
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- ACTIVE JOURNAL PANEL -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/journalPanel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#F5F0FF"
+        android:padding="24dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/iv_shleepy_logo"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/shleepylogo"
+            android:contentDescription="Shleepy"
+            android:layout_marginTop="16dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/iv_shleepy_body"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/shleepybody"
+            android:contentDescription="Shleepy body"
+            android:layout_marginTop="-8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/iv_shleepy_logo" />
+
+        <TextView
+            android:id="@+id/tv_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="@font/poppinsbold"
+            android:text="Gratitude Journaling"
+            android:textColor="#3B1FA8"
+            android:textSize="18sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/iv_shleepy_body" />
+
+        <TextView
+            android:id="@+id/tv_subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:fontFamily="@font/poppinsregular"
+            android:text="Share your thoughts."
+            android:textColor="#888888"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_title" />
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_input"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginTop="20dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
+            app:layout_constraintBottom_toTopOf="@id/card_timer"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_subtitle">
+
+            <EditText
+                android:id="@+id/et_journal_entry"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@null"
+                android:fontFamily="@font/poppinsregular"
+                android:gravity="top|start"
+                android:hint="Releasing your thoughts is great for your well-being. Share your thoughts in this field"
+                android:inputType="textMultiLine|textCapSentences"
+                android:padding="20dp"
+                android:textColor="#333333"
+                android:textColorHint="#BBBBBB"
+                android:textSize="14sp" />
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_timer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            app:cardBackgroundColor="#EDE8FF"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_clock"
+                    android:contentDescription="Timer"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:id="@+id/tv_timer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppinsbold"
+                    android:textColor="#3B1FA8"
+                    android:textSize="36sp"
+                    tools:text="10 : 00" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <Button
+            android:id="@+id/btnCompleteRoutine"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/bg_primary_button"
+            android:text="Complete Routine"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/poppinsbold"
+            android:visibility="gone"
+            tools:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</FrameLayout>

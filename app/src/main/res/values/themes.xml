@@ -7,6 +7,8 @@
 
         <!-- Customize your light theme here. -->
         <item name="colorPrimary">@color/noctra_purple_light</item>
+        <item name="fontFamily">@font/poppins</item>
+        <item name="android:fontFamily">@font/poppins</item>
     </style>
 
     <style name="Theme.Noctra" parent="Base.Theme.Noctra" />

@@ -37,4 +37,10 @@
     <color name="noctra_gray_track">#E0E0E0</color>
     <color name="noctra_card_bg">#FFFFFF</color>
     <color name="noctra_text_dark">#16056E</color>
+    <color name="timer_green">#038745</color>
+    <color name="timer_red">#E53935</color>
+    <color name="timer_default">#1A1560</color>
+    <color name="noctra_lavender_bg">#EDE9FB</color>
+    <color name="noctra_purple">#5C25F0</color>
+    <color name="noctra_lavender_border">#D9D4F0</color>
 </resources>

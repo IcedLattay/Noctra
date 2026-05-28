@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Single activity step row on the Routine Start screen -->
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="0dp"
+    app:cardBackgroundColor="@color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp">
+
+        <!-- Step number badge -->
+        <TextView
+            android:id="@+id/tv_step_number"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:background="@drawable/bg_step_number_circle_2"
+            android:gravity="center"
+            android:textColor="@color/noctra_purple_light"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/poppinsbold"
+            tools:text="1" />
+
+        <!-- Activity label and duration -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_activity_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/noctra_purple_dark"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="@font/poppinsbold"
+                tools:text="Slow-Paced Breathing" />
+
+            <TextView
+                android:id="@+id/tv_activity_duration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="#888888"
+                android:textSize="12sp"
+                android:fontFamily="@font/poppinsregular"
+                tools:text="5 minutes" />
+
+        </LinearLayout>
+
+        <!-- Activity icon -->
+        <ImageView
+            android:id="@+id/iv_activity_icon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/bg_activity_icon_circle"
+            android:padding="6dp"
+            android:contentDescription="activity icon"
+            tools:src="@drawable/ic_book" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

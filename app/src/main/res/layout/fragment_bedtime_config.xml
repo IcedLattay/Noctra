@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F4FF"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="32dp"
+        android:paddingBottom="32dp">
+
+        <!-- Header row: mascot + title -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="24dp">
+
+            <ImageView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/shleepylogo"
+                android:contentDescription="Shleepy mascot" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Set Your Target Bedtime"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="#16056E" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Step 1 of 3"
+                    android:textSize="13sp"
+                    android:textColor="#7B6FA0" />
+
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Hint card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="40dp"
+            app:cardBackgroundColor="#EAE6FF"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:textSize="14sp"
+                android:textColor="#16056E"
+                android:text="💡 This is the time you want to be asleep by — not when you start your routine." />
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- "Target Bedtime" label -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="Target Bedtime"
+            android:textSize="15sp"
+            android:textColor="#16056E"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Time display card (tappable — opens time picker dialog) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardTimePicker"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:cardBackgroundColor="#EAE6FF"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:rippleColor="#5C25F020">
+
+            <TextView
+                android:id="@+id/tvBedtimeDisplay"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:paddingVertical="28dp"
+                android:paddingHorizontal="40dp"
+                android:text="10:00"
+                android:textSize="36sp"
+                android:textStyle="bold"
+                android:textColor="#16056E"
+                android:fontFamily="sans-serif-medium" />
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Estimated start time card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="32dp"
+            app:cardBackgroundColor="#FFFDE7"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:gravity="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Estimated routine start time"
+                    android:textSize="13sp"
+                    android:textColor="#5C4A00" />
+
+                <TextView
+                    android:id="@+id/tvEstimatedStart"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="09:30"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:textColor="#F0A500"
+                    android:layout_marginVertical="4dp" />
+
+                <TextView
+                    android:id="@+id/tvEstimatedStartHint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Based on a ~30 minute routine"
+                    android:textSize="12sp"
+                    android:textColor="#5C4A00" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Best sleep range hint -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:gravity="center"
+            android:text="Most students sleep best between\n10:00 PM - 11:00 PM"
+            android:textSize="13sp"
+            android:textColor="#7B6FA0"
+            android:layout_marginBottom="40dp" />
+
+        <!-- Spacer -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- Continue button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnContinue"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Continue"
+            android:textSize="16sp"
+            android:textColor="#FFFFFF"
+            android:fontFamily="@font/poppinsbold"
+            android:textStyle="bold"
+            app:backgroundTint="#5C25F0"
+            app:cornerRadius="28dp" />
+
+    </LinearLayout>
+</ScrollView>

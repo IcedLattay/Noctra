@@ -7,7 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.edit
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -24,7 +24,7 @@ class CompanionFragment : Fragment() {
     private var _binding: FragmentCompanionBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: CompanionViewModel by viewModels()
+    private val viewModel: CompanionViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -46,6 +46,14 @@ class CompanionFragment : Fragment() {
 
         observeUiState()
         setupListeners()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val userId = UserSession.getUserId(requireContext())
+        val lastShownSleepDate = requireContext().getSharedPreferences("noctra_prefs", Context.MODE_PRIVATE)
+            .getString("last_shown_sleep_date", null)
+        viewModel.loadData(userId, lastShownSleepDate)
     }
 
     private fun observeUiState() {

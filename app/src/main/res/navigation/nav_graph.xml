@@ -2,12 +2,82 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/companionFragment">
+    app:startDestination="@id/bedtimeConfigFragment">
 
+    <!-- ═══════════════════════════════════════════════════
+         ONBOARDING FLOW (Person A)
+         Entry point: MainActivity checks onboarding_completed,
+         navigates here on first launch via action_global_onboarding
+    ════════════════════════════════════════════════════ -->
+    <fragment
+        android:id="@+id/bedtimeConfigFragment"
+        android:name="com.noctra.app.ui.routine.onboarding.BedtimeConfigFragment"
+        android:label="Set Your Bedtime">
+        <action
+            android:id="@+id/action_bedtimeConfig_to_activityLibrary"
+            app:destination="@id/activityLibraryFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/activityLibraryFragment"
+        android:name="com.noctra.app.ui.routine.onboarding.ActivityLibraryFragment"
+        android:label="Choose Activities">
+
+        <!-- NEW: defaults to false so existing onboarding nav doesn't break -->
+        <argument
+            android:name="editMode"
+            app:argType="boolean"
+            android:defaultValue="false" />
+
+        <action
+            android:id="@+id/action_activityLibrary_to_routineSequencing"
+            app:destination="@id/routineSequencingFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/routineSequencingFragment"
+        android:name="com.noctra.app.ui.routine.onboarding.RoutineSequencingFragment"
+        android:label="Arrange Routine">
+        <action
+            android:id="@+id/action_routineSequencing_to_onboardingSummary"
+            app:destination="@id/onboardingSummaryFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/onboardingSummaryFragment"
+        android:name="com.noctra.app.ui.routine.onboarding.OnboardingSummaryFragment"
+        android:label="You're All Set">
+        <action
+            android:id="@+id/action_onboardingSummary_to_routineHome"
+            app:destination="@id/routineHomeFragment"
+            app:popUpTo="@id/bedtimeConfigFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <!-- Global action — MainActivity uses this to enter onboarding -->
+    <action
+        android:id="@+id/action_global_onboarding"
+        app:destination="@id/bedtimeConfigFragment"
+        app:popUpTo="@id/routineHomeFragment"
+        app:popUpToInclusive="true" />
+
+    <!-- ═══════════════════════════════════════════════════
+         BOTTOM NAV TABS
+    ════════════════════════════════════════════════════ -->
     <fragment
         android:id="@+id/routineHomeFragment"
         android:name="com.noctra.app.ui.routine.home.RoutineHomeFragment"
-        android:label="Routine" />
+        android:label="Routine">
+
+        <action
+            android:id="@+id/action_routineHomeFragment_to_routineStartFragment"
+            app:destination="@id/routineStartFragment" />
+
+        <!-- NEW: jumps into Activity Library in edit mode -->
+        <action
+            android:id="@+id/action_routineHomeFragment_to_editRoutine"
+            app:destination="@id/activityLibraryFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/analyticsDashboardFragment"
@@ -44,5 +114,69 @@
         android:id="@+id/settingsFragment"
         android:name="com.noctra.app.ui.profile.SettingsFragment"
         android:label="Settings" />
+
+    <!-- ═══════════════════════════════════════════════════
+         ROUTINE FLOW
+    ════════════════════════════════════════════════════ -->
+    <fragment
+        android:id="@+id/routineStartFragment"
+        android:name="com.noctra.app.ui.routine.home.RoutineStartFragment"
+        android:label="Start Routine">
+        <action
+            android:id="@+id/action_routineStartFragment_to_breathingActivityFragment"
+            app:destination="@id/breathingActivityFragment" />
+        <action
+            android:id="@+id/action_routineStartFragment_to_audioscapeActivityFragment"
+            app:destination="@id/audioscapeActivityFragment" />
+        <action
+            android:id="@+id/action_routineStartFragment_to_gratitudeJournalingActivityFragment"
+            app:destination="@id/gratitudeJournalingActivityFragment" />
+        <action
+            android:id="@+id/action_routineStartFragment_to_genericTimerActivityFragment"
+            app:destination="@id/genericTimerActivityFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/breathingActivityFragment"
+        android:name="com.noctra.app.ui.routine.execution.activities.BreathingActivityFragment"
+        android:label="Breathing" />
+
+    <fragment
+        android:id="@+id/audioscapeActivityFragment"
+        android:name="com.noctra.app.ui.routine.execution.activities.AudioscapeActivityFragment"
+        android:label="Audio" />
+
+    <fragment
+        android:id="@+id/gratitudeJournalingActivityFragment"
+        android:name="com.noctra.app.ui.routine.execution.activities.GratitudeJournalingActivityFragment"
+        android:label="Journaling" />
+
+    <fragment
+        android:id="@+id/genericTimerActivityFragment"
+        android:name="com.noctra.app.ui.routine.execution.activities.GenericTimerActivityFragment"
+        android:label="Activity" />
+
+    <fragment
+        android:id="@+id/timesUpTransitionFragment"
+        android:name="com.noctra.app.ui.routine.execution.TimesUpTransitionFragment"
+        android:label="Time's Up" />
+
+    <fragment
+        android:id="@+id/routineCompletionOverlayFragment"
+        android:name="com.noctra.app.ui.routine.RoutineCompletionOverlayFragment"
+        android:label="Complete">
+        <action
+            android:id="@+id/action_routineCompletionOverlayFragment_to_companionFragment"
+            app:destination="@id/companionFragment" />
+    </fragment>
+
+    <!-- ═══════════════════════════════════════════════════
+         GLOBAL ACTIONS
+    ════════════════════════════════════════════════════ -->
+    <action
+        android:id="@+id/action_global_routineHomeFragment"
+        app:destination="@id/routineHomeFragment"
+        app:popUpTo="@id/routineHomeFragment"
+        app:popUpToInclusive="true" />
 
 </navigation>
