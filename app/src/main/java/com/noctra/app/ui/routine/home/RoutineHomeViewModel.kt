@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
@@ -29,9 +28,12 @@ import java.time.format.DateTimeFormatter
  * Routine Window Logic (from Noctra context doc):
  *   - Window OPENS  at: target_bedtime − total_routine_duration_minutes
  *   - Window CLOSES at: target_bedtime + 60 minutes
- *   - Outside window  → show activity list + Edit Routine button
- *   - Inside window   → show Start My Routine button
- *   - Already done    → show Routine Complete state
+ *   - Outside window  → BeforeWindow (Edit Routine button)
+ *   - Inside window   → InWindow (Begin Routine button)
+ *   - Already done    → Completed (Routine Complete state)
+ *
+ * Window can cross midnight (e.g. bedtime 23:30 + 30min activities → window 23:00–00:30).
+ * The isTimeInWindow() helper handles this rollover.
  */
 class RoutineHomeViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -48,26 +50,18 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
 
     // ─── UI State ────────────────────────────────────────────────────────────
 
-    /**
-     * The overall screen state exposed to RoutineHomeFragment.
-     */
     sealed class RoutineHomeState {
-        /** Still loading data — show shimmer / skeleton. */
         object Loading : RoutineHomeState()
-
-        /** User has not completed onboarding — no routine configured yet. */
         object NoRoutine : RoutineHomeState()
 
-        /** Routine exists; outside the routine window — show preview + Edit button. */
         data class BeforeWindow(
             val activities: List<Activity>,
             val totalDurationMinutes: Int,
-            val targetBedtime: String,       // e.g. "10:30 PM"
-            val routineStartTime: String,    // e.g. "10:00 PM"
+            val targetBedtime: String,
+            val routineStartTime: String,
             val currentStreak: Int
         ) : RoutineHomeState()
 
-        /** Inside the routine window — show Start My Routine button. */
         data class InWindow(
             val activities: List<Activity>,
             val totalDurationMinutes: Int,
@@ -76,12 +70,7 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
             val currentStreak: Int
         ) : RoutineHomeState()
 
-        /** User already completed tonight's routine. */
-        data class Completed(
-            val currentStreak: Int
-        ) : RoutineHomeState()
-
-        /** Something went wrong loading data. */
+        data class Completed(val currentStreak: Int) : RoutineHomeState()
         data class Error(val message: String) : RoutineHomeState()
     }
 
@@ -92,22 +81,25 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
 
     private var _activeRoutine: RoutineConfiguration? = null
 
-    /** Exposes the active routine config ID for RoutineStartFragment. */
     val activeRoutineConfigId: String?
         get() = _activeRoutine?.id
 
-    // ─── Init ─────────────────────────────────────────────────────────────────
+    // ─── Demo override ───────────────────────────────────────────────────────
+
+    /**
+     * If true, the window check is bypassed and InWindow is forced regardless
+     * of real time. Useful for demoing the app at any time of day.
+     *
+     * Set this to false before release.
+     */
+    private val FORCE_IN_WINDOW_FOR_DEMO = true
+
+    // ─── Init ────────────────────────────────────────────────────────────────
 
     init {
         loadHomeState()
     }
 
-    // ─── Public ──────────────────────────────────────────────────────────────
-
-    /**
-     * Called by RoutineHomeFragment on resume to refresh state.
-     * Handles cases where user returns from editing their routine or completing it.
-     */
     fun refresh() {
         loadHomeState()
     }
@@ -119,46 +111,56 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
             _state.value = RoutineHomeState.Loading
 
             try {
-                // 1. Get user profile for target_bedtime (default to 11 PM for demo)
                 val profile = userProfileRepository.getOrCreateProfile(userId)
-                val targetBedtimeRaw = profile.targetBedtime ?: "23:00:00"
+                val targetBedtimeRaw = profile.targetBedtime ?: "22:00:00"
 
-                // 2. FOR DEMO: Load only implemented activities from the library
-                val allActivities = routineRepository.getActivityLibrary()
-                val activities = allActivities.filter { 
-                    val type = it.activityType.lowercase()
-                    type == "breathing" || type == "audio" || type == "audioscape" || type == "journaling"
+                val activeRoutine = routineRepository.getActiveRoutine(userId)
+                if (activeRoutine == null) {
+                    _state.value = RoutineHomeState.NoRoutine
+                    return@launch
                 }
-                val totalDuration = activities.sumOf { it.defaultDurationMinutes }
+                _activeRoutine = activeRoutine
 
-                // 3. Check if already completed tonight
+                val entries = routineRepository.parseActivitySequence(activeRoutine.activitySequence)
+                val activities = routineRepository.hydrateActivitySequence(entries)
+                val totalDuration = activeRoutine.totalDurationMinutes
+
+                // Check tonight's completion BEFORE window logic — completion wins.
                 val todayDate = routineSessionRepository.getTodayDateString()
                 val alreadyCompleted = routineSessionRepository
                     .hasCompletedSessionForDate(userId, todayDate)
+                val streak = routineSessionRepository.getCurrentStreak(userId)
 
                 if (alreadyCompleted) {
-                    val streak = routineSessionRepository.getCurrentStreak(userId)
                     _state.value = RoutineHomeState.Completed(currentStreak = streak)
                     return@launch
                 }
 
-                // 4. Compute routine window
+                // Compute the routine window.
                 val targetBedtime = parseTime(targetBedtimeRaw)
                 val windowOpen    = targetBedtime.minusMinutes(totalDuration.toLong())
+                val windowClose   = targetBedtime.plusMinutes(60)
 
-                val streak = routineSessionRepository.getCurrentStreak(userId)
+                val inWindow = FORCE_IN_WINDOW_FOR_DEMO ||
+                        isTimeInWindow(LocalTime.now(), windowOpen, windowClose)
 
-                val targetBedtimeFormatted  = formatTime(targetBedtime)
-                val routineStartFormatted   = formatTime(windowOpen)
-
-                // For demo/testing: Always show activities and always enable the "Begin" button.
-                _state.value = RoutineHomeState.InWindow(
-                    activities           = activities,
-                    totalDurationMinutes = totalDuration,
-                    targetBedtime        = targetBedtimeFormatted,
-                    routineStartTime     = routineStartFormatted,
-                    currentStreak        = streak
-                )
+                _state.value = if (inWindow) {
+                    RoutineHomeState.InWindow(
+                        activities           = activities,
+                        totalDurationMinutes = totalDuration,
+                        targetBedtime        = formatTime(targetBedtime),
+                        routineStartTime     = formatTime(windowOpen),
+                        currentStreak        = streak
+                    )
+                } else {
+                    RoutineHomeState.BeforeWindow(
+                        activities           = activities,
+                        totalDurationMinutes = totalDuration,
+                        targetBedtime        = formatTime(targetBedtime),
+                        routineStartTime     = formatTime(windowOpen),
+                        currentStreak        = streak
+                    )
+                }
 
             } catch (e: Exception) {
                 _state.value = RoutineHomeState.Error(
@@ -168,12 +170,29 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    // ─── Time Helpers ─────────────────────────────────────────────────────────
+    // ─── Window check (handles midnight rollover) ────────────────────────────
 
     /**
-     * Parses a time string from Supabase (stored as "HH:mm:ss" or "HH:mm")
-     * into a LocalTime object.
+     * Returns true if `now` falls within [open, close], correctly handling the
+     * case where the window crosses midnight.
+     *
+     * Examples:
+     *   open=21:30 close=23:00  → simple within-day check
+     *   open=23:00 close=00:30  → crosses midnight; now must be ≥23:00 OR ≤00:30
+     *   open=00:30 close=02:00  → simple within-day check (early-morning bedtime)
      */
+    private fun isTimeInWindow(now: LocalTime, open: LocalTime, close: LocalTime): Boolean {
+        return if (!open.isAfter(close)) {
+            // No midnight crossing (open <= close)
+            !now.isBefore(open) && !now.isAfter(close)
+        } else {
+            // Window crosses midnight (open > close)
+            !now.isBefore(open) || !now.isAfter(close)
+        }
+    }
+
+    // ─── Time formatting helpers ─────────────────────────────────────────────
+
     private fun parseTime(raw: String): LocalTime {
         return try {
             LocalTime.parse(raw, DateTimeFormatter.ofPattern("HH:mm:ss"))
@@ -182,10 +201,6 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    /**
-     * Formats a LocalTime into a human-readable 12-hour string for display.
-     * e.g. 22:30 → "10:30 PM"
-     */
     private fun formatTime(time: LocalTime): String {
         return time.format(DateTimeFormatter.ofPattern("h:mm a"))
     }

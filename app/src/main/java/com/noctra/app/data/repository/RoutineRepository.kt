@@ -4,6 +4,9 @@ import com.noctra.app.data.model.Activity
 import com.noctra.app.data.model.RoutineActivityEntry
 import com.noctra.app.data.model.RoutineConfiguration
 import com.noctra.app.data.supabase.SupabaseClient
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.JsonPrimitive
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.encodeToString
@@ -125,16 +128,16 @@ class RoutineRepository {
         // Step 1 — deactivate any existing active config
         deactivateExistingConfigs(userId)
 
-        // Step 2 — build the JSONB array as a raw JsonArray
+        // Step 2 — build the JSONB array
         val sequenceJson = buildSequenceJson(activitySequence)
 
-        // Step 3 — insert new config
-        val newConfig = mapOf(
-            "user_id" to userId,
-            "activity_sequence" to sequenceJson,
-            "total_duration_minutes" to totalDurationMinutes,
-            "is_active" to true
-        )
+        // Step 3 — build the row as a JsonObject (NOT a mapOf with mixed types)
+        val newConfig = buildJsonObject {
+            put("user_id", userId)
+            put("activity_sequence", sequenceJson)
+            put("total_duration_minutes", totalDurationMinutes)
+            put("is_active", true)
+        }
 
         return client
             .from("routine_configurations")

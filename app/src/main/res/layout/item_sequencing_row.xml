@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Single activity step row on the Routine Start screen -->
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -21,7 +20,7 @@
         android:paddingTop="14dp"
         android:paddingBottom="14dp">
 
-        <!-- Step number badge -->
+        <!-- Step number badge — matches your existing style -->
         <TextView
             android:id="@+id/tv_step_number"
             android:layout_width="28dp"
@@ -64,15 +63,25 @@
 
         </LinearLayout>
 
-        <!-- Activity icon -->
+        <!-- Drag handle -->
         <ImageView
-            android:id="@+id/iv_activity_icon"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:background="@drawable/bg_activity_icon_circle"
+            android:id="@+id/iv_drag_handle"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="8dp"
+            android:alpha="0.35"
+            android:src="@android:drawable/ic_menu_sort_by_size"
+            android:contentDescription="Drag to reorder" />
+
+        <!-- Remove button -->
+        <ImageButton
+            android:id="@+id/btn_remove"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="@drawable/bg_remove_button"
+            android:contentDescription="Remove activity"
             android:padding="6dp"
-            android:contentDescription="activity icon"
-            tools:src="@drawable/ic_book" />
+            android:src="@android:drawable/ic_delete" />
 
     </LinearLayout>
 

@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F4FF"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="40dp"
+        android:paddingBottom="40dp">
+
+        <!-- Large Shleepy mascot -->
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_gravity="center_horizontal"
+            android:src="@drawable/shleepylogo"
+            android:contentDescription="Shleepy mascot"
+            android:layout_marginBottom="24dp" />
+
+        <!-- You're All Set! -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="You're All Set!"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="#16056E"
+            android:fontFamily="@font/poppinsbold"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="Your personalized sleep routine is ready"
+            android:textSize="14sp"
+            android:textColor="#7B6FA0"
+            android:fontFamily="@font/poppinsregular"
+            android:layout_marginBottom="32dp" />
+
+        <!-- Target Bedtime card (purple) -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#EAE6FF">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp">
+
+                <!-- Icon badge -->
+                <FrameLayout
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_summary_icon_purple"
+                    android:layout_marginEnd="14dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_alarm_clock"
+                        android:contentDescription="Bedtime icon" />
+
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Target Bedtime"
+                        android:textSize="12sp"
+                        android:textColor="#7B6FA0"
+                        android:fontFamily="@font/poppinsregular" />
+
+                    <TextView
+                        android:id="@+id/tv_bedtime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="10:00"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="#16056E"
+                        android:fontFamily="@font/poppinsbold" />
+
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Routine Duration card (yellow) -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#FFFDE7">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp">
+
+                <!-- Icon badge -->
+                <FrameLayout
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_summary_icon_yellow"
+                    android:layout_marginEnd="14dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_clock"
+                        android:contentDescription="Duration icon" />
+
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Routine Duration"
+                        android:textSize="12sp"
+                        android:textColor="#5C4A00"
+                        android:fontFamily="@font/poppinsregular" />
+
+                    <TextView
+                        android:id="@+id/tv_duration"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="23 minutes"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="#16056E"
+                        android:fontFamily="@font/poppinsbold" />
+
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Your Routine card (white, activities list) -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/white">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Card header -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="14dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginEnd="8dp"
+                        android:src="@drawable/ic_alarm_clock"
+                        android:contentDescription="Routine icon" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Your Routine (3 activities)"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#16056E"
+                        android:fontFamily="@font/poppinsbold" />
+
+                </LinearLayout>
+
+                <!-- Activity row 1 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_activity_row"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="10dp"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="1."
+                        android:textSize="13sp"
+                        android:textColor="#7B6FA0"
+                        android:fontFamily="@font/poppinsregular"
+                        android:layout_marginEnd="10dp" />
+
+                    <TextView
+                        android:id="@+id/tv_activity_1_name"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Deep Breathing"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="#5C25F0"
+                        android:fontFamily="@font/poppinsbold" />
+
+                    <TextView
+                        android:id="@+id/tv_activity_1_duration"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="5m"
+                        android:textSize="13sp"
+                        android:textColor="#7B6FA0"
+                        android:fontFamily="@font/poppinsregular" />
+
+                </LinearLayout>
+
+                <!-- Activity row 2 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_activity_row"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="10dp"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="2."
+                        android:textSize="13sp"
+                        android:textColor="#7B6FA0"
+                        android:fontFamily="@font/poppinsregular"
+                        android:layout_marginEnd="10dp" />
+
+                    <TextView
+                        android:id="@+id/tv_activity_2_name"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Brain Dump"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="#5C25F0"
+                        android:fontFamily="@font/poppinsbold" />
+
+                    <TextView
+                        android:id="@+id/tv_activity_2_duration"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="3m"
+                        android:textSize="13sp"
+                        android:textColor="#7B6FA0"
+                        android:fontFamily="@font/poppinsregular" />
+
+                </LinearLayout>
+
+                <!-- Activity row 3 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_activity_row"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="10dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="3."
+                        android:textSize="13sp"
+                        android:textColor="#7B6FA0"
+                        android:fontFamily="@font/poppinsregular"
+                        android:layout_marginEnd="10dp" />
+
+                    <TextView
+                        android:id="@+id/tv_activity_3_name"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Calming Sounds"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="#5C25F0"
+                        android:fontFamily="@font/poppinsbold" />
+
+                    <TextView
+                        android:id="@+id/tv_activity_3_duration"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="15m"
+                        android:textSize="13sp"
+                        android:textColor="#7B6FA0"
+                        android:fontFamily="@font/poppinsregular" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Welcome Bonus card (purple gradient) -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="32dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="24dp"
+                android:background="@drawable/bg_bonus_card">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🎁"
+                    android:textSize="32sp"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Welcome Bonus!"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:fontFamily="@font/poppinsbold"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="You've earned 50 Dream Tokens to get started"
+                    android:textSize="13sp"
+                    android:textColor="#E0D4FF"
+                    android:gravity="center"
+                    android:fontFamily="@font/poppinsregular" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Start Using Noctra button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_start_noctra"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Start Using Noctra"
+            android:textSize="16sp"
+            android:textColor="#FFFFFF"
+            android:fontFamily="@font/poppinsbold"
+            app:backgroundTint="#5C25F0"
+            app:cornerRadius="28dp" />
+
+    </LinearLayout>
+</ScrollView>

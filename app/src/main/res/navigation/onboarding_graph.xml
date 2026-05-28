@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/onboarding_graph"
+    app:startDestination="@id/bedtimeConfigFragment">
+
+    <fragment
+        android:id="@+id/bedtimeConfigFragment"
+        android:name="com.noctra.app.ui.routine.onboarding.BedtimeConfigFragment"
+        android:label="Set Your Bedtime">
+        <action
+            android:id="@+id/action_bedtimeConfig_to_activityLibrary"
+            app:destination="@id/activityLibraryFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/activityLibraryFragment"
+        android:name="com.noctra.app.ui.routine.onboarding.ActivityLibraryFragment"
+        android:label="Choose Activities">
+        <action
+            android:id="@+id/action_activityLibrary_to_routineSequencing"
+            app:destination="@id/routineSequencingFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/routineSequencingFragment"
+        android:name="com.noctra.app.ui.routine.onboarding.RoutineSequencingFragment"
+        android:label="Arrange Routine">
+        <action
+            android:id="@+id/action_routineSequencing_to_onboardingSummary"
+            app:destination="@id/onboardingSummaryFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/onboardingSummaryFragment"
+        android:name="com.noctra.app.ui.routine.onboarding.OnboardingSummaryFragment"
+        android:label="You're All Set">
+        <action
+            android:id="@+id/action_onboardingSummary_to_routineHome"
+            app:destination="@id/routineHomeFragment"
+            app:popUpTo="@id/onboarding_graph"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+</navigation>
