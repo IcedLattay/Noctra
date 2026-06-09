@@ -47,59 +47,27 @@
         android:layout_height="wrap_content"
         android:gravity="center_horizontal"
         android:orientation="vertical"
-        app:layout_constraintBottom_toTopOf="@+id/bottomSpacer"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tokenContainer"
-        app:layout_constraintVertical_bias="0.1">
+        app:layout_constraintVertical_bias="0.5">
 
         <!-- Shleepy Display Area -->
         <FrameLayout
             android:id="@+id/shleepyFrame"
-            android:layout_width="280dp"
-            android:layout_height="280dp">
+            android:layout_marginTop="20dp"
+            android:layout_width="220dp"
+            android:layout_height="280dp"
+            android:clipChildren="true"
+            android:clipToPadding="true">
 
-            <!-- Shleepy Shadow -->
-            <View
-                android:layout_width="120dp"
-                android:layout_height="20dp"
-                android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="24dp"
-                android:alpha="0.15"
-                android:background="@drawable/bg_token_pill" />
-
-            <!-- Base Shleepy - Fixed size via padding -->
-            <ImageView
-                android:id="@+id/ivShleepy"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:contentDescription="@string/content_description_shleepy"
-                android:padding="0dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/shleepy_depleted" />
-
-            <!-- Equipped Layers -->
-            <ImageView
-                android:id="@+id/ivEquippedOutfitCompanion"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="0dp"
-                android:scaleType="fitCenter"
-                android:visibility="gone" />
-
-            <ImageView
-                android:id="@+id/ivEquippedHatCompanion"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="0dp"
-                android:scaleType="fitCenter"
-                android:visibility="gone" />
-
-            <ImageView
-                android:id="@+id/ivEquippedAccessoryCompanion"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="0dp"
-                android:scaleType="fitCenter"
-                android:visibility="gone" />
+            <!-- Lottie Sheep Pet -->
+            <com.airbnb.lottie.LottieAnimationView
+                android:id="@+id/petAnimationView"
+                android:layout_width="390dp"
+                android:layout_height="390dp"
+                android:layout_marginTop="10dp"
+                android:layout_gravity="center"
+                app:lottie_loop="true" />
         </FrameLayout>
 
         <!-- Evolution Stage Pill -->
@@ -107,7 +75,7 @@
             android:id="@+id/tvStageLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="0dp"
+            android:layout_marginTop="40dp"
             android:background="@drawable/bg_stage_pill"
             android:fontFamily="sans-serif-black"
             android:paddingStart="24dp"
@@ -214,12 +182,5 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.cardview.widget.CardView>
     </LinearLayout>
-
-    <!-- Empty space for Bottom Nav -->
-    <View
-        android:id="@+id/bottomSpacer"
-        android:layout_width="match_parent"
-        android:layout_height="80dp"
-        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

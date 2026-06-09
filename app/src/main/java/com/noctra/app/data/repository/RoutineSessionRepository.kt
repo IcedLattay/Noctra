@@ -229,11 +229,11 @@ class RoutineSessionRepository {
     // ─── Database Sync Helpers ──────────────────────────────────────────────
 
     suspend fun insertSession(session: RoutineSession) {
-        client.from("routine_sessions").insert(session)
+        client.from("routine_sessions").upsert(session, onConflict = "id")
     }
 
     suspend fun insertSessions(sessions: List<RoutineSession>) {
-        client.from("routine_sessions").insert(sessions)
+        client.from("routine_sessions").upsert(sessions, onConflict = "id")
     }
 
     suspend fun deleteAllForUser(userId: String) {

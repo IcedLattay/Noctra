@@ -1,6 +1,7 @@
 package com.noctra.app.ui.companion
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,10 +13,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
+import com.airbnb.lottie.LottieProperty
+import com.airbnb.lottie.model.KeyPath
+import com.airbnb.lottie.value.LottieValueCallback
 import com.noctra.app.R
 import com.noctra.app.databinding.FragmentCustomizationBinding
 import com.noctra.app.ui.companion.adapters.ShopItemAdapter
-import com.noctra.app.utils.ShleepyAssetHelper
 import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.launch
 
@@ -27,6 +30,17 @@ class CustomizationFragment : Fragment() {
     private val viewModel: CustomizationViewModel by viewModels()
     private lateinit var adapter: ShopItemAdapter
     private var currentCategory = "Hats"
+    private var currentStageLevel: Int = -1
+
+    private val shleepyStates = mapOf(
+        1 to ShleepyState("DEPRIVED", R.raw.deprived_idle, R.raw.deprived_tapped),
+        2 to ShleepyState("AWAKENING", R.raw.awakening_idle, R.raw.awakening_tapped),
+        3 to ShleepyState("CHARGED", R.raw.charged_idle, R.raw.charged_tapped),
+        4 to ShleepyState("OVERDRIVE", R.raw.overdrive_idle, R.raw.overdrive_tapped),
+        5 to ShleepyState("ZEN", R.raw.zen_idle, R.raw.zen_tapped)
+    )
+
+    data class ShleepyState(val name: String, val idleRes: Int, val tappedRes: Int)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -146,52 +160,84 @@ class CustomizationFragment : Fragment() {
                     binding.tvTokenBalance.text = state.tokenBalance.toString()
                     filterItems()
                     
-                    // Update base Shleepy image
-                    val shleepyResId = when (state.stageLevel) {
-                        1 -> R.drawable.shleepy_depleted
-                        2 -> R.drawable.shleepy_awakening
-                        3 -> R.drawable.shleepy_charged
-                        4 -> R.drawable.shleepy_overdrive
-                        5 -> R.drawable.shleepy_zenmaster
-                        else -> R.drawable.shleepy_depleted
+                    // Update Shleepy Animation if stage changed
+                    if (currentStageLevel != state.stageLevel) {
+                        currentStageLevel = state.stageLevel
+                        applyIdleAnimation()
                     }
-                    binding.ivShleepyBase.setImageResource(shleepyResId)
 
-                    updateShleepyPreview(state.equippedItems, state.stageLevel)
+                    updateShleepyPreview(state.equippedItems)
                 }
             }
         }
     }
 
-    private fun updateShleepyPreview(equippedItems: Map<String, com.noctra.app.data.model.ShopItem>, stageLevel: Int) {
-        val categories = mapOf(
-            "HAT" to binding.ivEquippedHat,
-            "OUTFIT" to binding.ivEquippedOutfit,
-            "ACCESSORY" to binding.ivEquippedAccessory
+    private fun applyIdleAnimation() {
+        val state = shleepyStates[currentStageLevel] ?: shleepyStates[1]!!
+        binding.petAnimationView.apply {
+            setAnimation(state.idleRes)
+            repeatCount = -1
+            playAnimation()
+        }
+    }
+
+    private fun updateShleepyPreview(equippedItems: Map<String, com.noctra.app.data.model.ShopItem>) {
+        val petView = binding.petAnimationView
+        
+        // 1. Define all possible hat layers
+        val allHatLayers = listOf("hat_sleeping_hat", "hat_propeller_hat", "hat_floral_crown")
+        
+        // 2. Map other categories
+        val otherCategoryToLayer = mapOf(
+            "OUTFIT" to "outfit_layer",
+            "ACCESSORY" to "accessory_layer"
         )
 
-        val stageSuffix = when (stageLevel) {
-            1 -> "depleted"
-            2 -> "awakening"
-            3 -> "charged"
-            4 -> "overdrive"
-            5 -> "zenmaster"
-            else -> "depleted"
-        }
-
-        categories.forEach { (category, imageView) ->
-            val item = equippedItems[category]
-            if (item != null) {
-                // Using helper for ALL accessories now since they are full-frame
-                ShleepyAssetHelper.applyAccessory(imageView, item, stageSuffix)
-            } else {
-                imageView.visibility = View.GONE
+        // 3. Identify active hat
+        val activeHatLayer = equippedItems["HAT"]?.let { item ->
+            when (item.itemAsset) {
+                "hat_propeller_hat" -> "hat_propeller_hat"
+                "hat_sleeping_hat" -> "hat_sleeping_hat"
+                "hat_floral_crown" -> "hat_floral_crown"
+                else -> null
             }
         }
+
+        val applyOpacity = {
+            // Handle Hats
+            allHatLayers.forEach { layerName ->
+                val opacity = if (layerName == activeHatLayer) 100 else 0
+                try {
+                    petView.addValueCallback(
+                        KeyPath("**", layerName, "**"),
+                        LottieProperty.TRANSFORM_OPACITY,
+                        LottieValueCallback(opacity)
+                    )
+                } catch (e: Exception) {}
+            }
+
+            // Handle Other Categories
+            otherCategoryToLayer.forEach { (category, layerName) ->
+                val isEquipped = equippedItems.containsKey(category)
+                val opacity = if (isEquipped) 100 else 0
+                try {
+                    petView.addValueCallback(
+                        KeyPath("**", layerName, "**"),
+                        LottieProperty.TRANSFORM_OPACITY,
+                        LottieValueCallback(opacity)
+                    )
+                } catch (e: Exception) {}
+            }
+        }
+
+        // Apply on load and immediately
+        petView.addLottieOnCompositionLoadedListener { applyOpacity() }
+        applyOpacity()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        currentStageLevel = -1
         _binding = null
     }
 }

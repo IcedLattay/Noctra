@@ -27,7 +27,6 @@ import com.noctra.app.data.repository.SleepRecordRepository
 import com.noctra.app.data.model.SleepRecord
 import com.noctra.app.data.model.RoutineSession
 import com.noctra.app.domain.usecase.SleepQualityProcessingUseCase
-import com.noctra.app.utils.DemoDataSeeder
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.Instant
@@ -251,11 +250,8 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         lifecycleScope.launch {
             try {
                 val userId = UserSession.getUserId(applicationContext)
-                DemoDataSeeder(SleepRecordRepository(), RoutineSessionRepository()).seedLastSevenDays(
-                    userId,
-                    java.time.LocalTime.of(22, 0)
-                )
-                Toast.makeText(this@MainActivity, "7 days of data seeded!", Toast.LENGTH_SHORT).show()
+                com.noctra.app.domain.usecase.DataSeedingUseCase().seedMockData(userId)
+                Toast.makeText(this@MainActivity, "Shop items and 7 days of data seeded!", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 android.util.Log.e("MainActivity", "Seed Demo Data failed", e)
                 Toast.makeText(this@MainActivity, "Seeding failed: ${e.message}", Toast.LENGTH_LONG).show()
