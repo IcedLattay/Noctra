@@ -35,8 +35,11 @@ import java.util.UUID
 import kotlin.random.Random
 import kotlinx.coroutines.launch
 import android.widget.Toast
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
 class MainActivity : AppCompatActivity(), DebugPanelListener {
+
+    private var isLoading = true
 
     /** Bottom nav is hidden for onboarding and the entire routine execution chain. */
     private val executionDestinations = setOf(
@@ -58,6 +61,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     ) { /* result ignored */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen().setKeepOnScreenCondition { isLoading }
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -113,6 +117,8 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
             } catch (e: Exception) {
                 // If network fails, we'll stay on onboarding or current screen
                 android.util.Log.e("MainActivity", "Onboarding check failed", e)
+            } finally {
+                isLoading = false
             }
         }
     }
