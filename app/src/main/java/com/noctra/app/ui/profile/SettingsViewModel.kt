@@ -13,7 +13,7 @@ import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.utils.DemoDataSeeder
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.noctra.app.workers.WindDownNotificationWorker
+import com.noctra.app.receivers.WindDownNotificationReceiver
 
 class SettingsViewModel : ViewModel() {
 
@@ -98,9 +98,8 @@ class SettingsViewModel : ViewModel() {
     }
 
     fun triggerTestNotification(context: Context) {
-        val request = OneTimeWorkRequestBuilder<WindDownNotificationWorker>()
-            .build()
-        WorkManager.getInstance(context).enqueue(request)
+        val intent = android.content.Intent(context, WindDownNotificationReceiver::class.java)
+        context.sendBroadcast(intent)
     }
 }
 

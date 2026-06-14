@@ -8,6 +8,15 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navGraphViewModels
+import android.Manifest
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import com.google.android.material.snackbar.Snackbar
 import com.noctra.app.R
 import com.noctra.app.data.repository.RoutineRepository
@@ -24,6 +33,16 @@ class OnboardingSummaryFragment : Fragment() {
     private val viewModel: OnboardingViewModel by navGraphViewModels(R.id.nav_graph)
     private val routineRepository = RoutineRepository()
     private val profileRepository = UserProfileRepository()
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        // After the notification popup is dealt with, trigger the Alarm permission
+        requestAlarmPermission()
+        
+        // Final navigation
+        findNavController().navigate(R.id.action_onboardingSummary_to_routineHome)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -110,8 +129,8 @@ class OnboardingSummaryFragment : Fragment() {
                 // 3. Mark onboarding complete — Person C's routing reads this
                 profileRepository.markOnboardingComplete(userId)
 
-                // 4. Navigate to Routine Home, clear entire onboarding back stack
-                findNavController().navigate(R.id.action_onboardingSummary_to_routineHome)
+                // 4. Start sequential permission request
+                requestPermissionsSequentially()
 
             }  catch (e: Exception) {
             // Log the actual stacktrace
@@ -127,6 +146,40 @@ class OnboardingSummaryFragment : Fragment() {
                 Snackbar.LENGTH_LONG
             ).show()
         }
+        }
+    }
+
+    private fun requestPermissionsSequentially() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(
+                requireContext(), Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            
+            if (!granted) {
+                // This triggers the popup, and the callback above handles the rest
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                // Already granted, skip to next step
+                requestAlarmPermission()
+                findNavController().navigate(R.id.action_onboardingSummary_to_routineHome)
+            }
+        } else {
+            // Older version, skip notifications and check alarms
+            requestAlarmPermission()
+            findNavController().navigate(R.id.action_onboardingSummary_to_routineHome)
+        }
+    }
+
+    private fun requestAlarmPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+            if (!alarmManager.canScheduleExactAlarms()) {
+                val intent = Intent().apply {
+                    action = Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM
+                    data = Uri.fromParts("package", requireContext().packageName, null)
+                }
+                startActivity(intent)
+            }
         }
     }
 

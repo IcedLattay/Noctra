@@ -18,7 +18,6 @@ import com.noctra.app.ui.debug.DebugPanelListener
 import com.noctra.app.utils.DebugSettings
 import com.noctra.app.utils.UserSession
 import com.noctra.app.workers.WindDownNotificationScheduler
-import com.noctra.app.workers.WindDownNotificationWorker
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.noctra.app.data.repository.RewardLedgerRepository
@@ -87,9 +86,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
             }
         }
 
-        requestNotificationPermissionIfNeeded()
-        WindDownNotificationScheduler.scheduleNext(applicationContext)
-
+        // Check onboarding status and handle permissions if already completed
         checkOnboardingStatus()
     }
 
@@ -108,11 +105,19 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                 val currentDest = navController.currentDestination?.id
                 if (profile.onboardingCompleted && currentDest == R.id.bedtimeConfigFragment) {
                     // If onboarding is done, jump to the Companion screen
-                    // and clear the onboarding screens from the backstack
                     val navOptions = NavOptions.Builder()
                         .setPopUpTo(R.id.bedtimeConfigFragment, true)
                         .build()
                     navController.navigate(R.id.companionFragment, null, navOptions)
+                }
+
+                // If onboarding is already completed, ensure permissions are still active
+                if (profile.onboardingCompleted) {
+                    requestNotificationPermissionIfNeeded()
+                    requestAlarmPermissionIfNeeded()
+                    
+                    // Also schedule the next notification
+                    WindDownNotificationScheduler.scheduleNext(applicationContext)
                 }
             } catch (e: Exception) {
                 // If network fails, we'll stay on onboarding or current screen
@@ -133,6 +138,19 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         }
     }
 
+    private fun requestAlarmPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = getSystemService(android.content.Context.ALARM_SERVICE) as android.app.AlarmManager
+            if (!alarmManager.canScheduleExactAlarms()) {
+                val intent = android.content.Intent().apply {
+                    action = android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM
+                    data = android.net.Uri.fromParts("package", packageName, null)
+                }
+                startActivity(intent)
+            }
+        }
+    }
+
     // ─── DebugPanelListener ───────────────────────────────────────────────────
 
     override fun onResetOnboarding() {
@@ -149,8 +167,8 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     }
 
     override fun onFireWindDownNotification() {
-        val request = OneTimeWorkRequestBuilder<WindDownNotificationWorker>().build()
-        WorkManager.getInstance(this).enqueue(request)
+        val intent = android.content.Intent(this, com.noctra.app.receivers.WindDownNotificationReceiver::class.java)
+        sendBroadcast(intent)
         Toast.makeText(this, "Notification triggered!", Toast.LENGTH_SHORT).show()
     }
 

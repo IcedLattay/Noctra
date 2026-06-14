@@ -61,6 +61,10 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         windDownSwitch.setOnCheckedChangeListener { _, isChecked ->
             NotificationPreferences.setWindDownEnabled(ctx, isChecked)
+            // Immediately apply the change: schedule or cancel the alarm
+            lifecycleScope.launch {
+                com.noctra.app.workers.WindDownNotificationScheduler.scheduleNext(ctx)
+            }
         }
         morningSwitch.setOnCheckedChangeListener { _, isChecked ->
             NotificationPreferences.setMorningScoreEnabled(ctx, isChecked)

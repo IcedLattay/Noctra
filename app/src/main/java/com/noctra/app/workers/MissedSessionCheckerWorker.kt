@@ -6,6 +6,7 @@ import androidx.work.WorkerParameters
 import com.noctra.app.data.repository.RewardLedgerRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.utils.UserSession
+import com.noctra.app.workers.WindDownNotificationScheduler
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -18,6 +19,9 @@ class MissedSessionCheckerWorker(
     private val rewardRepository = RewardLedgerRepository()
 
     override suspend fun doWork(): Result {
+        // 1. Refresh the notification schedule for today (Self-healing logic)
+        WindDownNotificationScheduler.scheduleNext(applicationContext)
+
         val userId = UserSession.getUserId(applicationContext)
         val ledger = rewardRepository.getRewardLedger(userId) ?: return Result.failure()
 
