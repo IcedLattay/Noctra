@@ -37,7 +37,7 @@ class OnboardingSummaryFragment : Fragment() {
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { _ ->
-        // After the notification popup is dealt with, trigger the Alarm permission
+        // After the notification popup is dealt with, check for alarm permission
         requestAlarmPermission()
         
         // Final navigation
@@ -126,10 +126,13 @@ class OnboardingSummaryFragment : Fragment() {
                     totalDurationMinutes = viewModel.getTotalDurationMinutes()
                 )
 
-                // 3. Mark onboarding complete — Person C's routing reads this
+                // 3. Mark onboarding complete
                 profileRepository.markOnboardingComplete(userId)
 
-                // 4. Start sequential permission request
+                // 4. Schedule the first notification immediately
+                com.noctra.app.workers.WindDownNotificationScheduler.scheduleNext(requireContext())
+
+                // 5. Start sequential permission request
                 requestPermissionsSequentially()
 
             }  catch (e: Exception) {
@@ -156,15 +159,15 @@ class OnboardingSummaryFragment : Fragment() {
             ) == PackageManager.PERMISSION_GRANTED
             
             if (!granted) {
-                // This triggers the popup, and the callback above handles the rest
+                // This triggers the popup, and the callback above handles alarms and navigation
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             } else {
-                // Already granted, skip to next step
+                // Already granted, check alarms next
                 requestAlarmPermission()
                 findNavController().navigate(R.id.action_onboardingSummary_to_routineHome)
             }
         } else {
-            // Older version, skip notifications and check alarms
+            // Older version, check alarms and then navigate
             requestAlarmPermission()
             findNavController().navigate(R.id.action_onboardingSummary_to_routineHome)
         }

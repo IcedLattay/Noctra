@@ -57,7 +57,10 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { /* result ignored */ }
+    ) { _ ->
+        // After notification permission is handled, check for alarm permission
+        requestAlarmPermissionIfNeeded()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen().setKeepOnScreenCondition { isLoading }
@@ -113,8 +116,11 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
 
                 // If onboarding is already completed, ensure permissions are still active
                 if (profile.onboardingCompleted) {
-                    requestNotificationPermissionIfNeeded()
-                    requestAlarmPermissionIfNeeded()
+                    // Only ask for permissions if reminders are actually enabled in the app
+                    if (com.noctra.app.utils.NotificationPreferences.isWindDownEnabled(applicationContext)) {
+                        requestNotificationPermissionIfNeeded()
+                        // requestAlarmPermissionIfNeeded() is now called inside the launcher callback
+                    }
                     
                     // Also schedule the next notification
                     WindDownNotificationScheduler.scheduleNext(applicationContext)
@@ -129,12 +135,19 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     }
 
     private fun requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-        val granted = ContextCompat.checkSelfPermission(
-            this, Manifest.permission.POST_NOTIFICATIONS
-        ) == PackageManager.PERMISSION_GRANTED
-        if (!granted) {
-            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(
+                this, Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!granted) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                // If notifications already granted, still check if alarms are needed
+                requestAlarmPermissionIfNeeded()
+            }
+        } else {
+            // Older version, skip notifications and check alarms
+            requestAlarmPermissionIfNeeded()
         }
     }
 

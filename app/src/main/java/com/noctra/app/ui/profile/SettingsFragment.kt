@@ -2,11 +2,15 @@ package com.noctra.app.ui.profile
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -23,6 +27,14 @@ import java.time.format.DateTimeFormatter
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     private val viewModel: SettingsViewModel by viewModels()
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            Toast.makeText(requireContext(), "Notifications enabled", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -68,6 +80,16 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
         morningSwitch.setOnCheckedChangeListener { _, isChecked ->
             NotificationPreferences.setMorningScoreEnabled(ctx, isChecked)
+        }
+
+        // Notification Permissions row (Facebook style)
+        view.findViewById<View>(R.id.row_notification_permissions).setOnClickListener {
+            requestNotificationPermission()
+        }
+
+        // Alarm Permissions row
+        view.findViewById<View>(R.id.row_alarm_permissions).setOnClickListener {
+            requestAlarmPermissionManually()
         }
 
         // Privacy Policy + Terms of Use (placeholder URLs)
@@ -122,6 +144,64 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 "Cannot open link",
                 Toast.LENGTH_SHORT
             ).show()
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(
+                requireContext(), android.Manifest.permission.POST_NOTIFICATIONS
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            
+            if (!granted) {
+                // If not granted, show the standard popup
+                notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                // If already granted, open the system settings so the user can toggle it OFF if they want
+                openAppNotificationSettings()
+            }
+        } else {
+            // On older versions, just open the settings page
+            openAppNotificationSettings()
+        }
+    }
+
+    private fun openAppNotificationSettings() {
+        val intent = Intent().apply {
+            when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> {
+                    action = Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                    putExtra(Settings.EXTRA_APP_PACKAGE, requireContext().packageName)
+                }
+                else -> {
+                    action = "android.settings.APP_NOTIFICATION_SETTINGS"
+                    putExtra("app_package", requireContext().packageName)
+                    putExtra("app_uid", requireContext().applicationInfo.uid)
+                }
+            }
+        }
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "Cannot open settings", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun requestAlarmPermissionManually() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // Always open the settings page regardless of current state
+            // so the user can toggle it ON or OFF.
+            val intent = Intent().apply {
+                action = Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM
+                data = Uri.fromParts("package", requireContext().packageName, null)
+            }
+            try {
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Cannot open alarm settings", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Toast.makeText(requireContext(), "Exact alarms are not restricted on this version", Toast.LENGTH_SHORT).show()
         }
     }
 }
