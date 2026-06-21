@@ -96,6 +96,59 @@
                             android:text="(demo mode)" />
                     </LinearLayout>
                 </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <!-- Change Password row -->
+                <LinearLayout
+                    android:id="@+id/row_change_password"
+                    style="@style/SettingsRow"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_settings_key" />
+
+                    <TextView
+                        style="@style/SettingsRowTitle"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:text="Change Password" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <!-- Delete Account row -->
+                <LinearLayout
+                    android:id="@+id/row_delete_account"
+                    style="@style/SettingsRow"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_settings_delete" />
+
+                    <TextView
+                        style="@style/SettingsRowTitle"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:text="Delete Account"
+                        android:textColor="@color/noctra_destructive_red" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- ROUTINE MANAGEMENT -->

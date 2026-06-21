@@ -1,0 +1,36 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="23dp"
+    android:height="23dp"
+    android:viewportWidth="23"
+    android:viewportHeight="23">
+    <path
+        android:pathData="M2.8125,5.625H19.6875"
+        android:strokeWidth="1.875"
+        android:strokeColor="@color/noctra_destructive_red"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+    <path
+        android:pathData="M17.8125,5.625V18.75C17.8125,19.6875 16.875,20.625 15.9375,20.625H6.5625C5.625,20.625 4.6875,19.6875 4.6875,18.75V5.625"
+        android:strokeWidth="1.875"
+        android:strokeColor="@color/noctra_destructive_red"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+    <path
+        android:pathData="M7.5,5.625V3.75C7.5,2.8125 8.4375,1.875 9.375,1.875H13.125C14.0625,1.875 15,2.8125 15,3.75V5.625"
+        android:strokeWidth="1.875"
+        android:strokeColor="@color/noctra_destructive_red"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+    <path
+        android:pathData="M9.375,10.3125V15.9375"
+        android:strokeWidth="1.875"
+        android:strokeColor="@color/noctra_destructive_red"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+    <path
+        android:pathData="M13.125,10.3125V15.9375"
+        android:strokeWidth="1.875"
+        android:strokeColor="@color/noctra_destructive_red"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+</vector>

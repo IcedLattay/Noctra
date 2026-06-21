@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
@@ -101,17 +102,19 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             openUrl("https://example.com/terms")
         }
 
-        // Sign Out
+        // Sign Out button at the bottom
         view.findViewById<View>(R.id.btn_sign_out).setOnClickListener {
-            lifecycleScope.launch {
-                com.noctra.app.data.supabase.SupabaseClient.client.auth.signOut()
+            showLogoutConfirmation()
+        }
 
-                // Navigating to the root graph ID resets the app to the start destination (Login)
-                findNavController().navigate(R.id.nav_graph, null,
-                    androidx.navigation.NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_graph, true)
-                        .build())
-            }
+        // Change Password
+        view.findViewById<View>(R.id.row_change_password).setOnClickListener {
+            Toast.makeText(ctx, "Change Password feature coming soon!", Toast.LENGTH_SHORT).show()
+        }
+
+        // Delete Account
+        view.findViewById<View>(R.id.row_delete_account).setOnClickListener {
+            showDeleteAccountConfirmation()
         }
 
         // Observe profile data
@@ -147,6 +150,70 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 viewModel.updateTargetBedtime(requireContext(), newBedtime)
             }
             .show(parentFragmentManager, "bedtime_picker")
+    }
+
+    private fun showLogoutConfirmation() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_custom_alert, null)
+        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext(), R.style.Theme_Noctra)
+            .setView(dialogView)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        dialogView.findViewById<TextView>(R.id.dialog_title).apply {
+            text = "Logout?"
+            setTextColor(ContextCompat.getColor(context, R.color.noctra_purple_dark))
+        }
+        dialogView.findViewById<TextView>(R.id.dialog_message).text = "Are you sure you want to logout of your account?"
+        
+        val btnPositive = dialogView.findViewById<Button>(R.id.btn_positive)
+        btnPositive.text = "Yes, Logout"
+        btnPositive.setOnClickListener {
+            dialog.dismiss()
+            performLogout()
+        }
+
+        dialogView.findViewById<Button>(R.id.btn_negative).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun showDeleteAccountConfirmation() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_custom_alert, null)
+        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext(), R.style.Theme_Noctra)
+            .setView(dialogView)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        dialogView.findViewById<TextView>(R.id.dialog_title).text = "Delete Account?"
+        dialogView.findViewById<TextView>(R.id.dialog_message).text = "This action cannot be undone. All your data will be permanently deleted."
+        
+        val btnPositive = dialogView.findViewById<Button>(R.id.btn_positive)
+        btnPositive.text = "Delete Account"
+        btnPositive.setOnClickListener {
+            // Non-functional for now as requested
+            Toast.makeText(requireContext(), "Account deletion is disabled for safety", Toast.LENGTH_SHORT).show()
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<Button>(R.id.btn_negative).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun performLogout() {
+        lifecycleScope.launch {
+            com.noctra.app.data.supabase.SupabaseClient.client.auth.signOut()
+            findNavController().navigate(R.id.nav_graph, null,
+                androidx.navigation.NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_graph, true)
+                    .build())
+        }
     }
 
     private fun openUrl(url: String) {
