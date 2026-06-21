@@ -16,8 +16,11 @@ import kotlinx.coroutines.launch
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            CoroutineScope(Dispatchers.IO).launch {
-                WindDownNotificationScheduler.scheduleNext(context)
+            // Only proceed if user is logged in
+            if (com.noctra.app.utils.UserSession.getUserId(context) != null) {
+                CoroutineScope(Dispatchers.IO).launch {
+                    WindDownNotificationScheduler.scheduleNext(context)
+                }
             }
         }
     }

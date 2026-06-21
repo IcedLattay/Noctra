@@ -56,7 +56,7 @@ class CompanionFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val userId = UserSession.getUserId(requireContext())
+        val userId = UserSession.getUserId(requireContext()) ?: return
         val lastShownSleepDate = requireContext().getSharedPreferences("noctra_prefs", Context.MODE_PRIVATE)
             .getString("last_shown_sleep_date", null)
             
@@ -68,7 +68,7 @@ class CompanionFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        val userId = UserSession.getUserId(requireContext())
+        val userId = UserSession.getUserId(requireContext()) ?: return
         val lastShownSleepDate = requireContext().getSharedPreferences("noctra_prefs", Context.MODE_PRIVATE)
             .getString("last_shown_sleep_date", null)
         viewModel.loadData(userId, lastShownSleepDate)

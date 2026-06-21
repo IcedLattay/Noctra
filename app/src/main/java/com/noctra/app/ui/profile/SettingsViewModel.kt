@@ -25,7 +25,7 @@ class SettingsViewModel : ViewModel() {
     fun loadProfile(context: Context) {
         viewModelScope.launch {
             try {
-                val userId = UserSession.getUserId(context)
+                val userId = UserSession.getUserId(context) ?: return@launch
                 val profile = userProfileRepository.getOrCreateProfile(userId)
                 _profileState.value = SettingsUiState(
                     displayName = profile.displayName,
@@ -41,7 +41,7 @@ class SettingsViewModel : ViewModel() {
     fun updateTargetBedtime(context: Context, newBedtime: String) {
         viewModelScope.launch {
             try {
-                val userId = UserSession.getUserId(context)
+                val userId = UserSession.getUserId(context) ?: return@launch
                 userProfileRepository.updateTargetBedtime(userId, newBedtime)
                 _profileState.value = _profileState.value.copy(targetBedtime = newBedtime)
             } catch (e: Exception) {
@@ -53,7 +53,10 @@ class SettingsViewModel : ViewModel() {
     fun seedDemoData(context: Context, onComplete: (Boolean) -> Unit) {
         viewModelScope.launch {
             try {
-                val userId = UserSession.getUserId(context)
+                val userId = UserSession.getUserId(context) ?: run {
+                    onComplete(false)
+                    return@launch
+                }
 
                 // Read current target bedtime, default to 10 PM if not set
                 val profile = userProfileRepository.getOrCreateProfile(userId)
@@ -82,7 +85,10 @@ class SettingsViewModel : ViewModel() {
     fun clearAnalyticsData(context: Context, onComplete: (Boolean) -> Unit) {
         viewModelScope.launch {
             try {
-                val userId = UserSession.getUserId(context)
+                val userId = UserSession.getUserId(context) ?: run {
+                    onComplete(false)
+                    return@launch
+                }
                 val sleepRepo = SleepRecordRepository()
                 val sessionRepo = RoutineSessionRepository()
 

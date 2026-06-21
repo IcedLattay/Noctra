@@ -2,6 +2,7 @@
 package com.noctra.app.ui.routine.onboarding
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.noctra.app.data.model.Activity
 import com.noctra.app.data.model.RoutineActivityEntry
 import com.noctra.app.data.repository.RoutineRepository
@@ -9,8 +10,11 @@ import com.noctra.app.data.repository.UserProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class OnboardingViewModel : ViewModel() {
+
+    private val profileRepository = UserProfileRepository()
 
     // Step 1
     private val _targetBedtime = MutableStateFlow("22:00") // default 10:00 PM
@@ -25,6 +29,12 @@ class OnboardingViewModel : ViewModel() {
     val orderedActivities: StateFlow<List<Activity>> = _orderedActivities.asStateFlow()
 
     var isEditMode: Boolean = false
+
+    fun updateStep(userId: String, step: Int) {
+        viewModelScope.launch {
+            profileRepository.updateOnboardingStep(userId, step)
+        }
+    }
 
     fun setBedtime(hhmm: String) {
         _targetBedtime.value = hhmm

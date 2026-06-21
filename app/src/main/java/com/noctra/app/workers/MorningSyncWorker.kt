@@ -21,7 +21,7 @@ class MorningSyncWorker(
     private val sleepQualityUseCase = SleepQualityProcessingUseCase()
 
     override suspend fun doWork(): Result {
-        val userId = UserSession.getUserId(applicationContext)
+        val userId = UserSession.getUserId(applicationContext) ?: return Result.failure()
         
         // Generate mock data
         val durationMinutes = Random.nextInt(330, 540) // 5.5 to 9 hours

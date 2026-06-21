@@ -416,6 +416,17 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <Button
+                android:id="@+id/btn_sign_out"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Sign Out"
+                android:textColor="@color/noctra_destructive_red"
+                android:textAllCaps="false"
+                android:fontFamily="@font/poppinsbold" />
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </LinearLayout>

@@ -28,7 +28,7 @@ class UserProfileViewModel : ViewModel() {
     fun loadProfile(context: Context) {
         viewModelScope.launch {
             try {
-                val userId = UserSession.getUserId(context)
+                val userId = UserSession.getUserId(context) ?: return@launch
                 val profile = userProfileRepository.getOrCreateProfile(userId)
                 val ledger = rewardLedgerRepository.getRewardLedger(userId)
 
@@ -88,7 +88,7 @@ class UserProfileViewModel : ViewModel() {
     fun updateDisplayName(context: Context, newName: String) {
         viewModelScope.launch {
             try {
-                val userId = UserSession.getUserId(context)
+                val userId = UserSession.getUserId(context) ?: return@launch
                 userProfileRepository.updateDisplayName(userId, newName)
                 // Update local state so the UI reflects the change immediately
                 _profileData.value = _profileData.value.copy(displayName = newName)

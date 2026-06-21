@@ -111,6 +111,12 @@ class RoutineSequencingFragment : Fragment() {
 
     private fun setupButtons() {
         binding.btnConfirm.setOnClickListener {
+            if (!viewModel.isEditMode) {
+                val userId = com.noctra.app.utils.UserSession.getUserId(requireContext())
+                if (userId != null) {
+                    viewModel.updateStep(userId, 3)
+                }
+            }
             findNavController().navigate(R.id.action_routineSequencing_to_onboardingSummary)
         }
 

@@ -32,7 +32,7 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
         routineSessionRepository = routineSessionRepository
     )
 
-    private val userId: String get() = UserSession.getUserId(getApplication())
+    private val userId: String? get() = UserSession.getUserId(getApplication())
 
     // ─── Session Setup ────────────────────────────────────────────────────────
 
@@ -60,6 +60,7 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch {
             try {
+                val userId = userId ?: return@launch
                 val activeRoutine = routineRepository.getActiveRoutine(userId)
                 if (activeRoutine != null) {
                     val entries = routineRepository.parseActivitySequence(activeRoutine.activitySequence)
@@ -132,6 +133,7 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
 
     fun startSession() {
         viewModelScope.launch {
+            val userId = userId ?: return@launch
             _sessionState.value = SessionState.InProgress
             _currentStepIndex.value = 0
 
@@ -234,6 +236,7 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
 
     private fun completeSession() {
         viewModelScope.launch {
+            val userId = userId ?: return@launch
             cancelAllTimers()
             _sessionState.value = SessionState.Completed
 

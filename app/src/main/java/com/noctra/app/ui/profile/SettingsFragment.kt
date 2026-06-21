@@ -20,6 +20,7 @@ import com.noctra.app.BuildConfig
 import com.noctra.app.R
 import com.noctra.app.ui.common.BedtimePickerBottomSheet
 import com.noctra.app.utils.NotificationPreferences
+import io.github.jan.supabase.gotrue.auth
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -100,11 +101,22 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             openUrl("https://example.com/terms")
         }
 
+        // Sign Out
+        view.findViewById<View>(R.id.btn_sign_out).setOnClickListener {
+            lifecycleScope.launch {
+                com.noctra.app.data.supabase.SupabaseClient.client.auth.signOut()
+                findNavController().navigate(R.id.loginFragment, null,
+                    androidx.navigation.NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_graph, true)
+                        .build())
+            }
+        }
+
         // Observe profile data
         lifecycleScope.launch {
             viewModel.profileState.collect { state ->
                 displayName.text = state.displayName
-                email.text = state.email ?: "(demo mode)"
+                email.text = state.email ?: com.noctra.app.data.supabase.SupabaseClient.client.auth.currentUserOrNull()?.email ?: "(demo mode)"
                 bedtimePill.text = formatBedtime(state.targetBedtime)
             }
         }

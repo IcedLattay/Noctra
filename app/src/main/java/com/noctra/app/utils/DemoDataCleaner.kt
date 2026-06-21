@@ -7,7 +7,7 @@ import io.github.jan.supabase.postgrest.postgrest
 
 class DemoDataCleaner {
     suspend fun clearAllDataForCurrentUser(context: Context) {
-        val userId = UserSession.getUserId(context)
+        val userId = UserSession.getUserId(context) ?: return
 
         try {
             // Wipe routine sessions for this user

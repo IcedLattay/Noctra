@@ -47,7 +47,7 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
 
     // ─── User ID ─────────────────────────────────────────────────────────────
 
-    private val userId: String
+    private val userId: String?
         get() = UserSession.getUserId(getApplication())
 
     // ─── UI State ────────────────────────────────────────────────────────────
@@ -115,6 +115,7 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
     private fun loadHomeState() {
         viewModelScope.launch {
             _state.value = RoutineHomeState.Loading
+            val userId = userId ?: return@launch
 
             try {
                 val profile = userProfileRepository.getOrCreateProfile(userId)

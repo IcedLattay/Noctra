@@ -59,7 +59,8 @@ class AnalyticsViewModel : ViewModel() {
         }
     }
 
-    private suspend fun loadWeek(userId: String, weekStart: LocalDate) {
+    private suspend fun loadWeek(userId: String?, weekStart: LocalDate) {
+        if (userId == null) return
         try {
             val weekEnd = weekStart.plusDays(6)
 

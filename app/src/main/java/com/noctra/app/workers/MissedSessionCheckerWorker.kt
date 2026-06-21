@@ -22,7 +22,7 @@ class MissedSessionCheckerWorker(
         // 1. Refresh the notification schedule for today (Self-healing logic)
         WindDownNotificationScheduler.scheduleNext(applicationContext)
 
-        val userId = UserSession.getUserId(applicationContext)
+        val userId = UserSession.getUserId(applicationContext) ?: return Result.success() // Silent exit if not logged in
         val ledger = rewardRepository.getRewardLedger(userId) ?: return Result.failure()
 
         val yesterday = LocalDate.now().minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)

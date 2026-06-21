@@ -105,7 +105,7 @@ class OnboardingSummaryFragment : Fragment() {
     }
 
     private fun saveAndFinish() {
-        val userId = UserSession.getUserId(requireContext())
+        val userId = UserSession.getUserId(requireContext()) ?: return
 
         // Disable button to prevent double-tap
         binding.btnStartNoctra.isEnabled = false

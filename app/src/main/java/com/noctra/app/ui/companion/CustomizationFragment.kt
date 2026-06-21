@@ -59,7 +59,7 @@ class CustomizationFragment : Fragment() {
         setupListeners()
         observeUiState()
 
-        val userId = UserSession.getUserId(requireContext())
+        val userId = UserSession.getUserId(requireContext()) ?: return
         viewModel.loadData(userId)
     }
 
@@ -77,7 +77,7 @@ class CustomizationFragment : Fragment() {
     }
 
     private fun handleItemClick(model: CustomizationViewModel.ShopItemUiModel) {
-        val userId = UserSession.getUserId(requireContext())
+        val userId = UserSession.getUserId(requireContext()) ?: return
         if (model.isOwned) {
             viewModel.equipItem(userId, model.item)
         } else if (model.canAfford) {
@@ -92,7 +92,7 @@ class CustomizationFragment : Fragment() {
             .setTitle("Purchase Item")
             .setMessage("Buy ${item.label} for ${item.tokenCost} Dream Tokens?")
             .setPositiveButton("Purchase") { _, _ ->
-                val userId = UserSession.getUserId(requireContext())
+                val userId = UserSession.getUserId(requireContext()) ?: return@setPositiveButton
                 viewModel.purchaseAndEquip(userId, item)
             }
             .setNegativeButton("Cancel", null)

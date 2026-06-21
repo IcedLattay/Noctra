@@ -38,7 +38,7 @@ object WindDownNotificationScheduler {
             return
         }
 
-        val userId = UserSession.getUserId(context)
+        val userId = UserSession.getUserId(context) ?: return
 
         val profile = runCatching {
             UserProfileRepository().getOrCreateProfile(userId)
