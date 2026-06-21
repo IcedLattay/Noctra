@@ -4,8 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
-    android:padding="24dp">
+    android:background="@color/white">
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
@@ -14,7 +13,8 @@
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:padding="24dp">
 
             <ImageView
                 android:id="@+id/iv_logo"
@@ -135,11 +135,11 @@
                 android:paddingHorizontal="16dp"
                 app:layout_constraintTop_toBottomOf="@id/lbl_email">
 
-                <View
+                <ImageView
                     android:id="@+id/ic_email"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:background="@color/noctra_purple_dark" />
+                    android:src="@drawable/ic_auth_email" />
 
                 <EditText
                     android:id="@+id/et_email"
@@ -192,11 +192,11 @@
                 android:paddingHorizontal="16dp"
                 app:layout_constraintTop_toBottomOf="@id/lbl_password">
 
-                <View
+                <ImageView
                     android:id="@+id/ic_password"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:background="@color/noctra_purple_dark" />
+                    android:src="@drawable/ic_auth_password" />
 
                 <EditText
                     android:id="@+id/et_password"
@@ -211,11 +211,12 @@
                     android:textColor="@color/noctra_purple_dark"
                     android:textSize="14sp" />
 
-                <View
+                <ImageView
                     android:id="@+id/btn_toggle_password"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:background="@color/noctra_purple_dark" />
+                    android:src="@drawable/ic_auth_eye"
+                    android:padding="2dp" />
             </LinearLayout>
 
             <com.noctra.app.ui.auth.views.PasswordStrengthIndicatorView
@@ -223,6 +224,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:alpha="0"
+                android:visibility="gone"
                 app:layout_constraintTop_toBottomOf="@id/container_password" />
 
             <TextView
@@ -262,11 +265,11 @@
                 android:paddingHorizontal="16dp"
                 app:layout_constraintTop_toBottomOf="@id/lbl_confirm_password">
 
-                <View
+                <ImageView
                     android:id="@+id/ic_confirm_password"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:background="@color/noctra_purple_dark" />
+                    android:src="@drawable/ic_auth_password" />
 
                 <EditText
                     android:id="@+id/et_confirm_password"
@@ -300,7 +303,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginTop="32dp"
-                android:backgroundTint="@color/noctra_purple_soft"
+                android:backgroundTint="@color/noctra_purple"
                 android:fontFamily="@font/poppinsbold"
                 android:text="Create Account"
                 android:textAllCaps="false"

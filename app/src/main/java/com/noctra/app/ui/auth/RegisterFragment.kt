@@ -36,6 +36,28 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
         binding.etPassword.doAfterTextChanged { viewModel.password.value = it.toString().trim() }
         binding.etConfirmPassword.doAfterTextChanged { viewModel.confirmPassword.value = it.toString().trim() }
 
+        // SDD: Show/Hide password strength indicator on focus with transition
+        binding.etPassword.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                // Fade in and show
+                binding.passwordStrengthIndicator.visibility = View.VISIBLE
+                binding.passwordStrengthIndicator.animate()
+                    .alpha(1f)
+                    .setDuration(300)
+                    .withEndAction(null)
+                    .start()
+            } else {
+                // Fade out and then hide
+                binding.passwordStrengthIndicator.animate()
+                    .alpha(0f)
+                    .setDuration(300)
+                    .withEndAction {
+                        binding.passwordStrengthIndicator.visibility = View.GONE
+                    }
+                    .start()
+            }
+        }
+
         // SDD: Validate email format on focus loss
         binding.etEmail.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {

@@ -105,7 +105,9 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         view.findViewById<View>(R.id.btn_sign_out).setOnClickListener {
             lifecycleScope.launch {
                 com.noctra.app.data.supabase.SupabaseClient.client.auth.signOut()
-                findNavController().navigate(R.id.loginFragment, null,
+
+                // Navigating to the root graph ID resets the app to the start destination (Login)
+                findNavController().navigate(R.id.nav_graph, null,
                     androidx.navigation.NavOptions.Builder()
                         .setPopUpTo(R.id.nav_graph, true)
                         .build())

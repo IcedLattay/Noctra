@@ -28,14 +28,14 @@ class ForgotPasswordFragment : Fragment(R.layout.fragment_forgot_password) {
 
     private fun setupListeners() {
         binding.etEmail.doAfterTextChanged {
-            val email = it.toString()
+            val email = it.toString().trim()
             val isValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
             binding.btnSendReset.isEnabled = isValid
             binding.btnSendReset.alpha = if (isValid) 1.0f else 0.5f
         }
 
         binding.btnSendReset.setOnClickListener {
-            val email = binding.etEmail.text.toString()
+            val email = binding.etEmail.text.toString().trim()
             viewModel.sendPasswordReset(email)
         }
 
