@@ -154,7 +154,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     private fun showLogoutConfirmation() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_custom_alert, null)
-        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext(), R.style.Theme_Noctra)
+        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
             .setView(dialogView)
             .create()
 
@@ -178,11 +178,18 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
 
         dialog.show()
+        
+        // Ensure the dialog is centered and respects the custom width
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.85).toInt(),
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        dialog.window?.setGravity(android.view.Gravity.CENTER)
     }
 
     private fun showDeleteAccountConfirmation() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_custom_alert, null)
-        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext(), R.style.Theme_Noctra)
+        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
             .setView(dialogView)
             .create()
 
@@ -204,12 +211,20 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
 
         dialog.show()
+
+        // Ensure the dialog is centered and respects the custom width
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.85).toInt(),
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        dialog.window?.setGravity(android.view.Gravity.CENTER)
     }
 
     private fun performLogout() {
         lifecycleScope.launch {
             com.noctra.app.data.supabase.SupabaseClient.client.auth.signOut()
-            findNavController().navigate(R.id.nav_graph, null,
+            // Navigate specifically to the Auth Group and clear the backstack
+            findNavController().navigate(R.id.auth_graph, null,
                 androidx.navigation.NavOptions.Builder()
                     .setPopUpTo(R.id.nav_graph, true)
                     .build())

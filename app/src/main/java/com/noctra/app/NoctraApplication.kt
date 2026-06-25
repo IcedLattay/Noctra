@@ -17,6 +17,10 @@ class NoctraApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        
+        // Initialize Supabase with session persistence
+        com.noctra.app.data.supabase.SupabaseClient.init(this)
+
         setupMorningSyncWorker()
         setupMissedSessionWorker()
         createNotificationChannels()

@@ -59,8 +59,79 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         val navController = navHostFragment.navController
 
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
-        bottomNav.setupWithNavController(navController)
 
+        // Check onboarding status and handle permissions if already completed
+        checkOnboardingStatus(navController, bottomNav)
+    }
+
+    private fun checkOnboardingStatus(navController: androidx.navigation.NavController, bottomNav: BottomNavigationView) {
+        lifecycleScope.launch {
+            try {
+                val auth = SupabaseClient.client.auth
+                
+                // 1. Wait for Supabase to finish loading from storage
+                auth.awaitInitialization()
+
+                // 2. Double-check the current session status
+                val session = auth.currentSessionOrNull()
+                
+                android.util.Log.d("MainActivity", "Session check: ${session?.user?.id != null}")
+
+                val navInflater = navController.navInflater
+                val graph = navInflater.inflate(R.navigation.nav_graph)
+
+                if (session == null) {
+                    // Not logged in, set the Auth Group as start
+                    graph.setStartDestination(R.id.auth_graph)
+                    navController.graph = graph
+                } else {
+                    val userId = UserSession.getUserId(applicationContext) ?: throw Exception("User ID not found")
+                    val profile = UserProfileRepository().getOrCreateProfile(userId)
+
+                    if (profile.onboardingCompleted) {
+                        // Fully onboarded, set the Main Group as start
+                        graph.setStartDestination(R.id.main_graph)
+                        navController.graph = graph
+                        
+                        // Handle background tasks for onboarded users
+                        if (com.noctra.app.utils.NotificationPreferences.isWindDownEnabled(applicationContext)) {
+                            requestNotificationPermissionIfNeeded()
+                        }
+                        WindDownNotificationScheduler.scheduleNext(applicationContext)
+                    } else {
+                        // Mid-flow recovery: Set the Onboarding Group as start
+                        // and then adjust the internal start of that group
+                        val onboardingGraph = graph.findNode(R.id.onboarding_graph) as androidx.navigation.NavGraph
+                        val startStep = when (profile.onboardingStep) {
+                            1 -> R.id.activityLibraryFragment
+                            2 -> R.id.routineSequencingFragment
+                            3 -> R.id.onboardingSummaryFragment
+                            else -> R.id.bedtimeConfigFragment
+                        }
+                        onboardingGraph.setStartDestination(startStep)
+                        
+                        graph.setStartDestination(R.id.onboarding_graph)
+                        navController.graph = graph
+                    }
+                }
+
+                // 3. ONLY after the graph is set, connect the BottomNav
+                setupNavigationUI(navController, bottomNav)
+
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Onboarding check failed", e)
+                // Fallback to default
+                navController.setGraph(R.navigation.nav_graph)
+                setupNavigationUI(navController, bottomNav)
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    private fun setupNavigationUI(navController: androidx.navigation.NavController, bottomNav: BottomNavigationView) {
+        bottomNav.setupWithNavController(navController)
+        
         // Navigation UI Logic
         navController.addOnDestinationChangedListener { _, destination, _ ->
             // 1. Visibility Logic: Show only for the 4 main tabs
@@ -75,61 +146,6 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
             // 2. Ensure "Companion" stays selected when in Customization
             if (destination.id == R.id.customizationFragment) {
                 bottomNav.menu.findItem(R.id.companionFragment).isChecked = true
-            }
-        }
-
-        // Check onboarding status and handle permissions if already completed
-        checkOnboardingStatus()
-    }
-
-    private fun checkOnboardingStatus() {
-        val navHostFragment = supportFragmentManager
-            .findFragmentById(R.id.nav_host) as NavHostFragment
-        val navController = navHostFragment.navController
-
-        lifecycleScope.launch {
-            try {
-                // 1. Check if user is logged in
-                val session = SupabaseClient.client.auth.currentSessionOrNull()
-                val navInflater = navController.navInflater
-                val graph = navInflater.inflate(R.navigation.nav_graph)
-
-                if (session == null) {
-                    // Not logged in, set Login as start
-                    graph.setStartDestination(R.id.loginFragment)
-                    navController.graph = graph
-                } else {
-                    val userId = UserSession.getUserId(applicationContext) ?: throw Exception("User ID not found")
-                    val profile = UserProfileRepository().getOrCreateProfile(userId)
-
-                    if (profile.onboardingCompleted) {
-                        // Fully onboarded, start at Companion
-                        graph.setStartDestination(R.id.companionFragment)
-                        navController.graph = graph
-                        
-                        // Handle background tasks for onboarded users
-                        if (com.noctra.app.utils.NotificationPreferences.isWindDownEnabled(applicationContext)) {
-                            requestNotificationPermissionIfNeeded()
-                        }
-                        WindDownNotificationScheduler.scheduleNext(applicationContext)
-                    } else {
-                        // Mid-flow recovery
-                        val destination = when (profile.onboardingStep) {
-                            1 -> R.id.activityLibraryFragment
-                            2 -> R.id.routineSequencingFragment
-                            3 -> R.id.onboardingSummaryFragment
-                            else -> R.id.bedtimeConfigFragment
-                        }
-                        graph.setStartDestination(destination)
-                        navController.graph = graph
-                    }
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("MainActivity", "Onboarding check failed", e)
-                // Fallback to default
-                navController.setGraph(R.navigation.nav_graph)
-            } finally {
-                isLoading = false
             }
         }
     }
