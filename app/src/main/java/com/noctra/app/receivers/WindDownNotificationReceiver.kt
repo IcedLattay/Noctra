@@ -9,6 +9,9 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.navigation.NavDeepLinkBuilder
 import com.noctra.app.NoctraApplication
 import com.noctra.app.R
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * WindDownNotificationReceiver
@@ -19,7 +22,19 @@ import com.noctra.app.R
 class WindDownNotificationReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        // Check if the user has disabled these notifications in Settings
+        // 1. Schedule the NEXT notification (Self-healing loop)
+        // We do this first so that even if building the notification fails, 
+        // the chain of daily reminders continues.
+        val pendingResult = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                com.noctra.app.workers.WindDownNotificationScheduler.scheduleNext(context)
+            } finally {
+                pendingResult.finish()
+            }
+        }
+
+        // 2. Check if the user has disabled these notifications in Settings
         if (!com.noctra.app.utils.NotificationPreferences.isWindDownEnabled(context)) {
             return
         }

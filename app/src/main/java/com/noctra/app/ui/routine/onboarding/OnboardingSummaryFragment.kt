@@ -126,6 +126,13 @@ class OnboardingSummaryFragment : Fragment() {
                     totalDurationMinutes = viewModel.getTotalDurationMinutes()
                 )
 
+                // 2b. Update local cache for notifications
+                com.noctra.app.utils.NotificationPreferences.updateCachedSettings(
+                    requireContext(),
+                    bedtime = viewModel.targetBedtime.value,
+                    durationMinutes = viewModel.getTotalDurationMinutes()
+                )
+
                 // 3. Mark onboarding complete
                 profileRepository.markOnboardingComplete(userId)
 

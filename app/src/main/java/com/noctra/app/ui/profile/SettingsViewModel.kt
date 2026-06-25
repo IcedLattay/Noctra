@@ -44,6 +44,12 @@ class SettingsViewModel : ViewModel() {
                 val userId = UserSession.getUserId(context) ?: return@launch
                 userProfileRepository.updateTargetBedtime(userId, newBedtime)
                 _profileState.value = _profileState.value.copy(targetBedtime = newBedtime)
+                
+                // Update local cache
+                com.noctra.app.utils.NotificationPreferences.updateCachedSettings(context, bedtime = newBedtime)
+                
+                // Refresh the notification schedule whenever bedtime changes
+                com.noctra.app.workers.WindDownNotificationScheduler.scheduleNext(context)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

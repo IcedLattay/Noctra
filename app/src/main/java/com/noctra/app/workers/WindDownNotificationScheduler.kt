@@ -8,7 +8,8 @@ import android.os.Build
 import com.noctra.app.data.repository.RoutineRepository
 import com.noctra.app.data.repository.UserProfileRepository
 import com.noctra.app.receivers.WindDownNotificationReceiver
-import com.noctra.app.utils.UserSession
+import com.noctra.app.data.supabase.SupabaseClient
+import io.github.jan.supabase.gotrue.auth
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
@@ -32,27 +33,48 @@ import java.time.ZoneId
 object WindDownNotificationScheduler {
 
     suspend fun scheduleNext(context: Context) {
+        // Ensure Supabase is initialized before checking user session
+        val auth = SupabaseClient.client.auth
+        auth.awaitInitialization()
+
         // Only schedule if the user actually wants notifications
         if (!com.noctra.app.utils.NotificationPreferences.isWindDownEnabled(context)) {
             cancel(context)
             return
         }
 
-        val userId = UserSession.getUserId(context) ?: return
+        // 1. Try to get data from Local Cache first (Fast & Offline)
+        var bedtimeString = com.noctra.app.utils.NotificationPreferences.getCachedBedtime(context)
+        var routineDuration = com.noctra.app.utils.NotificationPreferences.getCachedDuration(context)
 
-        val profile = runCatching {
-            UserProfileRepository().getOrCreateProfile(userId)
-        }.getOrNull() ?: return
+        // 2. If cache is empty, fallback to Network (Slow & requires Signal)
+        if (bedtimeString == null || routineDuration == 0) {
+            val userId = com.noctra.app.utils.UserSession.getUserId(context) ?: return
 
-        val bedtimeString = profile.targetBedtime ?: return
+            val profile = runCatching {
+                UserProfileRepository().getOrCreateProfile(userId)
+            }.getOrNull()
+            
+            val routine = runCatching {
+                RoutineRepository().getActiveRoutine(userId)
+            }.getOrNull()
 
-        val routine = runCatching {
-            RoutineRepository().getActiveRoutine(userId)
-        }.getOrNull() ?: return
+            bedtimeString = profile?.targetBedtime
+            routineDuration = routine?.totalDurationMinutes ?: 0
+
+            // Save to cache for next time
+            if (bedtimeString != null && routineDuration != 0) {
+                com.noctra.app.utils.NotificationPreferences.updateCachedSettings(
+                    context, bedtimeString, routineDuration
+                )
+            }
+        }
+
+        if (bedtimeString == null || routineDuration == 0) return
 
         val triggerAt = computeNextTrigger(
             bedtimeString = bedtimeString,
-            routineDurationMinutes = routine.totalDurationMinutes
+            routineDurationMinutes = routineDuration
         )
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
