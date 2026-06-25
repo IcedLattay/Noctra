@@ -51,6 +51,15 @@ class AuthRepository {
     }
 
     /**
+     * Updates the user's password.
+     */
+    suspend fun updatePassword(newPassword: String) {
+        auth.updateUser {
+            password = newPassword
+        }
+    }
+
+    /**
      * Exposes the current authentication status as a Flow.
      */
     fun sessionStatus(): Flow<SessionStatus> {

@@ -92,6 +92,18 @@ class AuthViewModel : ViewModel() {
         }
     }
 
+    fun updatePassword(newPassword: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            try {
+                authRepository.updatePassword(newPassword)
+                _authState.value = AuthState.PasswordUpdated
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error(e.message ?: "Failed to update password")
+            }
+        }
+    }
+
     fun resetState() {
         _authState.value = AuthState.Idle
     }
@@ -100,6 +112,7 @@ class AuthViewModel : ViewModel() {
         object Idle : AuthState()
         object Loading : AuthState()
         object PasswordResetSent : AuthState()
+        object PasswordUpdated : AuthState()
         data class Success(val onboardingCompleted: Boolean) : AuthState()
         data class Error(val message: String) : AuthState()
     }

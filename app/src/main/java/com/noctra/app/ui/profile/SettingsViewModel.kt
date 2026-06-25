@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.noctra.app.data.repository.SleepRecordRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
+import com.noctra.app.data.repository.AuthRepository
 import com.noctra.app.utils.DemoDataSeeder
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -18,9 +19,13 @@ import com.noctra.app.receivers.WindDownNotificationReceiver
 class SettingsViewModel : ViewModel() {
 
     private val userProfileRepository = UserProfileRepository()
+    private val authRepository = AuthRepository()
 
     private val _profileState = MutableStateFlow(SettingsUiState())
     val profileState = _profileState.asStateFlow()
+
+    private val _settingsState = MutableStateFlow<SettingsState>(SettingsState.Idle)
+    val settingsState = _settingsState.asStateFlow()
 
     fun loadProfile(context: Context) {
         viewModelScope.launch {
@@ -112,6 +117,29 @@ class SettingsViewModel : ViewModel() {
     fun triggerTestNotification(context: Context) {
         val intent = android.content.Intent(context, WindDownNotificationReceiver::class.java)
         context.sendBroadcast(intent)
+    }
+
+    fun sendPasswordReset(email: String) {
+        viewModelScope.launch {
+            _settingsState.value = SettingsState.Loading
+            try {
+                authRepository.resetPassword(email)
+                _settingsState.value = SettingsState.PasswordResetSent
+            } catch (e: Exception) {
+                _settingsState.value = SettingsState.Error(e.message ?: "Failed to send reset link")
+            }
+        }
+    }
+
+    fun resetState() {
+        _settingsState.value = SettingsState.Idle
+    }
+
+    sealed class SettingsState {
+        object Idle : SettingsState()
+        object Loading : SettingsState()
+        object PasswordResetSent : SettingsState()
+        data class Error(val message: String) : SettingsState()
     }
 }
 

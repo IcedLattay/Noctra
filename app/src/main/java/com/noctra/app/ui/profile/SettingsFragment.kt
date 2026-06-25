@@ -109,7 +109,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         // Change Password
         view.findViewById<View>(R.id.row_change_password).setOnClickListener {
-            Toast.makeText(ctx, "Change Password feature coming soon!", Toast.LENGTH_SHORT).show()
+            showResetPasswordDialog()
         }
 
         // Delete Account
@@ -126,12 +126,68 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             }
         }
 
+        // Observe settings state (e.g. password reset)
+        lifecycleScope.launch {
+            viewModel.settingsState.collect { state ->
+                when (state) {
+                    is SettingsViewModel.SettingsState.PasswordResetSent -> {
+                        Toast.makeText(ctx, "Reset link sent to your email!", Toast.LENGTH_SHORT).show()
+                        viewModel.resetState()
+                    }
+                    is SettingsViewModel.SettingsState.Error -> {
+                        Toast.makeText(ctx, state.message, Toast.LENGTH_LONG).show()
+                        viewModel.resetState()
+                    }
+                    else -> {}
+                }
+            }
+        }
+
         // Bedtime picker
         bedtimePill.setOnClickListener {
             showBedtimePicker(viewModel.profileState.value.targetBedtime)
         }
 
         viewModel.loadProfile(ctx)
+    }
+
+    private fun showResetPasswordDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_reset_password_request, null)
+        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        val etEmail = dialogView.findViewById<android.widget.EditText>(R.id.et_email)
+        val btnSend = dialogView.findViewById<android.widget.Button>(R.id.btn_send_reset)
+        val btnClose = dialogView.findViewById<android.view.View>(R.id.btn_close)
+
+        // Pre-fill email
+        etEmail.setText(viewModel.profileState.value.email ?: "")
+
+        btnSend.setOnClickListener {
+            val email = etEmail.text.toString().trim()
+            if (android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                viewModel.sendPasswordReset(email)
+                dialog.dismiss()
+            } else {
+                Toast.makeText(requireContext(), "Please enter a valid email", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        btnClose.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+
+        // Ensure the dialog is centered and respects the custom width
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.85).toInt(),
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        dialog.window?.setGravity(android.view.Gravity.CENTER)
     }
 
     private fun formatBedtime(raw: String?): String {

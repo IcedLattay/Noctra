@@ -57,6 +57,13 @@
             android:id="@+id/passwordResetConfirmationFragment"
             android:name="com.noctra.app.ui.auth.PasswordResetConfirmationFragment"
             android:label="Reset Link Sent" />
+
+        <fragment
+            android:id="@+id/resetPasswordFragment"
+            android:name="com.noctra.app.ui.auth.ResetPasswordFragment"
+            android:label="Create New Password">
+            <deepLink app:uri="noctra://reset-password" />
+        </fragment>
     </navigation>
 
     <!-- ═══════════════════════════════════════════════════
