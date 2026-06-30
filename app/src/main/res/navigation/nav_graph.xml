@@ -31,6 +31,9 @@
             <action
                 android:id="@+id/action_login_to_forgotPassword"
                 app:destination="@id/forgotPasswordFragment" />
+            <action
+                android:id="@+id/action_login_to_verifyOtp"
+                app:destination="@id/verifyOtpFragment" />
         </fragment>
 
         <fragment
@@ -38,7 +41,19 @@
             android:name="com.noctra.app.ui.auth.RegisterFragment"
             android:label="Register">
             <action
-                android:id="@+id/action_register_to_onboarding"
+                android:id="@+id/action_register_to_verifyOtp"
+                app:destination="@id/verifyOtpFragment" />
+        </fragment>
+
+        <fragment
+            android:id="@+id/verifyOtpFragment"
+            android:name="com.noctra.app.ui.auth.VerifyOtpFragment"
+            android:label="Verify Email">
+            <argument
+                android:name="email"
+                app:argType="string" />
+            <action
+                android:id="@+id/action_verifyOtp_to_onboarding"
                 app:destination="@+id/onboarding_graph"
                 app:popUpTo="@id/auth_graph"
                 app:popUpToInclusive="true" />
@@ -61,9 +76,7 @@
         <fragment
             android:id="@+id/resetPasswordFragment"
             android:name="com.noctra.app.ui.auth.ResetPasswordFragment"
-            android:label="Create New Password">
-            <deepLink app:uri="noctra://reset-password" />
-        </fragment>
+            android:label="Create New Password" />
     </navigation>
 
     <!-- ═══════════════════════════════════════════════════
@@ -169,7 +182,8 @@
         <fragment
             android:id="@+id/settingsFragment"
             android:name="com.noctra.app.ui.profile.SettingsFragment"
-            android:label="Settings" />
+            android:label="Settings">
+        </fragment>
 
         <fragment
             android:id="@+id/routineStartFragment"

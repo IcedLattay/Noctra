@@ -139,9 +139,13 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
                 binding.btnCreateAccount.text = "Creating account..."
             }
             is AuthViewModel.AuthState.Success -> {
-                Toast.makeText(requireContext(), "Account created! Proceeding to onboarding.", Toast.LENGTH_LONG).show()
-                // Directly to onboarding as per SDD
-                findNavController().navigate(R.id.action_register_to_onboarding)
+                val email = viewModel.email.value
+                val bundle = Bundle().apply {
+                    putString("email", email)
+                    putBoolean("auto_resend", false)
+                }
+                findNavController().navigate(R.id.action_register_to_verifyOtp, bundle)
+                viewModel.resetState() // Clear state so we don't loop if we come back
             }
             is AuthViewModel.AuthState.Error -> {
                 binding.btnCreateAccount.text = "Create Account"

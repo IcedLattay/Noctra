@@ -35,7 +35,8 @@ class SettingsViewModel : ViewModel() {
                 _profileState.value = SettingsUiState(
                     displayName = profile.displayName,
                     email = profile.email,
-                    targetBedtime = profile.targetBedtime
+                    targetBedtime = profile.targetBedtime,
+                    isEmailVerified = profile.isEmailVerified
                 )
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -131,6 +132,19 @@ class SettingsViewModel : ViewModel() {
         }
     }
 
+    fun sendVerificationEmail() {
+        viewModelScope.launch {
+            val email = _profileState.value.email ?: return@launch
+            _settingsState.value = SettingsState.Loading
+            try {
+                authRepository.sendVerificationEmail(email)
+                _settingsState.value = SettingsState.VerificationSent
+            } catch (e: Exception) {
+                _settingsState.value = SettingsState.Error(e.message ?: "Failed to send verification email")
+            }
+        }
+    }
+
     fun resetState() {
         _settingsState.value = SettingsState.Idle
     }
@@ -139,6 +153,7 @@ class SettingsViewModel : ViewModel() {
         object Idle : SettingsState()
         object Loading : SettingsState()
         object PasswordResetSent : SettingsState()
+        object VerificationSent : SettingsState()
         data class Error(val message: String) : SettingsState()
     }
 }
@@ -146,5 +161,6 @@ class SettingsViewModel : ViewModel() {
 data class SettingsUiState(
     val displayName: String = "",
     val email: String? = null,
-    val targetBedtime: String? = null
+    val targetBedtime: String? = null,
+    val isEmailVerified: Boolean = false
 )

@@ -4,6 +4,7 @@ import com.noctra.app.data.supabase.SupabaseClient
 import io.github.jan.supabase.gotrue.SessionStatus
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.providers.builtin.Email
+import io.github.jan.supabase.gotrue.OtpType
 import kotlinx.coroutines.flow.Flow
 
 class AuthRepository {
@@ -24,16 +25,17 @@ class AuthRepository {
      * Registers a new user, creates their profile, and sets their display name.
      */
     suspend fun register(email: String, pass: String, displayName: String) {
-        auth.signUpWith(Email) {
+        val userInfo = auth.signUpWith(Email) {
             this.email = email
             this.password = pass
         }
 
-        val userId = auth.currentUserOrNull()?.id ?: throw Exception("User creation failed")
+        val userId = userInfo?.id ?: throw Exception("User creation failed")
         
-        // Initialize user profile and reward ledger
+        // Initialize user profile
         profileRepository.getOrCreateProfile(userId)
         profileRepository.updateDisplayName(userId, displayName)
+        profileRepository.updateEmail(userId, email)
     }
 
     /**
@@ -57,6 +59,20 @@ class AuthRepository {
         auth.updateUser {
             password = newPassword
         }
+    }
+
+    /**
+     * Verifies a 6-digit OTP code sent via email.
+     */
+    suspend fun verifyOtp(email: String, token: String, type: OtpType.Email) {
+        auth.verifyEmailOtp(type, email, token)
+    }
+
+    /**
+     * Triggers a verification email to the user.
+     */
+    suspend fun sendVerificationEmail(email: String) {
+        auth.resendEmail(OtpType.Email.SIGNUP, email = email)
     }
 
     /**

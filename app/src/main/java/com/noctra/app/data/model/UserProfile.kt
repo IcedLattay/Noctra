@@ -12,5 +12,6 @@ data class UserProfile(
     @SerialName("health_connect_granted") val healthConnectGranted: Boolean = false,
     @SerialName("onboarding_completed") val onboardingCompleted: Boolean = false,
     @SerialName("onboarding_step") val onboardingStep: Int = 0,
-    @SerialName("hr_baseline_bpm") val hrBaselineBpm: Double? = null
+    @SerialName("hr_baseline_bpm") val hrBaselineBpm: Double? = null,
+    @SerialName("is_email_verified") val isEmailVerified: Boolean = false
 )

@@ -61,4 +61,18 @@ class UserProfileRepository {
         }) { filter { eq("user_id", userId) } }
     }
 
+    suspend fun updateEmailVerificationStatus(userId: String, verified: Boolean) {
+        client.from("user_profiles").update({
+            set("is_email_verified", verified)
+            set("updated_at", "now()")
+        }) { filter { eq("user_id", userId) } }
+    }
+
+    suspend fun updateEmail(userId: String, email: String) {
+        client.from("user_profiles").update({
+            set("email", email)
+            set("updated_at", "now()")
+        }) { filter { eq("user_id", userId) } }
+    }
+
 }

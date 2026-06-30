@@ -116,6 +116,15 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                     findNavController().navigate(R.id.action_login_to_onboarding)
                 }
             }
+            is AuthViewModel.AuthState.UnverifiedEmail -> {
+                Toast.makeText(requireContext(), "Email not verified. Sending fresh code...", Toast.LENGTH_LONG).show()
+                val bundle = Bundle().apply {
+                    putString("email", state.email)
+                    putBoolean("auto_resend", true)
+                }
+                findNavController().navigate(R.id.action_login_to_verifyOtp, bundle)
+                viewModel.resetState() // Clear state so we don't loop if we come back
+            }
             is AuthViewModel.AuthState.Error -> {
                 binding.btnSignIn.isEnabled = true
                 binding.btnSignIn.text = "Sign In"

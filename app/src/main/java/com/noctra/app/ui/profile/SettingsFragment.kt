@@ -50,7 +50,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         // Account Management values
         val displayName = view.findViewById<TextView>(R.id.value_display_name)
-        val email = view.findViewById<TextView>(R.id.value_email)
+        val emailValue = view.findViewById<TextView>(R.id.value_email)
 
         // Routine Management
         val bedtimePill = view.findViewById<TextView>(R.id.btn_bedtime_pill)
@@ -121,7 +121,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         lifecycleScope.launch {
             viewModel.profileState.collect { state ->
                 displayName.text = state.displayName
-                email.text = state.email ?: com.noctra.app.data.supabase.SupabaseClient.client.auth.currentUserOrNull()?.email ?: "(demo mode)"
+                emailValue.text = state.email ?: com.noctra.app.data.supabase.SupabaseClient.client.auth.currentUserOrNull()?.email ?: "(demo mode)"
                 bedtimePill.text = formatBedtime(state.targetBedtime)
             }
         }
@@ -132,6 +132,10 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 when (state) {
                     is SettingsViewModel.SettingsState.PasswordResetSent -> {
                         Toast.makeText(ctx, "Reset link sent to your email!", Toast.LENGTH_SHORT).show()
+                        viewModel.resetState()
+                    }
+                    is SettingsViewModel.SettingsState.VerificationSent -> {
+                        Toast.makeText(ctx, "Verification link sent! Check your inbox.", Toast.LENGTH_LONG).show()
                         viewModel.resetState()
                     }
                     is SettingsViewModel.SettingsState.Error -> {
@@ -149,6 +153,14 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
 
         viewModel.loadProfile(ctx)
+    }
+
+    private fun setupDialogSize(dialog: androidx.appcompat.app.AlertDialog) {
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.85).toInt(),
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        dialog.window?.setGravity(android.view.Gravity.CENTER)
     }
 
     private fun showResetPasswordDialog() {
@@ -181,13 +193,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
 
         dialog.show()
-
-        // Ensure the dialog is centered and respects the custom width
-        dialog.window?.setLayout(
-            (resources.displayMetrics.widthPixels * 0.85).toInt(),
-            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-        )
-        dialog.window?.setGravity(android.view.Gravity.CENTER)
+        setupDialogSize(dialog)
     }
 
     private fun formatBedtime(raw: String?): String {
@@ -234,13 +240,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
 
         dialog.show()
-        
-        // Ensure the dialog is centered and respects the custom width
-        dialog.window?.setLayout(
-            (resources.displayMetrics.widthPixels * 0.85).toInt(),
-            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-        )
-        dialog.window?.setGravity(android.view.Gravity.CENTER)
+        setupDialogSize(dialog)
     }
 
     private fun showDeleteAccountConfirmation() {
@@ -267,13 +267,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
 
         dialog.show()
-
-        // Ensure the dialog is centered and respects the custom width
-        dialog.window?.setLayout(
-            (resources.displayMetrics.widthPixels * 0.85).toInt(),
-            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-        )
-        dialog.window?.setGravity(android.view.Gravity.CENTER)
+        setupDialogSize(dialog)
     }
 
     private fun performLogout() {
