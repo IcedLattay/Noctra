@@ -31,6 +31,9 @@ object SupabaseClient {
                 autoLoadFromStorage = true
                 autoSaveToStorage = true
                 sessionManager = SettingsSessionManager()
+                
+                scheme = "noctra"
+                host = "reset-password"
             }
         }
     }

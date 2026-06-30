@@ -16,6 +16,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.noctra.app.data.repository.UserProfileRepository
 import com.noctra.app.data.supabase.SupabaseClient
 import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.gotrue.handleDeeplinks
 import com.noctra.app.ui.debug.DebugPanelListener
 import com.noctra.app.utils.DebugSettings
 import com.noctra.app.utils.UserSession
@@ -60,8 +61,26 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
 
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
 
+        // Handle deep links from Supabase (e.g. password recovery)
+        handleDeepLink(intent)
+
         // Check onboarding status and handle permissions if already completed
         checkOnboardingStatus(navController, bottomNav)
+    }
+
+    private fun handleDeepLink(intent: android.content.Intent?) {
+        intent?.let {
+            try {
+                SupabaseClient.client.handleDeeplinks(it)
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Deep link handling failed", e)
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        handleDeepLink(intent)
     }
 
     private fun checkOnboardingStatus(navController: androidx.navigation.NavController, bottomNav: BottomNavigationView) {

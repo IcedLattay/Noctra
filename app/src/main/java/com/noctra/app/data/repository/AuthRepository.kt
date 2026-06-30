@@ -42,7 +42,7 @@ class AuthRepository {
      * Triggers a password reset email via Supabase.
      */
     suspend fun resetPassword(email: String) {
-        auth.resetPasswordForEmail(email)
+        auth.resetPasswordForEmail(email, redirectUrl = "noctra://reset-password")
     }
 
     /**
