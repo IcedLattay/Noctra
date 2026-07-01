@@ -7,6 +7,7 @@ import com.noctra.app.data.model.Activity
 import com.noctra.app.data.repository.RewardLedgerRepository
 import com.noctra.app.data.repository.RoutineRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
+import com.noctra.app.data.repository.UserProfileRepository
 import com.noctra.app.domain.usecase.RewardCalculationUseCase
 import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.Job
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 class RoutineViewModel(application: Application) : AndroidViewModel(application) {
@@ -27,6 +29,8 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
     private val routineSessionRepository = RoutineSessionRepository()
     private val rewardLedgerRepository    = RewardLedgerRepository()
     private val routineRepository         = RoutineRepository()
+    private val userProfileRepository    = UserProfileRepository()
+
     private val rewardCalculationUseCase = RewardCalculationUseCase(
         rewardRepository = rewardLedgerRepository,
         routineSessionRepository = routineSessionRepository
@@ -38,6 +42,9 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
 
     private val _isInitialized = MutableStateFlow(false)
     val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
+
+    private val _isWindowExpired = MutableStateFlow(false)
+    val isWindowExpired: StateFlow<Boolean> = _isWindowExpired.asStateFlow()
 
     var activities: List<Activity> = emptyList(); private set
     var routineConfigId: String = ""; private set
@@ -62,10 +69,21 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
             try {
                 val userId = userId ?: return@launch
                 val activeRoutine = routineRepository.getActiveRoutine(userId)
+                val profile = userProfileRepository.getOrCreateProfile(userId)
+                val targetBedtimeRaw = profile.targetBedtime ?: "22:00:00"
+
                 if (activeRoutine != null) {
                     val entries = routineRepository.parseActivitySequence(activeRoutine.activitySequence)
                     val activities = routineRepository.hydrateActivitySequence(entries)
                     val streak = routineSessionRepository.getCurrentStreak(userId)
+
+                    // Validate window before completing setup
+                    val inWindow = com.noctra.app.utils.RoutineWindowProvider.isTimeInWindow(
+                        now = LocalTime.now(),
+                        targetBedtime = targetBedtimeRaw,
+                        routineDurationMinutes = activeRoutine.totalDurationMinutes
+                    )
+                    _isWindowExpired.value = !inWindow && !com.noctra.app.utils.DebugSettings.forceRoutineWindow.value
 
                     setupSession(activities, activeRoutine.id, streak)
                 }
@@ -132,6 +150,10 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
     // ─── Public Lifecycle ─────────────────────────────────────────────────────
 
     fun startSession() {
+        if (_isWindowExpired.value) {
+            android.util.Log.e("RoutineViewModel", "Attempted to start session outside of window.")
+            return
+        }
         viewModelScope.launch {
             val userId = userId ?: return@launch
             _sessionState.value = SessionState.InProgress

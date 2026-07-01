@@ -146,26 +146,30 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
                 }
 
                 // Compute the routine window.
-                val targetBedtime = parseTime(targetBedtimeRaw)
-                val windowOpen    = targetBedtime.minusMinutes(totalDuration.toLong())
-                val windowClose   = targetBedtime.plusMinutes(60)
-
                 val inWindow = DebugSettings.forceRoutineWindow.value ||
-                        isTimeInWindow(LocalTime.now(), windowOpen, windowClose)
+                        com.noctra.app.utils.RoutineWindowProvider.isTimeInWindow(
+                            now = LocalTime.now(),
+                            targetBedtime = targetBedtimeRaw,
+                            routineDurationMinutes = totalDuration
+                        )
 
                 _state.value = if (inWindow) {
+                    val targetBedtimeParsed = parseTime(targetBedtimeRaw)
+                    val windowOpen = targetBedtimeParsed.minusMinutes(totalDuration.toLong())
                     RoutineHomeState.InWindow(
                         activities           = activities,
                         totalDurationMinutes = totalDuration,
-                        targetBedtime        = formatTime(targetBedtime),
+                        targetBedtime        = formatTime(targetBedtimeParsed),
                         routineStartTime     = formatTime(windowOpen),
                         currentStreak        = streak
                     )
                 } else {
+                    val targetBedtimeParsed = parseTime(targetBedtimeRaw)
+                    val windowOpen = targetBedtimeParsed.minusMinutes(totalDuration.toLong())
                     RoutineHomeState.BeforeWindow(
                         activities           = activities,
                         totalDurationMinutes = totalDuration,
-                        targetBedtime        = formatTime(targetBedtime),
+                        targetBedtime        = formatTime(targetBedtimeParsed),
                         routineStartTime     = formatTime(windowOpen),
                         currentStreak        = streak
                     )
@@ -176,27 +180,6 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
                     message = e.message ?: "Something went wrong loading your routine."
                 )
             }
-        }
-    }
-
-    // ─── Window check (handles midnight rollover) ────────────────────────────
-
-    /**
-     * Returns true if `now` falls within [open, close], correctly handling the
-     * case where the window crosses midnight.
-     *
-     * Examples:
-     *   open=21:30 close=23:00  → simple within-day check
-     *   open=23:00 close=00:30  → crosses midnight; now must be ≥23:00 OR ≤00:30
-     *   open=00:30 close=02:00  → simple within-day check (early-morning bedtime)
-     */
-    private fun isTimeInWindow(now: LocalTime, open: LocalTime, close: LocalTime): Boolean {
-        return if (!open.isAfter(close)) {
-            // No midnight crossing (open <= close)
-            !now.isBefore(open) && !now.isAfter(close)
-        } else {
-            // Window crosses midnight (open > close)
-            !now.isBefore(open) || !now.isAfter(close)
         }
     }
 
