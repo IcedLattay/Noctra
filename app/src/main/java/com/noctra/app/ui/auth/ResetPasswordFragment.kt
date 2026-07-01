@@ -106,11 +106,7 @@ class ResetPasswordFragment : Fragment(R.layout.fragment_reset_password) {
                 binding.btnResetPassword.text = "Updating..."
             }
             is AuthViewModel.AuthState.PasswordUpdated -> {
-                Toast.makeText(requireContext(), "Password updated successfully!", Toast.LENGTH_SHORT).show()
-                findNavController().navigate(R.id.loginFragment, null,
-                    androidx.navigation.NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_graph, true)
-                        .build())
+                findNavController().navigate(R.id.action_resetPassword_to_success)
             }
             is AuthViewModel.AuthState.Error -> {
                 binding.btnResetPassword.isEnabled = true

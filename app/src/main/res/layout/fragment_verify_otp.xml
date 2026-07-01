@@ -20,7 +20,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintHorizontal_bias="0"
         android:layout_marginStart="-12dp"
-        app:tint="@color/noctra_purple_dark" />
+        app:tint="#000000" />
 
     <TextView
         android:id="@+id/tv_title"
@@ -29,7 +29,7 @@
         android:layout_marginTop="32dp"
         android:fontFamily="@font/poppinsbold"
         android:text="Verify your email"
-        android:textColor="@color/noctra_purple_dark"
+        android:textColor="@color/black"
         android:textSize="28sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/btn_back" />
