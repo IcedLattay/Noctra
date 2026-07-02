@@ -7,7 +7,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.noctra.app.databinding.ItemShopBinding
-import com.noctra.app.ui.companion.CustomizationViewModel.ShopItemUiModel
+import com.noctra.app.ui.companion.CompanionViewModel.ShopItemUiModel
 
 class ShopItemAdapter(
     private val onItemClick: (ShopItemUiModel) -> Unit

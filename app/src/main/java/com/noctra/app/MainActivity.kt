@@ -161,11 +161,6 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                 R.id.userProfileFragment
             )
             bottomNav.visibility = if (destination.id in mainTabs) View.VISIBLE else View.GONE
-
-            // 2. Ensure "Companion" stays selected when in Customization
-            if (destination.id == R.id.customizationFragment) {
-                bottomNav.menu.findItem(R.id.companionFragment).isChecked = true
-            }
         }
     }
 

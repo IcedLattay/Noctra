@@ -31,6 +31,13 @@ class CompanionViewModel(
     private val seedingUseCase: DataSeedingUseCase = DataSeedingUseCase()
 ) : ViewModel() {
 
+    data class ShopItemUiModel(
+        val item: ShopItem,
+        val isOwned: Boolean,
+        val isEquipped: Boolean,
+        val canAfford: Boolean
+    )
+
     data class CompanionUiState(
         val isLoading: Boolean = false,
         val displayName: String = "User",
@@ -38,6 +45,7 @@ class CompanionViewModel(
         val tokenBalance: Int = 0,
         val lastSleepScore: Int? = null,
         val equippedItems: Map<String, ShopItem> = emptyMap(),
+        val shopItems: List<ShopItemUiModel> = emptyList(),
         val error: String? = null
     )
 
@@ -82,10 +90,23 @@ class CompanionViewModel(
             val latestSleep = sleepRecordRepository.getLatestSleepRecord(userId)
             val ledger = rewardRepository.getRewardLedger(userId)
             
-            // 1. Get equipment
+            // 1. Get equipment & Shop items
             val inventory = inventoryRepository.getUserInventory(userId)
             val equippedItemIds = inventory.filter { it.isEquipped }.map { it.itemId }.toSet()
             val allShopItems = shopRepository.getAllShopItems()
+            val balance = ledger?.tokenBalance ?: 0
+
+            val inventoryItemIds = inventory.map { it.itemId }.toSet()
+            
+            val uiModels = allShopItems.map { item ->
+                ShopItemUiModel(
+                    item = item,
+                    isOwned = inventoryItemIds.contains(item.itemId),
+                    isEquipped = equippedItemIds.contains(item.itemId),
+                    canAfford = balance >= item.tokenCost
+                )
+            }
+
             val equippedMap = allShopItems.filter { equippedItemIds.contains(it.itemId) }
                 .associateBy { it.category }
             
@@ -109,6 +130,7 @@ class CompanionViewModel(
                         tokenBalance = ledger.tokenBalance,
                         lastSleepScore = latestSleep?.compositeScore,
                         equippedItems = equippedMap,
+                        shopItems = uiModels,
                         error = null
                     )
                 }
@@ -132,6 +154,101 @@ class CompanionViewModel(
             Log.e("CompanionVM", "Refresh failed", e)
             _uiState.update { it.copy(isLoading = false, error = e.message) }
         }
+    }
+
+    fun purchaseAndEquip(userId: String, item: ShopItem) {
+        viewModelScope.launch {
+            try {
+                val ledger = rewardRepository.getRewardLedger(userId)
+                if (ledger != null && ledger.tokenBalance >= item.tokenCost) {
+                    val newBalance = ledger.tokenBalance - item.tokenCost
+                    
+                    // Optimistic UI update
+                    _uiState.update { currentState ->
+                        val updatedItems = currentState.shopItems.map { model ->
+                            if (model.item.itemId == item.itemId) {
+                                model.copy(isOwned = true, isEquipped = true)
+                            } else if (model.item.category == item.category) {
+                                model.copy(isEquipped = false)
+                            } else {
+                                model
+                            }
+                        }
+                        currentState.copy(
+                            tokenBalance = newBalance,
+                            shopItems = updatedItems,
+                            equippedItems = currentState.equippedItems.toMutableMap().apply {
+                                put(item.category, item)
+                            }
+                        )
+                    }
+
+                    // Background DB updates
+                    val updatedLedger = ledger.copy(
+                        tokenBalance = newBalance,
+                        lastUpdated = OffsetDateTime.now().toString()
+                    )
+                    rewardRepository.updateRewardLedger(updatedLedger)
+                    inventoryRepository.purchaseItem(userId, item.itemId)
+                    performEquip(userId, item)
+                    
+                    // Final background refresh
+                    refreshData(userId, null, triggerMorningPopup = false, checkDevolution = false)
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = "Purchase failed: ${e.message}") }
+                refreshData(userId, null, triggerMorningPopup = false, checkDevolution = false)
+            }
+        }
+    }
+
+    fun equipItem(userId: String, item: ShopItem) {
+        val isCurrentlyEquipped = _uiState.value.shopItems.find { it.item.itemId == item.itemId }?.isEquipped ?: false
+        
+        viewModelScope.launch {
+            try {
+                // Optimistic UI update (Toggle)
+                _uiState.update { currentState ->
+                    val updatedItems = currentState.shopItems.map { model ->
+                        if (model.item.itemId == item.itemId) {
+                            model.copy(isEquipped = !isCurrentlyEquipped)
+                        } else if (model.item.category == item.category) {
+                            model.copy(isEquipped = false)
+                        } else {
+                            model
+                        }
+                    }
+                    
+                    val newEquippedMap = currentState.equippedItems.toMutableMap()
+                    if (isCurrentlyEquipped) {
+                        newEquippedMap.remove(item.category)
+                    } else {
+                        newEquippedMap[item.category] = item
+                    }
+
+                    currentState.copy(
+                        shopItems = updatedItems,
+                        equippedItems = newEquippedMap
+                    )
+                }
+                
+                if (isCurrentlyEquipped) {
+                    inventoryRepository.unequipItem(userId, item.itemId)
+                } else {
+                    performEquip(userId, item)
+                }
+                refreshData(userId, null, triggerMorningPopup = false, checkDevolution = false)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = "Equip failed: ${e.message}") }
+                refreshData(userId, null, triggerMorningPopup = false, checkDevolution = false)
+            }
+        }
+    }
+
+    private suspend fun performEquip(userId: String, item: ShopItem) {
+        val allItems = shopRepository.getAllShopItems()
+        val itemIdsInCategory = allItems.filter { it.category == item.category }.map { it.itemId }
+        inventoryRepository.equipItem(userId, item.itemId, itemIdsInCategory)
     }
 
     fun seedDemoData(userId: String) {
