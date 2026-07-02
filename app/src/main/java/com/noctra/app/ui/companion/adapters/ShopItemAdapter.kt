@@ -3,9 +3,11 @@ package com.noctra.app.ui.companion.adapters
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.noctra.app.R
 import com.noctra.app.databinding.ItemShopBinding
 import com.noctra.app.ui.companion.CompanionViewModel.ShopItemUiModel
 
@@ -25,22 +27,48 @@ class ShopItemAdapter(
     inner class ViewHolder(private val binding: ItemShopBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(model: ShopItemUiModel) {
             
-            // Handle Equipped state
-            if (model.isEquipped) {
-                binding.ivEquippedCheck.visibility = View.VISIBLE
-                binding.priceContainer.visibility = View.GONE
-            } else if (model.isOwned) {
-                binding.ivEquippedCheck.visibility = View.GONE
-                binding.priceContainer.visibility = View.GONE
-            } else {
-                binding.ivEquippedCheck.visibility = View.GONE
-                binding.priceContainer.visibility = View.VISIBLE
-                binding.tvTokenCost.text = model.item.tokenCost.toString()
-                
-                binding.btnItemCard.alpha = if (model.canAfford) 1.0f else 0.5f
+            // 1. Reset defaults for recycling
+            binding.ivEquippedCheck.visibility = View.GONE
+            binding.priceContainer.visibility = View.GONE
+            
+            // Reset the internal layout border
+            binding.shopItemContent.background = null
+            
+            // Reset card elevation and shadow color
+            binding.btnItemCard.apply {
+                elevation = 2f * resources.displayMetrics.density
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    outlineAmbientShadowColor = android.graphics.Color.BLACK
+                    outlineSpotShadowColor = android.graphics.Color.BLACK
+                }
             }
 
-            // Robust Icon Loading
+            // 2. Set State based on ownership
+            if (model.isEquipped) {
+                // Owned & Equipped: Show Checkmark + Purple Border + Purple Glow
+                binding.ivEquippedCheck.visibility = View.VISIBLE
+                
+                // Set the purple border on the INNER content
+                binding.shopItemContent.setBackgroundResource(R.drawable.bg_shop_item_card_equipped)
+                
+                // Set the purple glow on the OUTER card
+                binding.btnItemCard.apply {
+                    elevation = 6f * resources.displayMetrics.density
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                        val purple = ContextCompat.getColor(context, R.color.noctra_purple_soft)
+                        outlineAmbientShadowColor = purple
+                        outlineSpotShadowColor = purple
+                    }
+                }
+            } else if (model.isOwned) {
+                // Owned but not equipped: Standard clean card
+            } else {
+                // NOT OWNED: Show Price
+                binding.priceContainer.visibility = View.VISIBLE
+                binding.tvTokenCost.text = model.item.tokenCost.toString()
+            }
+
+            // 3. Icon Loading
             val context = binding.root.context
             val assetName = model.item.previewAsset.removeSuffix(".png").removeSuffix(".jpg").removeSuffix(".webp")
             val resId = context.resources.getIdentifier(
@@ -50,7 +78,6 @@ class ShopItemAdapter(
             if (resId != 0) {
                 binding.ivItemPreview.setImageResource(resId)
             } else {
-                // Set a placeholder if the specific icon is missing to avoid a blank card
                 binding.ivItemPreview.setImageResource(android.R.drawable.ic_menu_help)
             }
 
