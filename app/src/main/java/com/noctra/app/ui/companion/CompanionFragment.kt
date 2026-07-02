@@ -25,6 +25,7 @@ import androidx.transition.Fade
 import androidx.transition.Slide
 import androidx.transition.TransitionManager
 import androidx.transition.TransitionSet
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import com.airbnb.lottie.LottieProperty
 import com.airbnb.lottie.model.KeyPath
 import com.airbnb.lottie.value.LottieValueCallback
@@ -392,7 +393,8 @@ class CompanionFragment : Fragment() {
             addTransition(ChangeBounds())
             
             ordering = TransitionSet.ORDERING_TOGETHER
-            duration = 350
+            duration = 450 // Slightly longer to let the curve feel smooth
+            interpolator = FastOutSlowInInterpolator()
         }
         
         TransitionManager.beginDelayedTransition(activityRoot, consolidatedTransition)
