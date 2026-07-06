@@ -28,7 +28,7 @@ class AudioscapeActivityFragment : Fragment() {
     private var mediaPlayer: MediaPlayer? = null
     private var preCountdownTimer: CountDownTimer? = null
 
-    companion object { private const val PRE_COUNTDOWN_SECONDS = 15L }
+    companion object { private const val PRE_COUNTDOWN_SECONDS = 10L }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?

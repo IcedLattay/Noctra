@@ -121,16 +121,22 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
                 }
                 _activeRoutine = activeRoutine
 
-                val entries = routineRepository.parseActivitySequence(activeRoutine.activitySequence)
-                val activities = routineRepository.hydrateActivitySequence(entries)
-                val totalDuration = activeRoutine.totalDurationMinutes
+                // 2. FOR DEMO: Load only implemented activities from the library
+                val allActivities = routineRepository.getActivityLibrary()
+                val activities = allActivities.filter { 
+                    val type = it.activityType.lowercase()
+                    type == "breathing" || type == "audio" || type == "audioscape" || type == "journaling"
+                }
+                val totalDuration = activities.sumOf { it.defaultDurationMinutes }
 
                 // Check tonight's completion BEFORE window logic — completion wins.
                 val todayDate = routineSessionRepository.getTodayDateString()
                 val alreadyCompleted = routineSessionRepository
                     .hasCompletedSessionForDate(userId, todayDate)
+                
+                // Fetch streak AFTER potential update
                 val streak = routineSessionRepository.getCurrentStreak(userId)
-                android.util.Log.d("StreakDebug", "HOME: reading as userId=$userId, got streak=$streak")
+                android.util.Log.d("StreakDebug", "HOME: userId=$userId today=$todayDate completed=$alreadyCompleted streak=$streak")
 
                 if (alreadyCompleted) {
                     _state.value = RoutineHomeState.Completed(currentStreak = streak)

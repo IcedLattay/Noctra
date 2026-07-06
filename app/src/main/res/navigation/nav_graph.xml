@@ -146,7 +146,9 @@
         android:label="Complete">
         <action
             android:id="@+id/action_routineCompletionOverlayFragment_to_companionFragment"
-            app:destination="@id/companionFragment" />
+            app:destination="@id/companionFragment"
+            app:popUpTo="@id/routineHomeFragment"
+            app:popUpToInclusive="true" />
     </fragment>
 
     <!-- ═══════════════════════════════════════════════════

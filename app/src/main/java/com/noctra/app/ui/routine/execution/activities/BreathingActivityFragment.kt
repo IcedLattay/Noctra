@@ -41,7 +41,7 @@ class BreathingActivityFragment : Fragment() {
     private val CIRCLE_MIN_SCALE = 0.6f
     private val CIRCLE_MAX_SCALE = 1.0f
 
-    companion object { private const val PRE_COUNTDOWN_SECONDS = 15L }
+    companion object { private const val PRE_COUNTDOWN_SECONDS = 10L }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?

@@ -38,7 +38,7 @@ class GenericTimerActivityFragment : Fragment() {
     private var preCountdownTimer: CountDownTimer? = null
 
     companion object {
-        private const val PRE_COUNTDOWN_MS  = 15_000L
+        private const val PRE_COUNTDOWN_MS  = 10_000L
         private const val TICK_MS           = 1_000L
     }
 

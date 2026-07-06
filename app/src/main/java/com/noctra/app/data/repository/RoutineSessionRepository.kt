@@ -78,6 +78,7 @@ class RoutineSessionRepository {
         client
             .from("routine_sessions")
             .update(SessionCompletion(
+                isCompleted = true, // Explicitly set to ensure it's sent
                 completionTimestamp = completionTimestamp,
                 streakAtCompletion = streakAtCompletion,
                 multiplierApplied = multiplierApplied,
@@ -189,8 +190,13 @@ class RoutineSessionRepository {
             }
             .decodeList<RoutineSession>()
 
+        android.util.Log.d("StreakDebug", "REPO: fetched ${allSessions.size} completed sessions for userId=$userId")
+        allSessions.forEach { 
+            android.util.Log.d("StreakDebug", "  - Session: date=${it.sessionDate}, completed=${it.isCompleted}")
+        }
+
         if (allSessions.isEmpty()) {
-            android.util.Log.d("StreakDebug", "REPO: no completed sessions for userId=$userId")
+            android.util.Log.d("StreakDebug", "REPO: no completed sessions found")
             return 0
         }
 
