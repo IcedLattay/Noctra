@@ -1,17 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    fragment_breathing_activity.xml
-    Used by BreathingActivityFragment — Slow-Paced Breathing
+    fragment_stepper_activity.xml
+    Used by StepperActivityFragment — Progressive Muscle Relaxation, Bedtime Stretching
 
     2 panels — only one visible at a time:
       preCountdownPanel  → 15s green timer + Shleepy body + instructions
-      breathingPanel     → animated circle + Inhale/Hold/Exhale label + main timer
-
-    Note: this consolidates the previous fragment_breathing_activity.xml (which had
-    a Lottie animation + unused timesUpOverlay/completionOverlay panels not present
-    in the wireframe) and fragment_breathing_activity_2.xml (a leaner, wireframe-accurate
-    version that was left unreferenced by the Kotlin binding). This single file replaces
-    both — delete fragment_breathing_activity_2.xml from the project once this is in place.
+      stepPanel          → per-step demo image + name + instruction + dots + step timer
+                            (alternates action-phase green timer / rest-phase default timer)
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -20,7 +15,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/routinestatebackground">
 
-    <!-- PRE-COUNTDOWN PANEL: 15s warm-up before breathing -->
+    <!-- PRE-COUNTDOWN PANEL -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/preCountdownPanel"
         android:layout_width="match_parent"
@@ -60,17 +55,20 @@
 
         <TextView
             android:id="@+id/tvPreTitle"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
             android:layout_marginTop="24dp"
+            android:layout_marginEnd="24dp"
             android:fontFamily="@font/poppinsbold"
-            android:text="Slow-Paced Breathing"
+            android:gravity="center"
             android:textColor="#2c1769"
             android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/imgShleepyBody" />
+            app:layout_constraintTop_toBottomOf="@id/imgShleepyBody"
+            tools:text="Progressive Muscle Relaxation" />
 
         <TextView
             android:id="@+id/tvPreInstruction"
@@ -84,13 +82,12 @@
             android:gravity="center"
             android:paddingHorizontal="20dp"
             android:paddingVertical="14dp"
-            android:text="Follow the circle. Inhale as it grows,\nexhale as it shrinks."
             android:textColor="#515251"
             android:textSize="10sp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvPreTitle" />
+            app:layout_constraintTop_toBottomOf="@id/tvPreTitle"
+            tools:text="Get comfortable and follow the demonstration being shown on the screen." />
 
         <LinearLayout
             android:id="@+id/preTimerCard"
@@ -105,7 +102,6 @@
             android:paddingHorizontal="24dp"
             android:paddingVertical="8dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvPreInstruction">
 
@@ -128,9 +124,9 @@
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- ACTIVE BREATHING PANEL: circle + phase label + main timer -->
+    <!-- STEP PANEL -->
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/breathingPanel"
+        android:id="@+id/stepPanel"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="10dp"
@@ -144,77 +140,113 @@
             android:scaleType="centerCrop"
             android:contentDescription="@null" />
 
-        <ImageView
-            android:id="@+id/imgShleepyHead"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginTop="30dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/shleepylogo"
+        <TextView
+            android:id="@+id/tvStepActivityLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:fontFamily="@font/poppinsbold"
+            android:textColor="#2c1769"
+            android:textSize="11sp"
+            android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Progressive Muscle Relaxation" />
 
-        <View
-            android:id="@+id/breathingCircle"
-            android:layout_width="200dp"
-            android:layout_height="200dp"
-            android:layout_marginTop="160dp"
-            android:background="@drawable/bg_breathing_circle"
-            android:scaleX="0.6"
-            android:scaleY="0.6"
+        <!-- Demo image / placeholder box for the current sub-step -->
+        <ImageView
+            android:id="@+id/imgStepDemo"
+            android:layout_width="0dp"
+            android:layout_height="180dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="24dp"
+            android:background="#F5F4FA"
+            android:scaleType="fitCenter"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toBottomOf="@id/tvStepActivityLabel"
+            tools:src="@drawable/shleepybody" />
 
         <TextView
-            android:id="@+id/tvBreathPhase"
+            android:id="@+id/tvStepTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:fontFamily="@font/poppinsbold"
-            android:textColor="@color/timer_green"
-            android:textSize="32sp"
+            android:textColor="#2c1769"
+            android:textSize="24sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/breathingCircle"
-            tools:text="Inhale" />
+            app:layout_constraintTop_toBottomOf="@id/imgStepDemo"
+            tools:text="Hands" />
+
+        <TextView
+            android:id="@+id/tvStepInstruction"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="32dp"
+            android:background="@drawable/bg_instruction_card"
+            android:fontFamily="@font/poppinsregular"
+            android:gravity="center"
+            android:minHeight="0dp"
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="14dp"
+            android:textColor="#515251"
+            android:textSize="10sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvStepTitle"
+            tools:text="Make a fist with your hands as tight as possible for 5 seconds" />
+
+        <!-- Progress dots, generated in code -->
+        <LinearLayout
+            android:id="@+id/dotsContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvStepInstruction" />
 
         <LinearLayout
-            android:id="@+id/mainTimerCard"
+            android:id="@+id/stepTimerCard"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="48dp"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="14dp"
             android:layout_marginEnd="48dp"
             android:background="@drawable/bg_timer_card"
             android:gravity="center"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:paddingHorizontal="24dp"
-            android:paddingVertical="16dp"
+            android:paddingVertical="8dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvBreathPhase">
+            app:layout_constraintTop_toBottomOf="@id/dotsContainer">
 
             <ImageView
                 android:layout_width="20dp"
                 android:layout_height="20dp"
-                android:layout_marginEnd="10dp"
-                android:src="@drawable/ic_clock"
-                android:tint="#7B6FE0" />
+                android:layout_gravity="center"
+                android:src="@drawable/ic_clock" />
 
             <TextView
-                android:id="@+id/tvMainTimer"
+                android:id="@+id/tvStepTimer"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/poppinsbold"
                 android:letterSpacing="0.05"
-                android:textColor="@color/timer_default"
-                android:textSize="28sp"
+                android:textColor="@color/timer_green"
+                android:textSize="22sp"
                 android:textStyle="bold"
-                tools:text="05 : 00" />
+                tools:text="00 : 05" />
         </LinearLayout>
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 </FrameLayout>

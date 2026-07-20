@@ -1,6 +1,5 @@
 package com.noctra.app.ui.routine.execution.activities
 
-import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.view.LayoutInflater
@@ -13,35 +12,47 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.navigation.fragment.navArgs
 import com.noctra.app.R
-import com.noctra.app.databinding.FragmentAudioscapeActivityBinding
+import com.noctra.app.databinding.FragmentGratitudeJournalingBinding
 import com.noctra.app.ui.routine.RoutineViewModel
 import kotlinx.coroutines.launch
 
-class AudioscapeActivityFragment : Fragment() {
+/**
+ * Shape D: Text Input.
+ * Used only by Gratitude Journaling. The text box is intentionally never
+ * persisted — no local storage, no DB write, no ViewModel field holding
+ * its content. It exists purely as an in-the-moment writing surface and
+ * is discarded when the fragment is destroyed.
+ */
+class GratitudeJournalingFragment : Fragment() {
 
-    private var _binding: FragmentAudioscapeActivityBinding? = null
+    private var _binding: FragmentGratitudeJournalingBinding? = null
     private val binding get() = _binding!!
 
+    private val args: GratitudeJournalingFragmentArgs by navArgs()
     private val routineViewModel: RoutineViewModel by activityViewModels()
 
-    private var mediaPlayer: MediaPlayer? = null
     private var preCountdownTimer: CountDownTimer? = null
 
     companion object {
-        // Matches wireframe: prep countdown starts at 00:15
         private const val PRE_COUNTDOWN_SECONDS = 15L
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentAudioscapeActivityBinding.inflate(inflater, container, false)
+        _binding = FragmentGratitudeJournalingBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        binding.tvPreTitle.text = args.activityTitle
+        binding.tvPreInstruction.text = args.activityInstruction
+        binding.tvActiveLabel.text = args.activityTitle
+
         showPreCountdownPanel()
         observeVm()
         startPreCountdown()
@@ -49,14 +60,14 @@ class AudioscapeActivityFragment : Fragment() {
 
     private fun showPreCountdownPanel() {
         binding.preCountdownPanel.visibility = View.VISIBLE
-        binding.audioPanel.visibility = View.GONE
+        binding.activePanel.visibility = View.GONE
         updatePreTimer(PRE_COUNTDOWN_SECONDS)
     }
 
-    private fun showAudioPanel() {
+    private fun showActivePanel() {
         binding.preCountdownPanel.visibility = View.GONE
-        binding.audioPanel.visibility = View.VISIBLE
-        startAudio()
+        binding.activePanel.visibility = View.VISIBLE
+        binding.etThoughts.setText("")
         routineViewModel.startCurrentActivityTimer()
     }
 
@@ -65,13 +76,12 @@ class AudioscapeActivityFragment : Fragment() {
             override fun onTick(millisUntilFinished: Long) {
                 val secs = (millisUntilFinished / 1000L).coerceAtMost(PRE_COUNTDOWN_SECONDS)
                 updatePreTimer(secs)
-                // Wireframe: green while prepping, red in the final 5 seconds
                 val colorRes = if (secs <= 5) R.color.timer_red else R.color.timer_green
                 binding.tvPreTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
             }
             override fun onFinish() {
                 updatePreTimer(0)
-                showAudioPanel()
+                showActivePanel()
             }
         }.start()
     }
@@ -101,32 +111,21 @@ class AudioscapeActivityFragment : Fragment() {
     private fun handleNavigationEvent(event: RoutineViewModel.NavigationEvent) {
         when (event) {
             is RoutineViewModel.NavigationEvent.GoToTransition -> {
-                stopAudio()
+                clearThoughtsText()
                 findNavController().navigate(R.id.timesUpTransitionFragment)
             }
             is RoutineViewModel.NavigationEvent.GoToCompletion -> {
-                stopAudio()
+                clearThoughtsText()
                 findNavController().navigate(R.id.routineCompletionOverlayFragment)
             }
             else -> {}
         }
     }
 
-    private fun startAudio() {
-        val resId = resources.getIdentifier("white_noise", "raw", requireContext().packageName)
-        if (resId == 0) return
-        try {
-            mediaPlayer = MediaPlayer.create(requireContext(), resId)?.apply {
-                isLooping = true
-                setVolume(0.85f, 0.85f)
-                start()
-            }
-        } catch (e: Exception) { e.printStackTrace() }
-    }
-
-    private fun stopAudio() {
-        try { mediaPlayer?.run { if (isPlaying) stop(); release() } } catch (e: Exception) {}
-        mediaPlayer = null
+    /** Explicitly discards whatever the user typed — never read, never stored. */
+    private fun clearThoughtsText() {
+        if (_binding == null) return
+        binding.etThoughts.setText("")
     }
 
     private fun updateMainTimerDisplay(seconds: Long) {
@@ -138,7 +137,6 @@ class AudioscapeActivityFragment : Fragment() {
 
     private fun updateMainTimerColor(seconds: Long) {
         if (_binding == null) return
-        // Wireframe only shows default color and red near the end — no green phase here.
         val colorRes = if (seconds <= 5) R.color.timer_red else R.color.timer_default
         binding.tvMainTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
     }
@@ -147,7 +145,7 @@ class AudioscapeActivityFragment : Fragment() {
         super.onDestroyView()
         preCountdownTimer?.cancel()
         preCountdownTimer = null
-        stopAudio()
+        // No save/flush step here on purpose — the text box content is discarded.
         _binding = null
     }
 }

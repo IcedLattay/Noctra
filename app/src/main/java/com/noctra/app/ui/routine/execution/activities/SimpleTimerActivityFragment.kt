@@ -13,35 +13,54 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.navigation.fragment.navArgs
 import com.noctra.app.R
-import com.noctra.app.databinding.FragmentAudioscapeActivityBinding
+import com.noctra.app.databinding.FragmentSimpleTimerActivityBinding
 import com.noctra.app.ui.routine.RoutineViewModel
 import kotlinx.coroutines.launch
 
-class AudioscapeActivityFragment : Fragment() {
+/**
+ * Shape A: Simple Timer.
+ * Used by Reading, White/Pink Noise, Bedtime To-Do List Writing,
+ * Low-Stimulus Audio Listening, and Warm Shower.
+ *
+ * Flow: 15s prep countdown -> main timer (VM-driven) -> Time's Up / Completion
+ * (both handled by shared fragments elsewhere in the nav graph).
+ *
+ * audioResName is nullable: Reading and Bedtime To-Do List Writing pass null
+ * (no audio); White/Pink Noise, Low-Stimulus Audio, and Warm Shower pass
+ * their res/raw filename.
+ */
+class SimpleTimerActivityFragment : Fragment() {
 
-    private var _binding: FragmentAudioscapeActivityBinding? = null
+    private var _binding: FragmentSimpleTimerActivityBinding? = null
     private val binding get() = _binding!!
 
+    private val args: SimpleTimerActivityFragmentArgs by navArgs()
     private val routineViewModel: RoutineViewModel by activityViewModels()
 
     private var mediaPlayer: MediaPlayer? = null
     private var preCountdownTimer: CountDownTimer? = null
 
     companion object {
-        // Matches wireframe: prep countdown starts at 00:15
         private const val PRE_COUNTDOWN_SECONDS = 15L
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentAudioscapeActivityBinding.inflate(inflater, container, false)
+        _binding = FragmentSimpleTimerActivityBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        binding.tvPreTitle.text = args.activityTitle
+        binding.tvPreInstruction.text = args.activityInstruction
+        binding.tvActiveLabel.text = args.activityTitle
+        binding.tvActiveInstruction.text = args.activityInstruction
+
         showPreCountdownPanel()
         observeVm()
         startPreCountdown()
@@ -49,14 +68,14 @@ class AudioscapeActivityFragment : Fragment() {
 
     private fun showPreCountdownPanel() {
         binding.preCountdownPanel.visibility = View.VISIBLE
-        binding.audioPanel.visibility = View.GONE
+        binding.activePanel.visibility = View.GONE
         updatePreTimer(PRE_COUNTDOWN_SECONDS)
     }
 
-    private fun showAudioPanel() {
+    private fun showActivePanel() {
         binding.preCountdownPanel.visibility = View.GONE
-        binding.audioPanel.visibility = View.VISIBLE
-        startAudio()
+        binding.activePanel.visibility = View.VISIBLE
+        startAudioIfNeeded()
         routineViewModel.startCurrentActivityTimer()
     }
 
@@ -65,13 +84,12 @@ class AudioscapeActivityFragment : Fragment() {
             override fun onTick(millisUntilFinished: Long) {
                 val secs = (millisUntilFinished / 1000L).coerceAtMost(PRE_COUNTDOWN_SECONDS)
                 updatePreTimer(secs)
-                // Wireframe: green while prepping, red in the final 5 seconds
                 val colorRes = if (secs <= 5) R.color.timer_red else R.color.timer_green
                 binding.tvPreTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
             }
             override fun onFinish() {
                 updatePreTimer(0)
-                showAudioPanel()
+                showActivePanel()
             }
         }.start()
     }
@@ -112,8 +130,9 @@ class AudioscapeActivityFragment : Fragment() {
         }
     }
 
-    private fun startAudio() {
-        val resId = resources.getIdentifier("white_noise", "raw", requireContext().packageName)
+    private fun startAudioIfNeeded() {
+        val name = args.audioResName ?: return
+        val resId = resources.getIdentifier(name, "raw", requireContext().packageName)
         if (resId == 0) return
         try {
             mediaPlayer = MediaPlayer.create(requireContext(), resId)?.apply {
@@ -138,9 +157,20 @@ class AudioscapeActivityFragment : Fragment() {
 
     private fun updateMainTimerColor(seconds: Long) {
         if (_binding == null) return
-        // Wireframe only shows default color and red near the end — no green phase here.
         val colorRes = if (seconds <= 5) R.color.timer_red else R.color.timer_default
         binding.tvMainTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Pause audio if the app is backgrounded mid-activity, so it doesn't
+        // keep playing indefinitely while the user isn't looking at the screen.
+        mediaPlayer?.let { if (it.isPlaying) it.pause() }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        mediaPlayer?.let { if (!it.isPlaying) it.start() }
     }
 
     override fun onDestroyView() {

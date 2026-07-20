@@ -1,17 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    fragment_breathing_activity.xml
-    Used by BreathingActivityFragment — Slow-Paced Breathing
+    fragment_gratitude_journaling.xml
+    Used by GratitudeJournalingFragment — Gratitude Journaling only.
 
     2 panels — only one visible at a time:
       preCountdownPanel  → 15s green timer + Shleepy body + instructions
-      breathingPanel     → animated circle + Inhale/Hold/Exhale label + main timer
-
-    Note: this consolidates the previous fragment_breathing_activity.xml (which had
-    a Lottie animation + unused timesUpOverlay/completionOverlay panels not present
-    in the wireframe) and fragment_breathing_activity_2.xml (a leaner, wireframe-accurate
-    version that was left unreferenced by the Kotlin binding). This single file replaces
-    both — delete fragment_breathing_activity_2.xml from the project once this is in place.
+      activePanel        → title + editable text box (never persisted) + main timer
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -20,7 +14,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/routinestatebackground">
 
-    <!-- PRE-COUNTDOWN PANEL: 15s warm-up before breathing -->
+    <!-- PRE-COUNTDOWN PANEL -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/preCountdownPanel"
         android:layout_width="match_parent"
@@ -64,7 +58,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:fontFamily="@font/poppinsbold"
-            android:text="Slow-Paced Breathing"
+            android:text="Gratitude Journaling"
             android:textColor="#2c1769"
             android:textSize="18sp"
             android:textStyle="bold"
@@ -84,11 +78,10 @@
             android:gravity="center"
             android:paddingHorizontal="20dp"
             android:paddingVertical="14dp"
-            android:text="Follow the circle. Inhale as it grows,\nexhale as it shrinks."
+            android:text="Releasing your thoughts is great for your well-being. Share your thoughts in this field."
             android:textColor="#515251"
             android:textSize="10sp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvPreTitle" />
 
@@ -105,7 +98,6 @@
             android:paddingHorizontal="24dp"
             android:paddingVertical="8dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvPreInstruction">
 
@@ -128,9 +120,9 @@
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- ACTIVE BREATHING PANEL: circle + phase label + main timer -->
+    <!-- ACTIVE PANEL -->
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/breathingPanel"
+        android:id="@+id/activePanel"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="10dp"
@@ -155,38 +147,46 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <View
-            android:id="@+id/breathingCircle"
-            android:layout_width="200dp"
-            android:layout_height="200dp"
-            android:layout_marginTop="160dp"
-            android:background="@drawable/bg_breathing_circle"
-            android:scaleX="0.6"
-            android:scaleY="0.6"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
         <TextView
-            android:id="@+id/tvBreathPhase"
+            android:id="@+id/tvActiveLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="24dp"
             android:fontFamily="@font/poppinsbold"
-            android:textColor="@color/timer_green"
-            android:textSize="32sp"
+            android:text="Gratitude Journaling"
+            android:textColor="#2c1769"
+            android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/breathingCircle"
-            tools:text="Inhale" />
+            app:layout_constraintTop_toBottomOf="@id/imgShleepyHead" />
+
+        <!-- Text box is never persisted: no local storage, no DB write, no VM field. -->
+        <EditText
+            android:id="@+id/etThoughts"
+            android:layout_width="0dp"
+            android:layout_height="160dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="24dp"
+            android:background="@drawable/bg_instruction_card"
+            android:gravity="top|start"
+            android:hint="Share your thoughts."
+            android:inputType="textMultiLine|textCapSentences"
+            android:padding="16dp"
+            android:textColor="#2c1769"
+            android:textColorHint="#9992B8"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvActiveLabel" />
 
         <LinearLayout
             android:id="@+id/mainTimerCard"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="48dp"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="16dp"
             android:layout_marginEnd="48dp"
             android:background="@drawable/bg_timer_card"
             android:gravity="center"
@@ -195,7 +195,7 @@
             android:paddingVertical="16dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvBreathPhase">
+            app:layout_constraintTop_toBottomOf="@id/etThoughts">
 
             <ImageView
                 android:layout_width="20dp"
@@ -213,8 +213,7 @@
                 android:textColor="@color/timer_default"
                 android:textSize="28sp"
                 android:textStyle="bold"
-                tools:text="05 : 00" />
+                tools:text="10 : 00" />
         </LinearLayout>
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 </FrameLayout>

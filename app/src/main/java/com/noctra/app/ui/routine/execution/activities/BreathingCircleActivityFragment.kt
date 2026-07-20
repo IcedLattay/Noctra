@@ -17,27 +17,30 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.navigation.fragment.navArgs
 import com.noctra.app.R
-import com.noctra.app.databinding.FragmentBreathingActivityBinding
+import com.noctra.app.databinding.FragmentBreathingCircleActivityBinding
 import com.noctra.app.ui.routine.RoutineViewModel
 import kotlinx.coroutines.launch
 
-class BreathingActivityFragment : Fragment() {
+/**
+ * Shape C: Breathing Circle.
+ * Used by Slow-Paced Breathing and Mindfulness Meditation — both use the
+ * same green expanding/shrinking circle synced to a 4-7-8 Inhale/Hold/Exhale
+ * cycle, confirmed to apply to both activities.
+ */
+class BreathingCircleActivityFragment : Fragment() {
 
-    private var _binding: FragmentBreathingActivityBinding? = null
+    private var _binding: FragmentBreathingCircleActivityBinding? = null
     private val binding get() = _binding!!
 
+    private val args: BreathingCircleActivityFragmentArgs by navArgs()
     private val routineViewModel: RoutineViewModel by activityViewModels()
 
-    // Pre-countdown is a local 15s warm-up. VM doesn't know about it.
     private var preCountdownTimer: CountDownTimer? = null
-
     private var breathingAnimatorSet: AnimatorSet? = null
     private var isBreathingRunning = false
 
-    // 4-7-8 breathing pattern (Inhale-Hold-Exhale).
-    // Wireframe only captured Inhale/Exhale frames; Hold is kept intentionally
-    // since it's a deliberate part of the 4-7-8 technique, not a UI bug.
     private val INHALE_MS = 4_000L
     private val HOLD_MS = 7_000L
     private val EXHALE_MS = 8_000L
@@ -45,19 +48,22 @@ class BreathingActivityFragment : Fragment() {
     private val CIRCLE_MAX_SCALE = 1.0f
 
     companion object {
-        // Matches wireframe: prep countdown starts at 00:15
         private const val PRE_COUNTDOWN_SECONDS = 15L
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentBreathingActivityBinding.inflate(inflater, container, false)
+        _binding = FragmentBreathingCircleActivityBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        binding.tvPreTitle.text = args.activityTitle
+        binding.tvPreInstruction.text = args.activityInstruction
+
         showPreCountdownPanel()
         observeVm()
         startPreCountdown()
@@ -89,11 +95,11 @@ class BreathingActivityFragment : Fragment() {
                 stopBreathingAnimation()
                 findNavController().navigate(R.id.routineCompletionOverlayFragment)
             }
-            else -> { /* not for us */ }
+            else -> {}
         }
     }
 
-    // ─── Panels ───────────────────────────────────────────────────────────────
+    // ─── Panels ───────────────────────────────────────────────────────────
 
     private fun showPreCountdownPanel() {
         binding.preCountdownPanel.visibility = View.VISIBLE
@@ -108,17 +114,14 @@ class BreathingActivityFragment : Fragment() {
         routineViewModel.startCurrentActivityTimer()
     }
 
-    // ─── Pre-countdown ────────────────────────────────────────────────────────
+    // ─── Pre-countdown ──────────────────────────────────────────────────────
 
     private fun startPreCountdown() {
-        val totalDurationMillis = (PRE_COUNTDOWN_SECONDS * 1000L) + 500L
-        preCountdownTimer = object : CountDownTimer(totalDurationMillis, 1000L) {
+        preCountdownTimer = object : CountDownTimer((PRE_COUNTDOWN_SECONDS * 1000L) + 500L, 1000L) {
             override fun onTick(millisUntilFinished: Long) {
-                val secs = millisUntilFinished / 1000L
-                val display = if (secs > PRE_COUNTDOWN_SECONDS) PRE_COUNTDOWN_SECONDS else secs
-                updatePreTimer(display)
-                // Wireframe: green while prepping, red in the final 5 seconds
-                val colorRes = if (display <= 5) R.color.timer_red else R.color.timer_green
+                val secs = (millisUntilFinished / 1000L).coerceAtMost(PRE_COUNTDOWN_SECONDS)
+                updatePreTimer(secs)
+                val colorRes = if (secs <= 5) R.color.timer_red else R.color.timer_green
                 binding.tvPreTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
             }
             override fun onFinish() {
@@ -134,8 +137,6 @@ class BreathingActivityFragment : Fragment() {
         binding.tvPreTimer.text = String.format("%02d : %02d", mins, secs)
     }
 
-    // ─── Main Timer Display (driven by VM) ────────────────────────────────────
-
     private fun updateMainTimerDisplay(seconds: Long) {
         if (_binding == null) return
         val mins = seconds / 60
@@ -145,12 +146,11 @@ class BreathingActivityFragment : Fragment() {
 
     private fun updateMainTimerColor(seconds: Long) {
         if (_binding == null) return
-        // Wireframe only shows default color and red near the end — no green phase here.
         val colorRes = if (seconds <= 5) R.color.timer_red else R.color.timer_default
         binding.tvMainTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
     }
 
-    // ─── Breathing Animation (4-7-8) ──────────────────────────────────────────
+    // ─── Breathing Animation (4-7-8) ──────────────────────────────────────
 
     private fun startBreathingLoop() {
         if (isBreathingRunning) return

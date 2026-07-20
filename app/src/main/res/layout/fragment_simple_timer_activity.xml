@@ -1,17 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    fragment_breathing_activity.xml
-    Used by BreathingActivityFragment — Slow-Paced Breathing
+    fragment_simple_timer_activity.xml
+    Used by SimpleTimerActivityFragment — Reading, White/Pink Noise,
+    Bedtime To-Do List Writing, Low-Stimulus Audio Listening, Warm Shower
 
     2 panels — only one visible at a time:
       preCountdownPanel  → 15s green timer + Shleepy body + instructions
-      breathingPanel     → animated circle + Inhale/Hold/Exhale label + main timer
-
-    Note: this consolidates the previous fragment_breathing_activity.xml (which had
-    a Lottie animation + unused timesUpOverlay/completionOverlay panels not present
-    in the wireframe) and fragment_breathing_activity_2.xml (a leaner, wireframe-accurate
-    version that was left unreferenced by the Kotlin binding). This single file replaces
-    both — delete fragment_breathing_activity_2.xml from the project once this is in place.
+      activePanel        → title + instruction + main timer (+ audio, if configured)
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -20,7 +15,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/routinestatebackground">
 
-    <!-- PRE-COUNTDOWN PANEL: 15s warm-up before breathing -->
+    <!-- PRE-COUNTDOWN PANEL -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/preCountdownPanel"
         android:layout_width="match_parent"
@@ -60,17 +55,20 @@
 
         <TextView
             android:id="@+id/tvPreTitle"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
             android:layout_marginTop="24dp"
+            android:layout_marginEnd="24dp"
             android:fontFamily="@font/poppinsbold"
-            android:text="Slow-Paced Breathing"
+            android:gravity="center"
             android:textColor="#2c1769"
             android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/imgShleepyBody" />
+            app:layout_constraintTop_toBottomOf="@id/imgShleepyBody"
+            tools:text="Reading" />
 
         <TextView
             android:id="@+id/tvPreInstruction"
@@ -84,13 +82,12 @@
             android:gravity="center"
             android:paddingHorizontal="20dp"
             android:paddingVertical="14dp"
-            android:text="Follow the circle. Inhale as it grows,\nexhale as it shrinks."
             android:textColor="#515251"
             android:textSize="10sp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvPreTitle" />
+            app:layout_constraintTop_toBottomOf="@id/tvPreTitle"
+            tools:text="Get a book to read for 10 minutes." />
 
         <LinearLayout
             android:id="@+id/preTimerCard"
@@ -105,7 +102,6 @@
             android:paddingHorizontal="24dp"
             android:paddingVertical="8dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvPreInstruction">
 
@@ -128,9 +124,9 @@
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- ACTIVE BREATHING PANEL: circle + phase label + main timer -->
+    <!-- ACTIVE PANEL -->
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/breathingPanel"
+        android:id="@+id/activePanel"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="10dp"
@@ -155,31 +151,52 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <View
-            android:id="@+id/breathingCircle"
-            android:layout_width="200dp"
-            android:layout_height="200dp"
-            android:layout_marginTop="160dp"
-            android:background="@drawable/bg_breathing_circle"
-            android:scaleX="0.6"
-            android:scaleY="0.6"
+        <ImageView
+            android:id="@+id/imgShleepyBodyActive"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="200dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/shleepybody"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
-            android:id="@+id/tvBreathPhase"
-            android:layout_width="wrap_content"
+            android:id="@+id/tvActiveLabel"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginEnd="24dp"
             android:fontFamily="@font/poppinsbold"
-            android:textColor="@color/timer_green"
-            android:textSize="32sp"
+            android:gravity="center"
+            android:textColor="#2c1769"
+            android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/breathingCircle"
-            tools:text="Inhale" />
+            app:layout_constraintTop_toBottomOf="@id/imgShleepyBodyActive"
+            tools:text="Reading" />
+
+        <TextView
+            android:id="@+id/tvActiveInstruction"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="32dp"
+            android:background="@drawable/bg_instruction_card"
+            android:fontFamily="@font/poppinsregular"
+            android:gravity="center"
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="14dp"
+            android:textColor="#515251"
+            android:textSize="10sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvActiveLabel"
+            tools:text="Get a book to read for 10 minutes." />
 
         <LinearLayout
             android:id="@+id/mainTimerCard"
@@ -195,7 +212,7 @@
             android:paddingVertical="16dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvBreathPhase">
+            app:layout_constraintTop_toBottomOf="@id/tvActiveInstruction">
 
             <ImageView
                 android:layout_width="20dp"
@@ -213,8 +230,7 @@
                 android:textColor="@color/timer_default"
                 android:textSize="28sp"
                 android:textStyle="bold"
-                tools:text="05 : 00" />
+                tools:text="10 : 00" />
         </LinearLayout>
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 </FrameLayout>
