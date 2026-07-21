@@ -23,6 +23,10 @@ import kotlinx.coroutines.launch
  * 5-second transition between activities. Plays a chime, shows "Time's Up!"
  * and "Nice work — next up: [activity]", then notifies the VM which fires
  * GoToActivity for the next destination.
+ *
+ * NOTE: per-activity completion messages ("Good job! Your body will start
+ * cooling down.", etc.) are NOT wired in yet — this is scoped to the
+ * dispatch fix only. That's a separate follow-up.
  */
 class TimesUpTransitionFragment : Fragment() {
 
@@ -101,14 +105,35 @@ class TimesUpTransitionFragment : Fragment() {
         } catch (e: Exception) { /* silent fallback */ }
     }
 
+    /**
+     * FIXED: previously only "Slow-Paced Breathing" and "White/Pink Noise"
+     * were routed correctly; everything else silently fell through to
+     * genericTimerActivityFragment. Same mapping as
+     * RoutineStartFragment.navigateToActivity() — keep both in sync.
+     */
     private fun navigateToActivity(index: Int) {
         val activity = routineViewModel.activities.getOrNull(index) ?: return
+
         val destinationId = when (activity.label) {
-            "Slow-Paced Breathing" -> R.id.breathingActivityFragment
-            "White/Pink Noise"     -> R.id.audioscapeActivityFragment
-            "Gratitude Journaling" -> R.id.gratitudeJournalingActivityFragment
-            else                   -> R.id.genericTimerActivityFragment
+            "Bedtime To-Do List Writing",
+            "Reading",
+            "White/Pink Noise",
+            "Warm Shower"
+                -> R.id.audioscapeActivityFragment
+
+            "Slow-Paced Breathing",
+            "Mindfulness"
+                -> R.id.breathingActivityFragment
+
+            "Gratitude Journaling"
+                -> R.id.gratitudeJournalingActivityFragment
+
+            // Progressive Muscle Relaxation, Bedtime Stretching, and anything
+            // unrecognized still land here until the real Stepper exists.
+            else
+                -> R.id.genericTimerActivityFragment
         }
+
         findNavController().navigate(destinationId)
     }
 

@@ -65,10 +65,10 @@ class RoutineStartFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         bindViews(view)
         setupRecyclerView()
-        
+
         // If opened via deep link, VM might be empty. Fetch data if needed.
         routineViewModel.initializeIfNecessary()
-        
+
         observeState()
         setupClickListeners()
         observeNavigationEvents()
@@ -111,7 +111,7 @@ class RoutineStartFragment : Fragment() {
     }
 
     private fun setupClickListeners() {
-        // X button — go back to home. If we deep-linked here, popBackStack might go to onboarding, 
+        // X button — go back to home. If we deep-linked here, popBackStack might go to onboarding,
         // so we navigate explicitly to routineHomeFragment.
         btnExit.setOnClickListener {
             findNavController().navigate(R.id.action_global_routineHomeFragment)
@@ -148,17 +148,40 @@ class RoutineStartFragment : Fragment() {
     }
 
     /**
-     * Navigates to the correct activity Fragment based on the activity type
-     * at the given index in the routine.
+     * Navigates to the correct activity Fragment based on the activity's
+     * label at the given index in the routine. Labels match the exact
+     * activity_library.label strings seeded in Supabase.
+     *
+     * FIXED: previously only "Slow-Paced Breathing" and "White/Pink Noise"
+     * were routed correctly; everything else silently fell through to
+     * genericTimerActivityFragment (flat timer, no audio, no breathing
+     * circle, no step sequence). Progressive Muscle Relaxation and Bedtime
+     * Stretching still route to genericTimerActivityFragment for now since
+     * the real Stepper UI doesn't exist yet — that's the next piece of work,
+     * not a routing problem.
      */
     private fun navigateToActivity(index: Int) {
         val activity = routineViewModel.activities.getOrNull(index) ?: return
 
         val actionId = when (activity.label) {
-            "Slow-Paced Breathing"  -> R.id.action_routineStartFragment_to_breathingActivityFragment
-            "White/Pink Noise"      -> R.id.action_routineStartFragment_to_audioscapeActivityFragment
-            "Gratitude Journaling"  -> R.id.action_routineStartFragment_to_gratitudeJournalingActivityFragment
-            else                    -> R.id.action_routineStartFragment_to_genericTimerActivityFragment
+            "Bedtime To-Do List Writing",
+            "Reading",
+            "White/Pink Noise",
+            "Warm Shower"
+                -> R.id.action_routineStartFragment_to_audioscapeActivityFragment
+
+            "Slow-Paced Breathing",
+            "Mindfulness"
+                -> R.id.action_routineStartFragment_to_breathingActivityFragment
+
+            "Gratitude Journaling"
+                -> R.id.action_routineStartFragment_to_gratitudeJournalingActivityFragment
+
+            // Progressive Muscle Relaxation, Bedtime Stretching, and anything
+            // unrecognized still land here — the flat generic timer — until
+            // the real Stepper fragment replaces this destination's contents.
+            else
+                -> R.id.action_routineStartFragment_to_genericTimerActivityFragment
         }
 
         findNavController().navigate(actionId)
