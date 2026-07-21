@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    fragment_gratitude_journaling_activity.xml
+    Used by GratitudeJournalingActivityFragment — Gratitude Journaling only.
+
+    2 panels — only one visible at a time:
+      preCountdownPanel  → 15s green timer + Shleepy body + instructions
+      activePanel        → title + editable text box (never persisted) + main timer
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -23,45 +31,46 @@
             android:contentDescription="@null" />
 
         <ImageView
-            android:id="@+id/iv_shleepy_logo_pre"
+            android:id="@+id/idmgShleepyBody"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:layout_marginTop="30dp"
             android:scaleType="fitCenter"
             android:src="@drawable/shleepylogo"
-            android:contentDescription="Shleepy"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <ImageView
-            android:id="@+id/iv_shleepy_body_pre"
+            android:id="@+id/imgShleepyBody"
             android:layout_width="120dp"
             android:layout_height="120dp"
             android:layout_marginTop="200dp"
             android:scaleType="fitCenter"
             android:src="@drawable/shleepybody"
-            android:contentDescription="Shleepy body"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
-            android:id="@+id/tv_pre_title"
-            android:layout_width="wrap_content"
+            android:id="@+id/tvPreTitle"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
             android:layout_marginTop="24dp"
+            android:layout_marginEnd="24dp"
             android:fontFamily="@font/poppinsbold"
-            android:text="Gratitude Journaling"
+            android:gravity="center"
             android:textColor="#2c1769"
             android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/iv_shleepy_body_pre" />
+            app:layout_constraintTop_toBottomOf="@id/imgShleepyBody"
+            tools:text="Gratitude Journaling" />
 
         <TextView
-            android:id="@+id/tv_pre_instruction"
+            android:id="@+id/tvPreInstruction"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="32dp"
@@ -72,15 +81,15 @@
             android:gravity="center"
             android:paddingHorizontal="20dp"
             android:paddingVertical="14dp"
-            android:text="Take a moment to reflect. What are you grateful for tonight?"
             android:textColor="#515251"
             android:textSize="10sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_pre_title" />
+            app:layout_constraintTop_toBottomOf="@id/tvPreTitle"
+            tools:text="Reflect on three things you are grateful for." />
 
         <LinearLayout
-            android:id="@+id/pre_timer_card"
+            android:id="@+id/preTimerCard"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="48dp"
@@ -93,151 +102,121 @@
             android:paddingVertical="8dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_pre_instruction">
+            app:layout_constraintTop_toBottomOf="@id/tvPreInstruction">
 
             <ImageView
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_clock"
-                android:contentDescription="Timer" />
+                android:src="@drawable/ic_clock" />
 
             <TextView
-                android:id="@+id/tv_pre_timer"
+                android:id="@+id/tvPreTimer"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/poppinsbold"
                 android:letterSpacing="0.05"
+                android:text="00 : 15"
                 android:textColor="@color/timer_green"
                 android:textSize="22sp"
-                android:textStyle="bold"
-                tools:text="00 : 15" />
+                android:textStyle="bold" />
         </LinearLayout>
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- ACTIVE JOURNAL PANEL -->
+    <!-- ACTIVE PANEL -->
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/journalPanel"
+        android:id="@+id/activePanel"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#F5F0FF"
-        android:padding="24dp"
+        android:layout_margin="10dp"
+        android:background="@drawable/routinewhitebg"
         android:visibility="gone">
 
         <ImageView
-            android:id="@+id/iv_shleepy_logo"
-            android:layout_width="64dp"
-            android:layout_height="64dp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/bg_activity_screen"
+            android:scaleType="centerCrop"
+            android:contentDescription="@null" />
+
+        <ImageView
+            android:id="@+id/imgShleepyHead"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="30dp"
+            android:scaleType="fitCenter"
             android:src="@drawable/shleepylogo"
-            android:contentDescription="Shleepy"
-            android:layout_marginTop="16dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <ImageView
-            android:id="@+id/iv_shleepy_body"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:src="@drawable/shleepybody"
-            android:contentDescription="Shleepy body"
-            android:layout_marginTop="-8dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/iv_shleepy_logo" />
-
         <TextView
-            android:id="@+id/tv_title"
+            android:id="@+id/tvActiveLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="24dp"
             android:fontFamily="@font/poppinsbold"
-            android:text="Gratitude Journaling"
-            android:textColor="#3B1FA8"
+            android:textColor="#2c1769"
             android:textSize="18sp"
+            android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/iv_shleepy_body" />
+            app:layout_constraintTop_toBottomOf="@id/imgShleepyHead"
+            tools:text="Gratitude Journaling" />
 
-        <TextView
-            android:id="@+id/tv_subtitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:fontFamily="@font/poppinsregular"
-            android:text="Share your thoughts."
-            android:textColor="#888888"
+        <!-- Text box is never persisted: no local storage, no DB write, no VM field. -->
+        <EditText
+            android:id="@+id/etThoughts"
+            android:layout_width="0dp"
+            android:layout_height="160dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="24dp"
+            android:background="@drawable/bg_instruction_card"
+            android:gravity="top|start"
+            android:hint="Share your thoughts."
+            android:inputType="textMultiLine|textCapSentences"
+            android:padding="16dp"
+            android:textColor="#2c1769"
+            android:textColorHint="#9992B8"
             android:textSize="13sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_title" />
+            app:layout_constraintTop_toBottomOf="@id/tvActiveLabel" />
 
-        <androidx.cardview.widget.CardView
-            android:id="@+id/card_input"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_marginTop="20dp"
-            app:cardBackgroundColor="#FFFFFF"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="2dp"
-            app:layout_constraintBottom_toTopOf="@id/card_timer"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_subtitle">
-
-            <EditText
-                android:id="@+id/et_journal_entry"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@null"
-                android:fontFamily="@font/poppinsregular"
-                android:gravity="top|start"
-                android:hint="Releasing your thoughts is great for your well-being. Share your thoughts in this field"
-                android:inputType="textMultiLine|textCapSentences"
-                android:padding="20dp"
-                android:textColor="#333333"
-                android:textColorHint="#BBBBBB"
-                android:textSize="14sp" />
-        </androidx.cardview.widget.CardView>
-
-        <androidx.cardview.widget.CardView
-            android:id="@+id/card_timer"
+        <LinearLayout
+            android:id="@+id/mainTimerCard"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:cardBackgroundColor="#EDE8FF"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginStart="48dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="48dp"
+            android:background="@drawable/bg_timer_card"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="16dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent">
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/etThoughts">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginEnd="10dp"
+                android:src="@drawable/ic_clock"
+                android:tint="#7B6FE0" />
+
+            <TextView
+                android:id="@+id/tvMainTimer"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_clock"
-                    android:contentDescription="Timer"
-                    android:layout_marginBottom="4dp" />
-
-                <TextView
-                    android:id="@+id/tv_timer"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="@font/poppinsbold"
-                    android:textColor="#3B1FA8"
-                    android:textSize="36sp"
-                    tools:text="10 : 00" />
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
+                android:fontFamily="@font/poppinsbold"
+                android:letterSpacing="0.05"
+                android:textColor="@color/timer_default"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                tools:text="05 : 00" />
+        </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
-
 </FrameLayout>

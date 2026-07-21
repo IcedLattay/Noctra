@@ -65,7 +65,11 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
     val sessionSecondsRemaining: StateFlow<Int> = _sessionSecondsRemaining.asStateFlow()
     private var sessionTimerJob: Job? = null
 
-    // For demo/testing: Force all activity execution timers to 15 seconds
+    // Fallback only — used if a caller doesn't know the activity's real duration.
+    // As of this patch, every activity fragment passes its own real duration
+    // (derived from Activity.defaultDurationMinutes, or a computed sum for
+    // Stepper-shaped activities) into startCurrentActivityTimer(), so this
+    // constant should no longer be hit in normal flow.
     private val DEMO_ACTIVITY_DURATION_SECONDS = 15
 
     private val _activitySecondsRemaining = MutableStateFlow(0)
@@ -118,8 +122,11 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
                 android.util.Log.e("StreakDebug", "START SESSION FAILED", e)
                 activeSessionId = null
             }
-            // Pre-populate display so the first activity shows the right time before it starts ticking
-            _activitySecondsRemaining.value = DEMO_ACTIVITY_DURATION_SECONDS
+            // Pre-populate display using the first activity's real duration so the
+            // first activity shows the right time before its own timer starts ticking.
+            val firstDurationSeconds = activities.firstOrNull()?.defaultDurationMinutes?.times(60)
+                ?: DEMO_ACTIVITY_DURATION_SECONDS
+            _activitySecondsRemaining.value = firstDurationSeconds
 
             startSessionTimer()
             _navigationEvent.emit(NavigationEvent.GoToActivity(0))
@@ -128,13 +135,19 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
 
     /**
      * Called by the active activity fragment when it's ready to begin
-     * (e.g. after Breathing's 15s pre-countdown, or immediately for Audio/Journaling).
+     * (e.g. after the 15s pre-countdown shared by every activity shape).
      * VM owns the countdown — fragments observe `activitySecondsRemaining` for display.
+     *
+     * @param durationSeconds The real duration for this activity. Simple Timer and
+     *   Breathing Circle shapes should pass `currentActivity.defaultDurationMinutes * 60`.
+     *   Stepper-shaped activities (Progressive Muscle Relaxation, Bedtime Stretching)
+     *   should pass the sum of all their step action+rest durations, since the DB's
+     *   default_duration_minutes for those two doesn't yet reflect the step-level timing.
      */
-    fun startCurrentActivityTimer() {
+    fun startCurrentActivityTimer(durationSeconds: Int = DEMO_ACTIVITY_DURATION_SECONDS) {
         if (currentActivity == null) return
         activityTimerJob?.cancel()
-        _activitySecondsRemaining.value = DEMO_ACTIVITY_DURATION_SECONDS
+        _activitySecondsRemaining.value = durationSeconds
         activityTimerJob = viewModelScope.launch {
             while (_activitySecondsRemaining.value > 0) {
                 delay(1000)
@@ -161,13 +174,13 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /**
-     * Called by TimesUpTransitionFragment after its 5-second countdown.
+     * Called by TimesUpTransitionFragment after its countdown.
      * Emits GoToActivity so the transition fragment navigates to the next activity.
      */
     fun onTransitionComplete() {
         viewModelScope.launch {
             currentActivity?.let {
-                _activitySecondsRemaining.value = DEMO_ACTIVITY_DURATION_SECONDS
+                _activitySecondsRemaining.value = it.defaultDurationMinutes * 60
             }
             _navigationEvent.emit(NavigationEvent.GoToActivity(_currentStepIndex.value))
         }

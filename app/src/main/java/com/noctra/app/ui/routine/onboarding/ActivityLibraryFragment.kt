@@ -76,30 +76,35 @@ class ActivityLibraryFragment : Fragment() {
     }
 
     private fun observeSelection() {
+        val min = OnboardingViewModel.MIN_SELECTABLE_ACTIVITIES
+        val max = OnboardingViewModel.MAX_SELECTABLE_ACTIVITIES
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.selectedActivities.collect { selected ->
                 val count = selected.size
-                val remaining = 3 - count
+                val remainingToMin = min - count
 
                 // Update banner text
                 binding.tvSelectionCount.text = when {
-                    count == 0 -> "0 selected — add 3 more"
-                    remaining > 0 -> "$count selected — add $remaining more"
-                    else -> "3 selected ✓"
+                    count == 0 -> "0 selected — pick $min to $max"
+                    count < min -> "$count selected — add $remainingToMin more"
+                    count in min..max -> "$count selected ✓"
+                    else -> "$count selected"
                 }
                 binding.tvSelectionHint.text = when {
-                    count == 3 -> "Ready to continue!"
-                    else -> "Exactly 3 activities required"
+                    count < min -> "Select at least $min activities"
+                    count in min..max -> "Ready to continue! (up to $max total)"
+                    else -> "Maximum is $max activities"
                 }
 
                 // Update continue button
-                val ready = count == 3
+                val ready = count in min..max
                 binding.btnContinue.isEnabled = ready
                 binding.btnContinue.alpha = if (ready) 1f else 0.5f
                 binding.btnContinue.text = if (ready)
                     "Continue"
                 else
-                    "Select exactly 3 activities"
+                    "Select $min to $max activities"
 
                 // Update adapter selection state
                 adapter.setSelected(selected.map { it.activityId }.toSet())

@@ -1,17 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     fragment_breathing_activity.xml
-    Used by BreathingActivityFragment — Slow-Paced Breathing
+    Used by BreathingActivityFragment — Slow-Paced Breathing, Mindfulness Meditation
 
     2 panels — only one visible at a time:
       preCountdownPanel  → 15s green timer + Shleepy body + instructions
       breathingPanel     → animated circle + Inhale/Hold/Exhale label + main timer
-
-    Note: this consolidates the previous fragment_breathing_activity.xml (which had
-    a Lottie animation + unused timesUpOverlay/completionOverlay panels not present
-    in the wireframe) and fragment_breathing_activity_2.xml (a leaner, wireframe-accurate
-    version that was left unreferenced by the Kotlin binding). This single file replaces
-    both — delete fragment_breathing_activity_2.xml from the project once this is in place.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -20,7 +14,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/routinestatebackground">
 
-    <!-- PRE-COUNTDOWN PANEL: 15s warm-up before breathing -->
+    <!-- PRE-COUNTDOWN PANEL -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/preCountdownPanel"
         android:layout_width="match_parent"
@@ -60,17 +54,20 @@
 
         <TextView
             android:id="@+id/tvPreTitle"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
             android:layout_marginTop="24dp"
+            android:layout_marginEnd="24dp"
             android:fontFamily="@font/poppinsbold"
-            android:text="Slow-Paced Breathing"
+            android:gravity="center"
             android:textColor="#2c1769"
             android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/imgShleepyBody" />
+            app:layout_constraintTop_toBottomOf="@id/imgShleepyBody"
+            tools:text="Slow-Paced Breathing" />
 
         <TextView
             android:id="@+id/tvPreInstruction"
@@ -84,13 +81,12 @@
             android:gravity="center"
             android:paddingHorizontal="20dp"
             android:paddingVertical="14dp"
-            android:text="Follow the circle. Inhale as it grows,\nexhale as it shrinks."
             android:textColor="#515251"
             android:textSize="10sp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvPreTitle" />
+            app:layout_constraintTop_toBottomOf="@id/tvPreTitle"
+            tools:text="Follow the circle. Inhale as it grows, exhale as it shrinks." />
 
         <LinearLayout
             android:id="@+id/preTimerCard"
@@ -105,7 +101,6 @@
             android:paddingHorizontal="24dp"
             android:paddingVertical="8dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvPreInstruction">
 
@@ -128,7 +123,7 @@
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- ACTIVE BREATHING PANEL: circle + phase label + main timer -->
+    <!-- ACTIVE BREATHING PANEL -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/breathingPanel"
         android:layout_width="match_parent"
@@ -215,6 +210,5 @@
                 android:textStyle="bold"
                 tools:text="05 : 00" />
         </LinearLayout>
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 </FrameLayout>

@@ -121,19 +121,25 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
                 }
                 _activeRoutine = activeRoutine
 
-                // 2. FOR DEMO: Load only implemented activities from the library
-                val allActivities = routineRepository.getActivityLibrary()
-                val activities = allActivities.filter { 
-                    val type = it.activityType.lowercase()
-                    type == "breathing" || type == "audio" || type == "audioscape" || type == "journaling"
-                }
+                // All 9 seeded activity_library rows are now supported by a
+                // fragment (Simple Timer, Breathing Circle, Stepper, or Text
+                // Input shapes) — see ACTIVITY_MIGRATION_REFERENCE for the
+                // label -> shape mapping. Low-Stimulus Audio Listening is not
+                // yet seeded in the DB, so it can't appear here regardless.
+                //
+                // Previous version filtered by activity_type using values
+                // ("breathing", "audioscape", "journaling") that don't match
+                // the real DB values (JOURNAL / PHYS / AUDIO), so only AUDIO
+                // activities were ever showing up. Filter removed now that
+                // dispatch is label-based and all seeded activities are covered.
+                val activities = routineRepository.getActivityLibrary()
                 val totalDuration = activities.sumOf { it.defaultDurationMinutes }
 
                 // Check tonight's completion BEFORE window logic — completion wins.
                 val todayDate = routineSessionRepository.getTodayDateString()
                 val alreadyCompleted = routineSessionRepository
                     .hasCompletedSessionForDate(userId, todayDate)
-                
+
                 // Fetch streak AFTER potential update
                 val streak = routineSessionRepository.getCurrentStreak(userId)
                 android.util.Log.d("StreakDebug", "HOME: userId=$userId today=$todayDate completed=$alreadyCompleted streak=$streak")

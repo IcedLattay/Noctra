@@ -12,6 +12,15 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class OnboardingViewModel : ViewModel() {
 
+    companion object {
+        // Locked-in rule: user selects between 2 and 5 activities during
+        // onboarding (and via the same edit flow later). Resolves a
+        // documented conflict between the SRS (2-5) and the SDD (exactly 3)
+        // in favor of the SRS range.
+        const val MIN_SELECTABLE_ACTIVITIES = 2
+        const val MAX_SELECTABLE_ACTIVITIES = 5
+    }
+
     // Step 1
     private val _targetBedtime = MutableStateFlow("22:00") // default 10:00 PM
     val targetBedtime: StateFlow<String> = _targetBedtime.asStateFlow()
@@ -33,13 +42,17 @@ class OnboardingViewModel : ViewModel() {
         if (current.any { it.activityId == activity.activityId }) {
             current.removeAll { it.activityId == activity.activityId }
         } else {
-            if (current.size < 3) current.add(activity)
+            if (current.size < MAX_SELECTABLE_ACTIVITIES) current.add(activity)
         }
         _selectedActivities.value = current
     }
 
     fun isActivitySelected(activity: Activity): Boolean =
         _selectedActivities.value.any { it.activityId == activity.activityId }
+
+    /** True once the user has selected a valid number of activities (2-5 inclusive). */
+    fun isSelectionValid(): Boolean =
+        _selectedActivities.value.size in MIN_SELECTABLE_ACTIVITIES..MAX_SELECTABLE_ACTIVITIES
 
     fun confirmSelectionAndProceed() {
         _orderedActivities.value = _selectedActivities.value.toList()

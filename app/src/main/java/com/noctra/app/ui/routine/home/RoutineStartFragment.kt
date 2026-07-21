@@ -133,17 +133,53 @@ class RoutineStartFragment : Fragment() {
     }
 
     /**
-     * Navigates to the correct activity Fragment based on the activity type
-     * at the given index in the routine.
+     * Navigates to the correct activity Fragment based on the activity's
+     * label at the given index in the routine. Labels match the exact
+     * `activity_library.label` strings seeded in Supabase — see
+     * ACTIVITY_MIGRATION_REFERENCE for the full label -> shape mapping.
+     *
+     * All 9 seeded activities route to one of the 4 existing destinations,
+     * each repurposed to a shared shape:
+     *   audioscapeActivityFragment       -> Simple Timer shape
+     *   breathingActivityFragment        -> Breathing Circle shape
+     *   gratitudeJournalingActivityFragment -> Text Input shape
+     *   genericTimerActivityFragment     -> Stepper shape
+     *
+     * Low-Stimulus Audio Listening is intentionally omitted — it isn't
+     * seeded in activity_library yet, so it will never appear in
+     * routineViewModel.activities in the first place.
      */
     private fun navigateToActivity(index: Int) {
         val activity = routineViewModel.activities.getOrNull(index) ?: return
 
         val actionId = when (activity.label) {
-            "Slow-Paced Breathing"  -> R.id.action_routineStartFragment_to_breathingActivityFragment
-            "White/Pink Noise"      -> R.id.action_routineStartFragment_to_audioscapeActivityFragment
-            "Gratitude Journaling"  -> R.id.action_routineStartFragment_to_gratitudeJournalingActivityFragment
-            else                    -> R.id.action_routineStartFragment_to_genericTimerActivityFragment
+            "Bedtime To-Do List Writing",
+            "Reading",
+            "White/Pink Noise",
+            "Warm Shower"
+                -> R.id.action_routineStartFragment_to_audioscapeActivityFragment
+
+            "Slow-Paced Breathing",
+            "Mindfulness"
+                -> R.id.action_routineStartFragment_to_breathingActivityFragment
+
+            "Gratitude Journaling"
+                -> R.id.action_routineStartFragment_to_gratitudeJournalingActivityFragment
+
+            "Progressive Muscle Relaxation",
+            "Bedtime Stretching"
+                -> R.id.action_routineStartFragment_to_genericTimerActivityFragment
+
+            else -> {
+                // Unknown label — shouldn't happen with the 9 seeded activities,
+                // but fall back rather than crash if the DB gains a new row
+                // this dispatch table hasn't been updated for yet.
+                android.util.Log.w(
+                    "RoutineStartFragment",
+                    "No shape mapping for activity label '${activity.label}', falling back to genericTimerActivityFragment"
+                )
+                R.id.action_routineStartFragment_to_genericTimerActivityFragment
+            }
         }
 
         findNavController().navigate(actionId)
