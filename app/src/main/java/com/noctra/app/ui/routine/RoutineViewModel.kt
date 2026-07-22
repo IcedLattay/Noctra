@@ -99,7 +99,10 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
     val sessionSecondsRemaining: StateFlow<Int> = _sessionSecondsRemaining.asStateFlow()
     private var sessionTimerJob: Job? = null
 
-    // For demo/testing: Force all activity execution timers to 15 seconds
+    // Fallback only. Callers that know their own real duration (e.g. the
+    // Stepper shape, which sums its own sub-step durations) should pass it
+    // explicitly to startCurrentActivityTimer(). Callers that don't pass
+    // anything still get this 15s demo value, unchanged from before.
     private val DEMO_ACTIVITY_DURATION_SECONDS = 15
 
     private val _activitySecondsRemaining = MutableStateFlow(0)
@@ -162,19 +165,26 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
 
     /**
      * Called by the active activity fragment when it's ready to begin
-     * (e.g. after Breathing's 15s pre-countdown, or immediately for Audio/Journaling).
+     * (e.g. after the 15s pre-countdown shared by every activity shape).
      * VM owns the countdown — fragments observe `activitySecondsRemaining` for display.
+     *
+     * @param durationSeconds Real duration for this activity's main timer.
+     *   Defaults to the 15s demo value if the caller doesn't know its own
+     *   duration. The Stepper shape (Progressive Muscle Relaxation, Bedtime
+     *   Stretching) MUST pass its own computed total (sum of all step
+     *   action+rest durations) here — otherwise the VM will fire
+     *   GoToTransition at 15s regardless of how many steps remain.
      */
-    fun startCurrentActivityTimer() {
+    fun startCurrentActivityTimer(durationSeconds: Int = DEMO_ACTIVITY_DURATION_SECONDS) {
         if (currentActivity == null) return
         activityTimerJob?.cancel()
-        _activitySecondsRemaining.value = DEMO_ACTIVITY_DURATION_SECONDS
+        _activitySecondsRemaining.value = durationSeconds
         activityTimerJob = viewModelScope.launch {
             while (_activitySecondsRemaining.value > 0) {
                 delay(1000)
                 _activitySecondsRemaining.value--
             }
-            // Timer ended. 
+            // Timer ended.
             // If it's NOT the last step, auto-transition to next.
             // If it IS the last step, we stay here until the user taps "Complete Routine".
             if (!isLastStep) {
