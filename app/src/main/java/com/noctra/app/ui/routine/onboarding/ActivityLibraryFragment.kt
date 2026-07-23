@@ -16,6 +16,16 @@ import com.noctra.app.databinding.FragmentActivityLibraryBinding
 import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.launch
 
+/**
+ * FIXED: setupAdapter() now uses a SpanSizeLookup so the last item spans
+ * the full row width when the item count is odd (9 activities -> last row
+ * has 1 card instead of 2). Same pattern already used in
+ * RoutineHomeFragment's ActivityCardAdapter setup. Without this, the last
+ * item (Bedtime To-Do List Writing, sort_order 9) was not rendering at all —
+ * a GridLayoutManager + wrap_content measurement issue with an incomplete
+ * final row, not a data-loading problem (confirmed the DB row itself is
+ * valid and Logcat showed no fetch/decode errors).
+ */
 class ActivityLibraryFragment : Fragment() {
 
     private var _binding: FragmentActivityLibraryBinding? = null
@@ -24,6 +34,7 @@ class ActivityLibraryFragment : Fragment() {
     private val viewModel: OnboardingViewModel by navGraphViewModels(R.id.nav_graph)
     private val repository = RoutineRepository()
     private lateinit var adapter: ActivityGridAdapter
+    private lateinit var gridLayoutManager: GridLayoutManager
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -49,7 +60,7 @@ class ActivityLibraryFragment : Fragment() {
     }
 
     private fun setupEditMode() {
-        // If we are in edit mode and the VM is empty (first entry), 
+        // If we are in edit mode and the VM is empty (first entry),
         // we should pre-load the current routine.
         if (viewModel.selectedActivities.value.isEmpty()) {
             val userId = UserSession.getUserId(requireContext())
@@ -60,7 +71,7 @@ class ActivityLibraryFragment : Fragment() {
                         val profile = UserProfileRepository().getOrCreateProfile(userId)
                         val entries = repository.parseActivitySequence(activeRoutine.activitySequence)
                         val activities = repository.hydrateActivitySequence(entries)
-                        
+
                         viewModel.loadExistingRoutine(
                             activities = activities,
                             bedtime = profile.targetBedtime ?: "22:00"
@@ -77,7 +88,14 @@ class ActivityLibraryFragment : Fragment() {
         adapter = ActivityGridAdapter { activity ->
             viewModel.toggleActivity(activity)
         }
-        binding.rvActivities.layoutManager = GridLayoutManager(requireContext(), 2)
+        gridLayoutManager = GridLayoutManager(requireContext(), 2)
+        gridLayoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int): Int {
+                val itemCount = adapter.itemCount
+                return if (itemCount % 2 != 0 && position == itemCount - 1) 2 else 1
+            }
+        }
+        binding.rvActivities.layoutManager = gridLayoutManager
         binding.rvActivities.adapter = adapter
     }
 
@@ -100,7 +118,22 @@ class ActivityLibraryFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val activities = repository.getActivityLibrary()
-                adapter.submitList(activities)
+                android.util.Log.d("ActivityLibraryDebug", "Fetched ${activities.size} activities: ${activities.map { it.label }}")
+                adapter.submitList(activities) {
+                    // Runs after DiffUtil finishes applying the new list.
+                    gridLayoutManager.spanSizeLookup.invalidateSpanIndexCache()
+                    // RecyclerView (wrap_content, inside a ScrollView) can get
+                    // stuck at whatever height it was first measured at,
+                    // since submitList()'s internal requestLayout() doesn't
+                    // always propagate up through the ScrollView/LinearLayout
+                    // chain to force them to grow for the new content height.
+                    // Force it explicitly.
+                    binding.rvActivities.requestLayout()
+                    binding.rvActivities.post {
+                        binding.rvActivities.requestLayout()
+                        (binding.rvActivities.parent as? View)?.requestLayout()
+                    }
+                }
                 binding.tvError.visibility = View.GONE
             } catch (e: Exception) {
                 binding.tvError.visibility = View.VISIBLE

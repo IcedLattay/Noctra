@@ -18,6 +18,21 @@ import com.noctra.app.databinding.FragmentAudioscapeActivityBinding
 import com.noctra.app.ui.routine.RoutineViewModel
 import kotlinx.coroutines.launch
 
+/**
+ * AudioscapeActivityFragment
+ *
+ * Serves: Bedtime To-Do List Writing, Reading, White/Pink Noise, Warm Shower.
+ *
+ * FIXED: audio filename was previously a single hardcoded "white_noise"
+ * string used for every activity that reaches this fragment — meaning Warm
+ * Shower would incorrectly try to play White/Pink Noise's audio too, and
+ * there was no way to add Warm Shower's own file. Now looked up per-label.
+ *
+ * FIXED: updateMainTimerColor() had an erroneous green band between the red
+ * threshold and the default color (previously `seconds <= 10 -> green`),
+ * which doesn't match the wireframe (main timer is only ever default color
+ * or red, never green — green is reserved for the prep countdown only).
+ */
 class AudioscapeActivityFragment : Fragment() {
 
     private var _binding: FragmentAudioscapeActivityBinding? = null
@@ -28,7 +43,18 @@ class AudioscapeActivityFragment : Fragment() {
     private var mediaPlayer: MediaPlayer? = null
     private var preCountdownTimer: CountDownTimer? = null
 
-    companion object { private const val PRE_COUNTDOWN_SECONDS = 15L }
+    companion object {
+        private const val PRE_COUNTDOWN_SECONDS = 15L
+
+        // Not part of the DB schema — audio filename per activity label.
+        // File must exist at res/raw/<name>.mp3 (or other supported format).
+        // Update these as real assets are added.
+        private val AUDIO_RES_BY_LABEL = mapOf(
+            "White/Pink Noise" to "whitenoiseaudio",
+            "Warm Shower" to "warm_shower" // TODO: still a placeholder filename, confirm/replace with real asset
+            // Reading, Bedtime To-Do List Writing intentionally absent — no audio.
+        )
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -61,7 +87,8 @@ class AudioscapeActivityFragment : Fragment() {
         binding.preCountdownPanel.visibility = View.GONE
         binding.audioPanel.visibility = View.VISIBLE
         startAudio()
-        routineViewModel.startCurrentActivityTimer()
+        val durationSeconds = (routineViewModel.currentActivity?.defaultDurationMinutes ?: 0) * 60
+        routineViewModel.startCurrentActivityTimer(durationSeconds)
     }
 
     private fun startPreCountdown() {
@@ -70,7 +97,8 @@ class AudioscapeActivityFragment : Fragment() {
                 val secs = (millisUntilFinished / 1000L).coerceAtMost(PRE_COUNTDOWN_SECONDS)
                 updatePreTimer(secs)
                 val colorRes = if (secs <= 5) R.color.timer_red else R.color.timer_green
-                binding.tvPreTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))            }
+                binding.tvPreTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
+            }
             override fun onFinish() {
                 updatePreTimer(0)
                 showAudioPanel()
@@ -122,7 +150,9 @@ class AudioscapeActivityFragment : Fragment() {
     }
 
     private fun startAudio() {
-        val resId = resources.getIdentifier("white_noise", "raw", requireContext().packageName)
+        val label = routineViewModel.currentActivity?.label ?: return
+        val name = AUDIO_RES_BY_LABEL[label] ?: return
+        val resId = resources.getIdentifier(name, "raw", requireContext().packageName)
         if (resId == 0) return
         try {
             mediaPlayer = MediaPlayer.create(requireContext(), resId)?.apply {
@@ -147,12 +177,18 @@ class AudioscapeActivityFragment : Fragment() {
 
     private fun updateMainTimerColor(seconds: Long) {
         if (_binding == null) return
-        val colorRes = when {
-            seconds <= 5 -> R.color.timer_red
-            seconds <= 10 -> R.color.timer_green
-            else -> R.color.timer_default
-        }
+        val colorRes = if (seconds <= 5) R.color.timer_red else R.color.timer_default
         binding.tvMainTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
+    }
+
+    override fun onPause() {
+        super.onPause()
+        mediaPlayer?.let { if (it.isPlaying) it.pause() }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        mediaPlayer?.let { if (!it.isPlaying) it.start() }
     }
 
     override fun onDestroyView() {

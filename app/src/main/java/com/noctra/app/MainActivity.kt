@@ -61,7 +61,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        DebugSettings.setForceRoutineWindow(true) // TEMP — remove before final submission
+        //DebugSettings.setForceRoutineWindow(true) // TEMP — remove before final submission
         DebugSettings.setSkipCompletionCheck(true) // TEMP — remove before final submission
 
         val navHostFragment = supportFragmentManager
