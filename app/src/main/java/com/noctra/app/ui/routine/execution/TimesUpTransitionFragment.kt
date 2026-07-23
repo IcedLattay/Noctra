@@ -118,11 +118,12 @@ class TimesUpTransitionFragment : Fragment() {
             "Bedtime To-Do List Writing",
             "Reading",
             "White/Pink Noise",
-            "Warm Shower"
+            "Warm Shower",
+            "Mindfulness",                    // nature-scenery ambient variant
+            "Low-Stimulus Audio Listening"    // waveform variant (not seeded in DB yet)
                 -> R.id.audioscapeActivityFragment
 
-            "Slow-Paced Breathing",
-            "Mindfulness"
+            "Slow-Paced Breathing"
                 -> R.id.breathingActivityFragment
 
             "Gratitude Journaling"

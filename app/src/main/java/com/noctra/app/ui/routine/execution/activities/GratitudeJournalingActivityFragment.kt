@@ -19,6 +19,20 @@ import com.noctra.app.databinding.FragmentGratitudeJournalingActivityBinding
 import com.noctra.app.ui.routine.RoutineViewModel
 import kotlinx.coroutines.launch
 
+/**
+ * GratitudeJournalingActivityFragment
+ *
+ * Serves: Gratitude Journaling only.
+ *
+ * FIXED: previously called routineViewModel.startCurrentActivityTimer() with
+ * no argument, silently defaulting to the VM's 15s demo value permanently —
+ * not a test-mode choice, just never wired to the real DB duration (5min)
+ * at all. Now passes the real duration (or the temporary 15s test override),
+ * same pattern as AudioscapeActivityFragment and GenericTimerActivityFragment.
+ *
+ * FIXED: previous PRE_COUNTDOWN_SECONDS was 10L, not the standard 15L every
+ * other activity uses — inconsistent with the wireframe. Corrected to 15L.
+ */
 class GratitudeJournalingActivityFragment : Fragment() {
 
     private var _binding: FragmentGratitudeJournalingActivityBinding? = null
@@ -28,7 +42,14 @@ class GratitudeJournalingActivityFragment : Fragment() {
 
     private var preCountdownTimer: CountDownTimer? = null
 
-    companion object { private const val PRE_COUNTDOWN_SECONDS = 15L }
+    companion object {
+        private const val PRE_COUNTDOWN_SECONDS = 15L
+
+        // TEMPORARY FOR TESTING — set to false once all activities are
+        // manually verified, to restore the real 5-minute DB duration.
+        private const val TEST_MODE_SHORT_DURATION = true
+        private const val TEST_DURATION_SECONDS = 15
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -64,7 +85,9 @@ class GratitudeJournalingActivityFragment : Fragment() {
         binding.etJournalEntry.requestFocus()
         val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.showSoftInput(binding.etJournalEntry, InputMethodManager.SHOW_IMPLICIT)
-        routineViewModel.startCurrentActivityTimer()
+        val durationSeconds = if (TEST_MODE_SHORT_DURATION) TEST_DURATION_SECONDS
+        else (routineViewModel.currentActivity?.defaultDurationMinutes ?: 0) * 60
+        routineViewModel.startCurrentActivityTimer(durationSeconds)
     }
 
     private fun startPreCountdown() {
@@ -140,11 +163,8 @@ class GratitudeJournalingActivityFragment : Fragment() {
 
     private fun updateTimerColor(seconds: Long) {
         if (_binding == null) return
-        val colorRes = when {
-            seconds <= 5 -> R.color.timer_red
-            seconds <= 15 -> R.color.timer_green
-            else -> R.color.timer_default
-        }
+        // Wireframe only shows default color and red near the end — no green phase.
+        val colorRes = if (seconds <= 5) R.color.timer_red else R.color.timer_default
         binding.tvTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
     }
 

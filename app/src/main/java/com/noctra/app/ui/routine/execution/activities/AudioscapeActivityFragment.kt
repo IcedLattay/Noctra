@@ -21,17 +21,23 @@ import kotlinx.coroutines.launch
 /**
  * AudioscapeActivityFragment
  *
- * Serves: Bedtime To-Do List Writing, Reading, White/Pink Noise, Warm Shower.
+ * Serves six activities across three visual variants, all sharing the same
+ * 15s prep countdown -> main timer -> transition skeleton:
  *
- * FIXED: audio filename was previously a single hardcoded "white_noise"
- * string used for every activity that reaches this fragment — meaning Warm
- * Shower would incorrectly try to play White/Pink Noise's audio too, and
- * there was no way to add Warm Shower's own file. Now looked up per-label.
+ *   1. WAVEFORM variant — White/Pink Noise, Low-Stimulus Audio Listening.
+ *      Audio plays on entry, animated waveform under the instruction card.
+ *      Matches the SDD's AudioActivityScreen, which explicitly covers
+ *      "low-stimulus audio and white/pink noise activities" together.
  *
- * FIXED: updateMainTimerColor() had an erroneous green band between the red
- * threshold and the default color (previously `seconds <= 10 -> green`),
- * which doesn't match the wireframe (main timer is only ever default color
- * or red, never green — green is reserved for the prep countdown only).
+ *   2. NATURE variant — Mindfulness only. Nature scenery image replaces the
+ *      Shleepy illustration, ambient nature audio plays, NO waveform.
+ *      Matches the SDD's MindfulnessActivityScreen ("nature-themed ambient
+ *      visual with bundled meditation audio").
+ *
+ *   3. PLAIN variant — Reading, Bedtime To-Do List Writing, Warm Shower.
+ *      Shleepy illustration, no audio, no waveform, just the timer.
+ *      (Warm Shower has an audio entry below but no waveform, since its
+ *      wireframe shows ambient shower audio without a player visualization.)
  */
 class AudioscapeActivityFragment : Fragment() {
 
@@ -47,20 +53,39 @@ class AudioscapeActivityFragment : Fragment() {
         private const val PRE_COUNTDOWN_SECONDS = 15L
 
         // TEMPORARY FOR TESTING — set to false once all activities are
-        // manually verified, to restore real per-activity durations from
-        // the DB (15min Reading, 10min White/Pink Noise, 5min Bedtime To-Do
-        // List, 10min Warm Shower). Same pattern as GenericTimerActivityFragment.
+        // manually verified, to restore real per-activity durations from the DB.
         private const val TEST_MODE_SHORT_DURATION = true
         private const val TEST_DURATION_SECONDS = 15
 
+        private const val LABEL_MINDFULNESS = "Mindfulness"
+        private const val LABEL_WHITE_PINK_NOISE = "White/Pink Noise"
+
+        // Must match the `label` column in Supabase exactly once this row is
+        // seeded — it does NOT exist in the DB yet, so this activity can't
+        // appear in a routine until it's added.
+        private const val LABEL_LOW_STIMULUS = "Low-Stimulus Audio Listening"
+
         // Not part of the DB schema — audio filename per activity label.
-        // File must exist at res/raw/<name>.mp3 (or other supported format).
-        // Update these as real assets are added.
+        // Each must exist at res/raw/<name>.mp3 (or another supported format).
         private val AUDIO_RES_BY_LABEL = mapOf(
-            "White/Pink Noise" to "whitenoiseaudio",
-            "Warm Shower" to "warm_shower" // TODO: still a placeholder filename, confirm/replace with real asset
+            LABEL_WHITE_PINK_NOISE to "whitenoiseaudio",
+            // TODO: add the real meditation audio file to res/raw/ and confirm this name.
+            LABEL_LOW_STIMULUS to "meditationaudio",
+            // TODO: add the real nature/ambient audio file to res/raw/ and confirm this name.
+            LABEL_MINDFULNESS to "natureaudio",
+            // TODO: still a placeholder filename, confirm/replace with real asset.
+            "Warm Shower" to "warm_shower"
             // Reading, Bedtime To-Do List Writing intentionally absent — no audio.
         )
+
+        // Only these two get the animated waveform, per the SDD's
+        // AudioActivityScreen. Mindfulness deliberately excluded — it gets the
+        // nature visual instead.
+        private val WAVEFORM_LABELS = setOf(LABEL_WHITE_PINK_NOISE, LABEL_LOW_STIMULUS)
+
+        // TODO: replace with the real nature scenery drawable once added to
+        // res/drawable/. Falls back to hiding the image if not found.
+        private const val NATURE_SCENERY_DRAWABLE = "bg_nature_scenery"
     }
 
     override fun onCreateView(
@@ -80,19 +105,43 @@ class AudioscapeActivityFragment : Fragment() {
     }
 
     /**
-     * FIXED: title/instruction were previously left as the hardcoded
-     * "White/Pink Noise" text baked into the XML. That was fine when this
-     * fragment only served White/Pink Noise, but it now serves 4 activities
-     * (Reading, White/Pink Noise, Bedtime To-Do List Writing, Warm Shower) —
-     * so Reading and Bedtime To-Do List were showing White/Pink Noise's
-     * title and instruction. Now DB-driven, same pattern as
-     * GenericTimerActivityFragment.setupStaticUI().
+     * Title/instruction are DB-driven, and the visual variant is chosen by
+     * label. Without this, all six activities would show the hardcoded
+     * White/Pink Noise copy baked into the XML.
      */
     private fun setupStaticUI() {
         val activity = routineViewModel.currentActivity ?: return
-        binding.tvPreTitle.text = activity.label
+        val label = activity.label
+
+        binding.tvPreTitle.text = label
         binding.tvPreInstruction.text = activity.instruction
-        binding.tvAudioLabel.text = activity.label
+        binding.tvAudioLabel.text = label
+        binding.tvActiveInstruction.text = activity.instruction
+
+        val isMindfulness = label == LABEL_MINDFULNESS
+        val showWaveform = WAVEFORM_LABELS.contains(label)
+
+        // Nature scenery replaces the Shleepy illustration for Mindfulness.
+        if (isMindfulness) {
+            val resId = resources.getIdentifier(
+                NATURE_SCENERY_DRAWABLE, "drawable", requireContext().packageName
+            )
+            if (resId != 0) {
+                binding.imgNatureScenery.setImageResource(resId)
+                binding.imgNatureScenery.visibility = View.VISIBLE
+                binding.imgShleepyBodyActive.visibility = View.GONE
+            } else {
+                // Asset not added yet — fall back to Shleepy rather than
+                // showing an empty box.
+                binding.imgNatureScenery.visibility = View.GONE
+                binding.imgShleepyBodyActive.visibility = View.VISIBLE
+            }
+        } else {
+            binding.imgNatureScenery.visibility = View.GONE
+            binding.imgShleepyBodyActive.visibility = View.VISIBLE
+        }
+
+        binding.waveformView.visibility = if (showWaveform) View.VISIBLE else View.GONE
     }
 
     private fun setupListeners() {
@@ -111,6 +160,9 @@ class AudioscapeActivityFragment : Fragment() {
         binding.preCountdownPanel.visibility = View.GONE
         binding.audioPanel.visibility = View.VISIBLE
         startAudio()
+        if (binding.waveformView.visibility == View.VISIBLE) {
+            binding.waveformView.start()
+        }
         val durationSeconds = if (TEST_MODE_SHORT_DURATION) TEST_DURATION_SECONDS
         else (routineViewModel.currentActivity?.defaultDurationMinutes ?: 0) * 60
         routineViewModel.startCurrentActivityTimer(durationSeconds)
@@ -191,6 +243,7 @@ class AudioscapeActivityFragment : Fragment() {
     private fun stopAudio() {
         try { mediaPlayer?.run { if (isPlaying) stop(); release() } } catch (e: Exception) {}
         mediaPlayer = null
+        _binding?.waveformView?.stop()
     }
 
     private fun updateMainTimerDisplay(seconds: Long) {
@@ -209,11 +262,17 @@ class AudioscapeActivityFragment : Fragment() {
     override fun onPause() {
         super.onPause()
         mediaPlayer?.let { if (it.isPlaying) it.pause() }
+        _binding?.waveformView?.stop()
     }
 
     override fun onResume() {
         super.onResume()
-        mediaPlayer?.let { if (!it.isPlaying) it.start() }
+        if (binding.audioPanel.visibility == View.VISIBLE) {
+            mediaPlayer?.let { if (!it.isPlaying) it.start() }
+            if (binding.waveformView.visibility == View.VISIBLE) {
+                binding.waveformView.start()
+            }
+        }
     }
 
     override fun onDestroyView() {
