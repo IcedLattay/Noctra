@@ -8,6 +8,13 @@
          ONBOARDING FLOW (Person A)
          Entry point: MainActivity checks onboarding_completed,
          navigates here on first launch via action_global_onboarding
+
+         Step order:
+           1. bedtimeConfigFragment      — Set Your Target Bedtime
+           2. activityLibraryFragment    — Choose Your Activities
+           3. routineSequencingFragment  — Arrange Your Routine
+           4. healthConnectSetupFragment — Health Connect Setup   (NEW)
+              → onboardingSummaryFragment — You're All Set
     ════════════════════════════════════════════════════ -->
     <fragment
         android:id="@+id/bedtimeConfigFragment"
@@ -38,8 +45,27 @@
         android:id="@+id/routineSequencingFragment"
         android:name="com.noctra.app.ui.routine.onboarding.RoutineSequencingFragment"
         android:label="Arrange Routine">
+
+        <!-- First-time onboarding continues into Health Connect setup -->
+        <action
+            android:id="@+id/action_routineSequencing_to_healthConnectSetup"
+            app:destination="@id/healthConnectSetupFragment" />
+
+        <!-- Edit-routine flow skips Health Connect and goes straight to the
+             summary, since permissions were already handled at onboarding -->
         <action
             android:id="@+id/action_routineSequencing_to_onboardingSummary"
+            app:destination="@id/onboardingSummaryFragment" />
+    </fragment>
+
+    <!-- NEW — Step 4 of 4. UI shell only; no real Health Connect permission
+         request is made (see HealthConnectSetupFragment). -->
+    <fragment
+        android:id="@+id/healthConnectSetupFragment"
+        android:name="com.noctra.app.ui.routine.onboarding.HealthConnectSetupFragment"
+        android:label="Health Connect Setup">
+        <action
+            android:id="@+id/action_healthConnectSetup_to_onboardingSummary"
             app:destination="@id/onboardingSummaryFragment" />
     </fragment>
 

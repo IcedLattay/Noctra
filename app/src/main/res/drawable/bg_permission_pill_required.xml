@@ -1,0 +1,6 @@
+<!-- res/drawable/bg_permission_pill_required.xml -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#FADBDF" />
+    <corners android:radius="20dp" />
+</shape>

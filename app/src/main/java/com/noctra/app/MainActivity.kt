@@ -46,6 +46,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         R.id.routineSequencingFragment,
         R.id.onboardingSummaryFragment,
         R.id.routineStartFragment,
+        R.id.healthConnectSetupFragment,
         R.id.breathingActivityFragment,
         R.id.audioscapeActivityFragment,
         R.id.gratitudeJournalingActivityFragment,

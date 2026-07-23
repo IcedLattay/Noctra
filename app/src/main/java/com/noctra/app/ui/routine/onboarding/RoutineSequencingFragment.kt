@@ -111,7 +111,16 @@ class RoutineSequencingFragment : Fragment() {
 
     private fun setupButtons() {
         binding.btnConfirm.setOnClickListener {
-            findNavController().navigate(R.id.action_routineSequencing_to_onboardingSummary)
+            // First-time onboarding continues to Health Connect setup (Step 4 of 4).
+            // The edit-routine flow skips it — permissions were already handled
+            // during the original onboarding, so re-showing that screen would be
+            // confusing and would mislabel itself as "Step 4 of 4".
+            val destination = if (viewModel.isEditMode) {
+                R.id.action_routineSequencing_to_onboardingSummary
+            } else {
+                R.id.action_routineSequencing_to_healthConnectSetup
+            }
+            findNavController().navigate(destination)
         }
 
         binding.btnBack.setOnClickListener {
