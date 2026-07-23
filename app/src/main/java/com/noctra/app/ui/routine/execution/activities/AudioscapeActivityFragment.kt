@@ -46,6 +46,13 @@ class AudioscapeActivityFragment : Fragment() {
     companion object {
         private const val PRE_COUNTDOWN_SECONDS = 15L
 
+        // TEMPORARY FOR TESTING — set to false once all activities are
+        // manually verified, to restore real per-activity durations from
+        // the DB (15min Reading, 10min White/Pink Noise, 5min Bedtime To-Do
+        // List, 10min Warm Shower). Same pattern as GenericTimerActivityFragment.
+        private const val TEST_MODE_SHORT_DURATION = true
+        private const val TEST_DURATION_SECONDS = 15
+
         // Not part of the DB schema — audio filename per activity label.
         // File must exist at res/raw/<name>.mp3 (or other supported format).
         // Update these as real assets are added.
@@ -65,10 +72,27 @@ class AudioscapeActivityFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupStaticUI()
         showPreCountdownPanel()
         setupListeners()
         observeVm()
         startPreCountdown()
+    }
+
+    /**
+     * FIXED: title/instruction were previously left as the hardcoded
+     * "White/Pink Noise" text baked into the XML. That was fine when this
+     * fragment only served White/Pink Noise, but it now serves 4 activities
+     * (Reading, White/Pink Noise, Bedtime To-Do List Writing, Warm Shower) —
+     * so Reading and Bedtime To-Do List were showing White/Pink Noise's
+     * title and instruction. Now DB-driven, same pattern as
+     * GenericTimerActivityFragment.setupStaticUI().
+     */
+    private fun setupStaticUI() {
+        val activity = routineViewModel.currentActivity ?: return
+        binding.tvPreTitle.text = activity.label
+        binding.tvPreInstruction.text = activity.instruction
+        binding.tvAudioLabel.text = activity.label
     }
 
     private fun setupListeners() {
@@ -87,7 +111,8 @@ class AudioscapeActivityFragment : Fragment() {
         binding.preCountdownPanel.visibility = View.GONE
         binding.audioPanel.visibility = View.VISIBLE
         startAudio()
-        val durationSeconds = (routineViewModel.currentActivity?.defaultDurationMinutes ?: 0) * 60
+        val durationSeconds = if (TEST_MODE_SHORT_DURATION) TEST_DURATION_SECONDS
+        else (routineViewModel.currentActivity?.defaultDurationMinutes ?: 0) * 60
         routineViewModel.startCurrentActivityTimer(durationSeconds)
     }
 
