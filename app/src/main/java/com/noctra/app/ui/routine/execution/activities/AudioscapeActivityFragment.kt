@@ -16,6 +16,8 @@ import androidx.navigation.fragment.findNavController
 import com.noctra.app.R
 import com.noctra.app.databinding.FragmentAudioscapeActivityBinding
 import com.noctra.app.ui.routine.RoutineViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -26,18 +28,13 @@ import kotlinx.coroutines.launch
  *
  *   1. WAVEFORM variant — White/Pink Noise, Low-Stimulus Audio Listening.
  *      Audio plays on entry, animated waveform under the instruction card.
- *      Matches the SDD's AudioActivityScreen, which explicitly covers
- *      "low-stimulus audio and white/pink noise activities" together.
  *
- *   2. NATURE variant — Mindfulness only. Nature scenery image replaces the
- *      Shleepy illustration, ambient nature audio plays, NO waveform.
- *      Matches the SDD's MindfulnessActivityScreen ("nature-themed ambient
- *      visual with bundled meditation audio").
+ *   2. NATURE variant — Mindfulness only. A slideshow of nature scenery
+ *      images crossfades every 10 seconds while ambient audio plays.
+ *      NO waveform.
  *
  *   3. PLAIN variant — Reading, Bedtime To-Do List Writing, Warm Shower.
- *      Shleepy illustration, no audio, no waveform, just the timer.
- *      (Warm Shower has an audio entry below but no waveform, since its
- *      wireframe shows ambient shower audio without a player visualization.)
+ *      Shleepy illustration, no waveform.
  */
 class AudioscapeActivityFragment : Fragment() {
 
@@ -48,6 +45,10 @@ class AudioscapeActivityFragment : Fragment() {
 
     private var mediaPlayer: MediaPlayer? = null
     private var preCountdownTimer: CountDownTimer? = null
+
+    /** Resolved drawable IDs for the nature slideshow; empty for non-Mindfulness. */
+    private var natureSceneryResIds: List<Int> = emptyList()
+    private var slideshowJob: Job? = null
 
     companion object {
         private const val PRE_COUNTDOWN_SECONDS = 15L
@@ -61,31 +62,29 @@ class AudioscapeActivityFragment : Fragment() {
         private const val LABEL_WHITE_PINK_NOISE = "White/Pink Noise"
 
         // Must match the `label` column in Supabase exactly once this row is
-        // seeded — it does NOT exist in the DB yet, so this activity can't
-        // appear in a routine until it's added.
+        // seeded — it does NOT exist in the DB yet.
         private const val LABEL_LOW_STIMULUS = "Low-Stimulus Audio Listening"
 
-        // Not part of the DB schema — audio filename per activity label.
-        // Each must exist at res/raw/<name>.mp3 (or another supported format).
+        // Audio filename per activity label. Each must exist in res/raw/.
         private val AUDIO_RES_BY_LABEL = mapOf(
             LABEL_WHITE_PINK_NOISE to "whitenoiseaudio",
-            // TODO: add the real meditation audio file to res/raw/ and confirm this name.
             LABEL_LOW_STIMULUS to "meditationaudio",
-            // TODO: add the real nature/ambient audio file to res/raw/ and confirm this name.
             LABEL_MINDFULNESS to "natureaudio",
-            // TODO: still a placeholder filename, confirm/replace with real asset.
             "Warm Shower" to "warm_shower"
             // Reading, Bedtime To-Do List Writing intentionally absent — no audio.
         )
 
-        // Only these two get the animated waveform, per the SDD's
-        // AudioActivityScreen. Mindfulness deliberately excluded — it gets the
-        // nature visual instead.
+        // Only these two get the animated waveform. Mindfulness deliberately
+        // excluded — it gets the nature slideshow instead.
         private val WAVEFORM_LABELS = setOf(LABEL_WHITE_PINK_NOISE, LABEL_LOW_STIMULUS)
 
-        // TODO: replace with the real nature scenery drawable once added to
-        // res/drawable/. Falls back to hiding the image if not found.
-        private const val NATURE_SCENERY_DRAWABLE = "bg_nature_scenery"
+        // Nature slideshow: expects bg_nature_scenery_1 .. bg_nature_scenery_8
+        // in res/drawable/ (NOT res/raw — raw is for audio only).
+        // Any that are missing are silently skipped, so a partial set still works.
+        private const val NATURE_SCENERY_PREFIX = "bg_nature_scenery_"
+        private const val NATURE_SCENERY_COUNT = 8
+        private const val SLIDESHOW_INTERVAL_MS = 10_000L
+        private const val SLIDESHOW_FADE_MS = 600L
     }
 
     override fun onCreateView(
@@ -104,11 +103,6 @@ class AudioscapeActivityFragment : Fragment() {
         startPreCountdown()
     }
 
-    /**
-     * Title/instruction are DB-driven, and the visual variant is chosen by
-     * label. Without this, all six activities would show the hardcoded
-     * White/Pink Noise copy baked into the XML.
-     */
     private fun setupStaticUI() {
         val activity = routineViewModel.currentActivity ?: return
         val label = activity.label
@@ -121,17 +115,14 @@ class AudioscapeActivityFragment : Fragment() {
         val isMindfulness = label == LABEL_MINDFULNESS
         val showWaveform = WAVEFORM_LABELS.contains(label)
 
-        // Nature scenery replaces the Shleepy illustration for Mindfulness.
         if (isMindfulness) {
-            val resId = resources.getIdentifier(
-                NATURE_SCENERY_DRAWABLE, "drawable", requireContext().packageName
-            )
-            if (resId != 0) {
-                binding.imgNatureScenery.setImageResource(resId)
+            natureSceneryResIds = resolveNatureSceneryResIds()
+            if (natureSceneryResIds.isNotEmpty()) {
+                binding.imgNatureScenery.setImageResource(natureSceneryResIds.first())
                 binding.imgNatureScenery.visibility = View.VISIBLE
                 binding.imgShleepyBodyActive.visibility = View.GONE
             } else {
-                // Asset not added yet — fall back to Shleepy rather than
+                // No scenery assets present — fall back to Shleepy rather than
                 // showing an empty box.
                 binding.imgNatureScenery.visibility = View.GONE
                 binding.imgShleepyBodyActive.visibility = View.VISIBLE
@@ -142,6 +133,54 @@ class AudioscapeActivityFragment : Fragment() {
         }
 
         binding.waveformView.visibility = if (showWaveform) View.VISIBLE else View.GONE
+    }
+
+    /** Collects bg_nature_scenery_1..8, skipping any that don't exist. */
+    private fun resolveNatureSceneryResIds(): List<Int> {
+        val pkg = requireContext().packageName
+        return (1..NATURE_SCENERY_COUNT).mapNotNull { i ->
+            val id = resources.getIdentifier("$NATURE_SCENERY_PREFIX$i", "drawable", pkg)
+            if (id != 0) id else null
+        }
+    }
+
+    /**
+     * Crossfades to the next scenery image every SLIDESHOW_INTERVAL_MS.
+     * No-op unless there are at least 2 images to cycle between.
+     */
+    private fun startNatureSlideshow() {
+        if (natureSceneryResIds.size < 2) return
+        slideshowJob?.cancel()
+        slideshowJob = viewLifecycleOwner.lifecycleScope.launch {
+            var index = 0
+            while (true) {
+                delay(SLIDESHOW_INTERVAL_MS)
+                if (_binding == null) return@launch
+                index = (index + 1) % natureSceneryResIds.size
+                crossfadeSceneryTo(natureSceneryResIds[index])
+            }
+        }
+    }
+
+    private fun crossfadeSceneryTo(resId: Int) {
+        val image = _binding?.imgNatureScenery ?: return
+        image.animate()
+            .alpha(0f)
+            .setDuration(SLIDESHOW_FADE_MS / 2)
+            .withEndAction {
+                if (_binding == null) return@withEndAction
+                image.setImageResource(resId)
+                image.animate()
+                    .alpha(1f)
+                    .setDuration(SLIDESHOW_FADE_MS / 2)
+                    .start()
+            }
+            .start()
+    }
+
+    private fun stopNatureSlideshow() {
+        slideshowJob?.cancel()
+        slideshowJob = null
     }
 
     private fun setupListeners() {
@@ -162,6 +201,9 @@ class AudioscapeActivityFragment : Fragment() {
         startAudio()
         if (binding.waveformView.visibility == View.VISIBLE) {
             binding.waveformView.start()
+        }
+        if (binding.imgNatureScenery.visibility == View.VISIBLE) {
+            startNatureSlideshow()
         }
         val durationSeconds = if (TEST_MODE_SHORT_DURATION) TEST_DURATION_SECONDS
         else (routineViewModel.currentActivity?.defaultDurationMinutes ?: 0) * 60
@@ -216,10 +258,12 @@ class AudioscapeActivityFragment : Fragment() {
         when (event) {
             is RoutineViewModel.NavigationEvent.GoToTransition -> {
                 stopAudio()
+                stopNatureSlideshow()
                 findNavController().navigate(R.id.timesUpTransitionFragment)
             }
             is RoutineViewModel.NavigationEvent.GoToCompletion -> {
                 stopAudio()
+                stopNatureSlideshow()
                 findNavController().navigate(R.id.routineCompletionOverlayFragment)
             }
             else -> {}
@@ -263,6 +307,7 @@ class AudioscapeActivityFragment : Fragment() {
         super.onPause()
         mediaPlayer?.let { if (it.isPlaying) it.pause() }
         _binding?.waveformView?.stop()
+        stopNatureSlideshow()
     }
 
     override fun onResume() {
@@ -272,6 +317,9 @@ class AudioscapeActivityFragment : Fragment() {
             if (binding.waveformView.visibility == View.VISIBLE) {
                 binding.waveformView.start()
             }
+            if (binding.imgNatureScenery.visibility == View.VISIBLE) {
+                startNatureSlideshow()
+            }
         }
     }
 
@@ -280,6 +328,7 @@ class AudioscapeActivityFragment : Fragment() {
         preCountdownTimer?.cancel()
         preCountdownTimer = null
         stopAudio()
+        stopNatureSlideshow()
         _binding = null
     }
 }
