@@ -11,7 +11,7 @@ data class RoutineSession(
     @SerialName("session_date") val sessionDate: String,
     @SerialName("start_timestamp") val startTimestamp: String,
     @SerialName("completion_timestamp") val completionTimestamp: String? = null,
-    @SerialName("is_completed") val isCompleted: Boolean = false,
+    val status: String = "PENDING",
     @SerialName("streak_at_completion") val streakAtCompletion: Int? = null,
     @SerialName("multiplier_applied") val multiplierApplied: Double? = null,
     @SerialName("tokens_earned") val tokensEarned: Int? = null,

@@ -9,6 +9,7 @@ import com.noctra.app.utils.UserSession
 import com.noctra.app.workers.WindDownNotificationScheduler
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.OffsetDateTime
 
 class MissedSessionCheckerWorker(
     context: Context,
@@ -29,33 +30,25 @@ class MissedSessionCheckerWorker(
         val sessions = sessionRepository.getSessionsByDate(userId, yesterday)
 
         if (sessions.isEmpty()) {
-            // Missed session!
-            var newXp = ledger.totalXp
-            var newCurrentStreak = 0
+            // Missed session! Record it in the DB so it shows up in Analytics
+            sessionRepository.recordMissedSession(userId, yesterday)
+
+            var newCurrentStreak = ledger.currentStreak
             
-            if (ledger.devolutionPending) {
-                // Second consecutive miss -> Devolve
-                newXp = calculateDevolvedXp(ledger.totalXp)
+            if (ledger.hasFirstMiss) {
+                // Second consecutive miss -> Reset streak
+                // Note: User decided no XP loss for routine miss
+                newCurrentStreak = 0
             }
 
             val updatedLedger = ledger.copy(
                 currentStreak = newCurrentStreak,
-                devolutionPending = true, // Mark for potential devolution next time
-                totalXp = newXp
+                hasFirstMiss = true, // Set/maintain warning
+                lastUpdated = OffsetDateTime.now().toString()
             )
             rewardRepository.updateRewardLedger(updatedLedger)
         }
 
         return Result.success()
-    }
-
-    private fun calculateDevolvedXp(currentXp: Int): Int {
-        return when {
-            currentXp >= 50000 -> 15000 // To Stage 4
-            currentXp >= 15000 -> 5000  // To Stage 3
-            currentXp >= 5000 -> 1500   // To Stage 2
-            currentXp >= 1500 -> 0      // To Stage 1
-            else -> 0
-        }
     }
 }

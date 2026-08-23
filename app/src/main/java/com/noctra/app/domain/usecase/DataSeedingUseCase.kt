@@ -44,7 +44,7 @@ class DataSeedingUseCase(
                 tokenBalance = 2500,
                 totalXp = 0,
                 currentStreak = 0,
-                devolutionPending = false,
+                hasFirstMiss = false,
                 lastSessionDate = today.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE),
                 lastUpdated = java.time.OffsetDateTime.now().toString()
             ))
@@ -105,7 +105,7 @@ class DataSeedingUseCase(
                 sessionDate = dateString,
                 startTimestamp = dateString + "T21:30:00Z",
                 completionTimestamp = if (isCompleted) dateString + "T21:55:00Z" else null,
-                isCompleted = isCompleted,
+                status = if (isCompleted) "COMPLETED" else "MISSED",
                 tokensEarned = if (isCompleted) 50 else null,
                 xpEarned = if (isCompleted) 100 else null
             ))

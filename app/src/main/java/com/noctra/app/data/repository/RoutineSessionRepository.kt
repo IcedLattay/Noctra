@@ -71,7 +71,7 @@ class RoutineSessionRepository {
                 filter {
                     eq("user_id", userId)
                     eq("session_date", sessionDate)
-                    eq("is_completed", true)
+                    eq("status", "COMPLETED")
                 }
             }
             .decodeList<RoutineSession>()
@@ -91,7 +91,7 @@ class RoutineSessionRepository {
             .select {
                 filter {
                     eq("user_id", userId)
-                    eq("is_completed", true)
+                    eq("status", "COMPLETED")
                 }
                 order("completion_timestamp", Order.DESCENDING)
                 limit(1)
@@ -109,8 +109,22 @@ class RoutineSessionRepository {
                 filter {
                     eq("user_id", userId)
                     eq("session_date", sessionDate)
-                    eq("is_completed", false)
+                    eq("status", "PENDING")
                 }
+            }
+            .decodeSingleOrNull<RoutineSession>()
+    }
+
+    suspend fun getOldestPendingSession(userId: String): RoutineSession? {
+        return client
+            .from("routine_sessions")
+            .select {
+                filter {
+                    eq("user_id", userId)
+                    eq("status", "PENDING")
+                }
+                order("session_date", Order.ASCENDING)
+                limit(1)
             }
             .decodeSingleOrNull<RoutineSession>()
     }
@@ -141,7 +155,7 @@ class RoutineSessionRepository {
             .select {
                 filter {
                     eq("user_id", userId)
-                    eq("is_completed", true)
+                    eq("status", "COMPLETED")
                 }
             }
             .decodeList<RoutineSession>()
@@ -154,7 +168,7 @@ class RoutineSessionRepository {
             .select {
                 filter {
                     eq("user_id", userId)
-                    eq("is_completed", true)
+                    eq("status", "COMPLETED")
                 }
                 order("session_date", Order.DESCENDING)
             }
@@ -242,13 +256,25 @@ class RoutineSessionRepository {
         }
     }
 
+    suspend fun finalizeOldPendingSessions(userId: String) {
+        val fourteenDaysAgo = java.time.LocalDate.now().minusDays(14).toString()
+        client.from("routine_sessions")
+            .update(mapOf("status" to "MISSED")) {
+                filter {
+                    eq("user_id", userId)
+                    eq("status", "PENDING")
+                    lt("session_date", fourteenDaysAgo)
+                }
+            }
+    }
+
     @Serializable
     private data class NewSessionInsert(
         @SerialName("user_id") val userId: String,
         @SerialName("routine_config_id") val routineConfigId: String,
         @SerialName("session_date") val sessionDate: String,
         @SerialName("start_timestamp") val startTimestamp: String,
-        @SerialName("is_completed") val isCompleted: Boolean = false
+        val status: String = "PENDING"
     )
 
     @Serializable
@@ -256,12 +282,12 @@ class RoutineSessionRepository {
         @SerialName("user_id") val userId: String,
         @SerialName("session_date") val sessionDate: String,
         @SerialName("start_timestamp") val startTimestamp: String,
-        @SerialName("is_completed") val isCompleted: Boolean = false
+        val status: String = "MISSED"
     )
 
     @Serializable
     private data class SessionCompletion(
-        @SerialName("is_completed") val isCompleted: Boolean = true,
+        val status: String = "COMPLETED",
         @SerialName("completion_timestamp") val completionTimestamp: String,
         @SerialName("streak_at_completion") val streakAtCompletion: Int,
         @SerialName("multiplier_applied") val multiplierApplied: Double,

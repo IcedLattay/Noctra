@@ -62,13 +62,13 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
 
         // Handle deep links from Supabase (e.g. password recovery)
-        handleDeepLink(intent)
+        handleDeeplinks(intent)
 
         // Check onboarding status and handle permissions if already completed
         checkOnboardingStatus(navController, bottomNav)
     }
 
-    private fun handleDeepLink(intent: android.content.Intent?) {
+    private fun handleDeeplinks(intent: android.content.Intent?) {
         intent?.let {
             try {
                 SupabaseClient.client.handleDeeplinks(it)
@@ -80,7 +80,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
-        handleDeepLink(intent)
+        handleDeeplinks(intent)
     }
 
     private fun checkOnboardingStatus(navController: androidx.navigation.NavController, bottomNav: BottomNavigationView) {
@@ -277,22 +277,23 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                     userId = userId,
                     sessionDate = yesterday,
                     startTimestamp = Instant.now().minusSeconds(86400).toString(),
-                    isCompleted = false
+                    status = "MISSED"
                 )
                 RoutineSessionRepository().insertSessions(listOf(missedSession))
 
-                // 2. Reset streak and queue devolution penalty
+                // 2. Queue warning (or reset streak if already warned)
                 val repo = RewardLedgerRepository()
                 val ledger = repo.getRewardLedger(userId)
                 if (ledger != null) {
+                    val wasWarned = ledger.hasFirstMiss
                     repo.updateRewardLedger(ledger.copy(
-                        currentStreak = 0,
-                        devolutionPending = true,
+                        currentStreak = if (wasWarned) 0 else ledger.currentStreak,
+                        hasFirstMiss = true,
                         lastUpdated = OffsetDateTime.now().toString()
                     ))
                 }
 
-                Toast.makeText(this@MainActivity, "Missed night simulated. Streak reset.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, "Missed night simulated.", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 android.util.Log.e("MainActivity", "Simulate Missed Night failed", e)
                 Toast.makeText(this@MainActivity, "Missed night simulation failed: ${e.message}", Toast.LENGTH_LONG).show()

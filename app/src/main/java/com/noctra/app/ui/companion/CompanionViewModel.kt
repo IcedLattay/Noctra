@@ -11,6 +11,8 @@ import com.noctra.app.data.repository.SleepRecordRepository
 import com.noctra.app.data.repository.UserProfileRepository
 import com.noctra.app.domain.usecase.CompanionEvolutionUseCase
 import com.noctra.app.domain.usecase.DataSeedingUseCase
+import com.noctra.app.domain.usecase.ReconciliationAuditUseCase
+import com.noctra.app.data.model.RewardLedger
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -28,7 +30,8 @@ class CompanionViewModel(
     private val shopRepository: ShopRepository = ShopRepository(),
     private val inventoryRepository: InventoryRepository = InventoryRepository(),
     private val evolutionUseCase: CompanionEvolutionUseCase = CompanionEvolutionUseCase(),
-    private val seedingUseCase: DataSeedingUseCase = DataSeedingUseCase()
+    private val seedingUseCase: DataSeedingUseCase = DataSeedingUseCase(),
+    private val auditUseCase: ReconciliationAuditUseCase = ReconciliationAuditUseCase()
 ) : ViewModel() {
 
     data class ShopItemUiModel(
@@ -58,20 +61,40 @@ class CompanionViewModel(
     private val _showEvolutionPopup = MutableSharedFlow<CompanionEvolutionUseCase.EvolutionState>()
     val showEvolutionPopup: SharedFlow<CompanionEvolutionUseCase.EvolutionState> = _showEvolutionPopup.asSharedFlow()
 
-    private val _showDevolutionPopup = MutableSharedFlow<Unit>()
-    val showDevolutionPopup: SharedFlow<Unit> = _showDevolutionPopup.asSharedFlow()
+    private val _showNoticePopup = MutableSharedFlow<CompanionNotice>()
+    val showNoticePopup: SharedFlow<CompanionNotice> = _showNoticePopup.asSharedFlow()
+
+    enum class CompanionNotice { RESTORED, LOST, WARNING }
 
     private var previousStageLevel: Int? = null
     
     // session flag to prevent dialog loop
-    private var devolutionHandledThisSession = false
+    private var noticeHandledThisSession = false
 
     fun loadData(userId: String, lastShownSleepDate: String?) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
+                // 1. Snapshot Ledger BEFORE Audit
+                val oldLedger = rewardRepository.getRewardLedger(userId)
+                
+                // 2. Run the Reconciliation Audit
+                auditUseCase.execute(userId)
+                
+                // 3. Snapshot Ledger AFTER Audit
+                val newLedger = rewardRepository.getRewardLedger(userId)
+
+                // 4. Determine and Trigger Notice
+                if (oldLedger != null && newLedger != null && !noticeHandledThisSession) {
+                    val notice = determineNotice(oldLedger, newLedger)
+                    if (notice != null) {
+                        _showNoticePopup.emit(notice)
+                        noticeHandledThisSession = true
+                    }
+                }
+
                 userProfileRepository.getOrCreateProfile(userId)
-                refreshData(userId, lastShownSleepDate, triggerMorningPopup = true, checkDevolution = true)
+                refreshData(userId, lastShownSleepDate, triggerMorningPopup = true)
             } catch (e: Exception) {
                 Log.e("CompanionVM", "Load failed", e)
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
@@ -79,11 +102,22 @@ class CompanionViewModel(
         }
     }
 
+    private fun determineNotice(old: RewardLedger, new: RewardLedger): CompanionNotice? {
+        return when {
+            // Priority 1: RESTORED
+            new.currentStreak > old.currentStreak && new.currentStreak > 0 -> CompanionNotice.RESTORED
+            // Priority 2: LOST
+            new.currentStreak == 0 && old.currentStreak > 0 -> CompanionNotice.LOST
+            // Priority 3: WARNING
+            !old.hasFirstMiss && new.hasFirstMiss -> CompanionNotice.WARNING
+            else -> null
+        }
+    }
+
     private suspend fun refreshData(
         userId: String, 
         lastShownSleepDate: String?, 
-        triggerMorningPopup: Boolean = true,
-        checkDevolution: Boolean = false
+        triggerMorningPopup: Boolean = true
     ) {
         try {
             val profile = userProfileRepository.getOrCreateProfile(userId)
@@ -133,13 +167,6 @@ class CompanionViewModel(
                         shopItems = uiModels,
                         error = null
                     )
-                }
-
-                // 4. One-time devolution check
-                if (checkDevolution && !devolutionHandledThisSession && ledger.devolutionPending) {
-                    devolutionHandledThisSession = true
-                    _showDevolutionPopup.emit(Unit)
-                    rewardRepository.updateRewardLedger(ledger.copy(devolutionPending = false))
                 }
 
                 // 5. Morning Popup check
@@ -193,11 +220,11 @@ class CompanionViewModel(
                     performEquip(userId, item)
                     
                     // Final background refresh
-                    refreshData(userId, null, triggerMorningPopup = false, checkDevolution = false)
+                    refreshData(userId, null, triggerMorningPopup = false)
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = "Purchase failed: ${e.message}") }
-                refreshData(userId, null, triggerMorningPopup = false, checkDevolution = false)
+                refreshData(userId, null, triggerMorningPopup = false)
             }
         }
     }
@@ -237,10 +264,10 @@ class CompanionViewModel(
                 } else {
                     performEquip(userId, item)
                 }
-                refreshData(userId, null, triggerMorningPopup = false, checkDevolution = false)
+                refreshData(userId, null, triggerMorningPopup = false)
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = "Equip failed: ${e.message}") }
-                refreshData(userId, null, triggerMorningPopup = false, checkDevolution = false)
+                refreshData(userId, null, triggerMorningPopup = false)
             }
         }
     }
@@ -256,8 +283,8 @@ class CompanionViewModel(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 seedingUseCase.seedMockData(userId)
-                devolutionHandledThisSession = false // allow for re-testing
-                refreshData(userId, null, triggerMorningPopup = true, checkDevolution = true)
+                noticeHandledThisSession = false // allow for re-testing
+                refreshData(userId, null, triggerMorningPopup = true)
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = "Seeding failed: ${e.message}") }
             }
@@ -273,13 +300,13 @@ class CompanionViewModel(
                     
                     val updatedLedger = ledger.copy(
                         totalXp = newXp,
-                        devolutionPending = false, // xp tweak silences devolution
+                        hasFirstMiss = false, // xp tweak silences warning
                         lastUpdated = OffsetDateTime.now().toString()
                     )
                     rewardRepository.updateRewardLedger(updatedLedger)
                     
                     // Force refresh without triggering the morning/tired popups
-                    refreshData(userId, null, triggerMorningPopup = false, checkDevolution = false)
+                    refreshData(userId, null, triggerMorningPopup = false)
                 }
             } catch (e: Exception) {
                 Log.e("CompanionVM", "XP tweak failed", e)

@@ -24,7 +24,7 @@ class InsightGenerationUseCase {
     ): Result {
         // Dates the user completed a routine
         val routineCompletedDates: Set<String> = routineSessions
-            .filter { it.isCompleted }
+            .filter { it.status == "COMPLETED" }
             .map { it.sessionDate }
             .toSet()
 

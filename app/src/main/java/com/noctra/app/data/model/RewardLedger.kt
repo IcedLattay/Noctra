@@ -10,7 +10,7 @@ data class RewardLedger(
     @SerialName("total_xp") val totalXp: Int = 0,
     @SerialName("current_streak") val currentStreak: Int = 0,
     @SerialName("longest_streak") val longestStreak: Int = 0,
-    @SerialName("devolution_pending") val devolutionPending: Boolean = false,
+    @SerialName("has_first_miss") val hasFirstMiss: Boolean = false,
     @SerialName("last_session_date") val lastSessionDate: String? = null,
     @SerialName("last_updated") val lastUpdated: String
 )
