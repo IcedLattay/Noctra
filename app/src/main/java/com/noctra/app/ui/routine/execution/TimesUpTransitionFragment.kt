@@ -83,9 +83,12 @@ class TimesUpTransitionFragment : Fragment() {
             // ("Surpressing"); corrected spelling used below.
             ,"Gratitude Journaling" to
                     "Great job. Suppressing your thoughts is bad for your health. Think of yourself for a second."
-            // TODO: Low-Stimulus Audio Listening has no confirmed message yet —
-            // its wireframe mistakenly reused Bedtime To-Do List Writing's copy.
-            // Falls back to DEFAULT_COMPLETION_MESSAGE until real copy exists.
+            // Low-Stimulus Audio Listening had no wireframe message of its own
+            // (its wireframe mistakenly reused Bedtime To-Do List Writing's
+            // copy) — original copy written below, matching the tone of the
+            // other AUDIO-type messages (White/Pink Noise, Mindfulness).
+            ,"Low-Stimulus Audio Listening" to
+                    "Good job. Letting the sound wash over you is a great way to unwind."
         )
     }
 
@@ -187,7 +190,7 @@ class TimesUpTransitionFragment : Fragment() {
             "White/Pink Noise",
             "Warm Shower",
             "Mindfulness",                    // nature-scenery ambient variant
-            "Low-Stimulus Audio Listening"    // waveform variant (not seeded in DB yet)
+            "Low-Stimulus Audio Listening"    // waveform variant
                 -> R.id.audioscapeActivityFragment
 
             "Slow-Paced Breathing"

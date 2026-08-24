@@ -87,9 +87,14 @@ class GenericTimerActivityFragment : Fragment() {
             "Bedtime Stretching" to ("Rest." to listOf(
                 StepperStepConfig("neck_rolls", "Neck Rolls", "Move your head in a slow, continuous half-circle by dropping your chin to your chest and rolling it smoothly from one shoulder to the other.", "ic_stretch_neck_rolls", 3, 15),
                 StepperStepConfig("shoulder_rolls", "Shoulder Rolls", "Move your shoulders in a slow, continuous circle by lifting them up toward your ears, rolling them backward, and dropping them down in a smooth motion.", "ic_stretch_shoulder_rolls", 3, 15),
-                // TODO: instruction text confirmed swapped in wireframe — replace with correct copy once available.
-                StepperStepConfig("overhead_arm_reach", "Overhead Arm Reach", "TBD — correct copy needed", "ic_stretch_overhead_reach", 3, 15),
-                StepperStepConfig("side_neck_stretch", "Side Neck Stretch", "TBD — correct copy needed", "ic_stretch_side_neck", 3, 15),
+                // Confirmed against wireframe: this text was misplaced onto the
+                // Side Neck Stretch card there — it actually describes the
+                // overhead reach motion, so it belongs here.
+                StepperStepConfig("overhead_arm_reach", "Overhead Arm Reach", "Interlock your fingers with your palms facing up, then push your hands straight toward the ceiling while reaching as high as you can.", "ic_stretch_overhead_reach", 3, 15),
+                // Wireframe had no genuine Side Neck Stretch copy (its card
+                // duplicated Overhead Arm Reach's text) — new copy written to
+                // match the tone/length of the other steps here.
+                StepperStepConfig("side_neck_stretch", "Side Neck Stretch", "Gently tilt your head to one side, bringing your ear toward your shoulder, and hold before slowly returning to center and repeating on the other side.", "ic_stretch_side_neck", 3, 15),
                 StepperStepConfig("seated_side_stretch", "Seated Side Stretch", "Sit down, reach one arm straight up, and lean your upper body to the opposite side until you feel a stretch along your ribs", "ic_stretch_seated_side", 3, 15)
             ))
         )
