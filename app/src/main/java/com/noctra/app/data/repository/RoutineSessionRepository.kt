@@ -1,6 +1,7 @@
 package com.noctra.app.data.repository
 
 import com.noctra.app.data.model.RoutineSession
+import com.noctra.app.data.model.RoutineSessionStatus
 import com.noctra.app.data.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
@@ -55,6 +56,27 @@ class RoutineSessionRepository {
                 tokensEarned = tokensEarned,
                 xpEarned = xpEarned
             )) {
+                filter { eq("id", sessionId) }
+            }
+    }
+
+    // ─── Safety Net / Abandonment ────────────────────────────────────────────
+
+    /**
+     * Marks a session as ABANDONED_PENDING_DIAGNOSIS — used when the 60-minute
+     * Safety Net timer expires before the user finishes or explicitly resumes
+     * the routine (see RoutineSessionStatus in RoutineSession.kt for why this
+     * is a separate field from is_completed / any sleep-data reconciliation
+     * status).
+     *
+     * Does NOT touch is_completed or any reward fields — this only marks the
+     * session as no longer resumable, it doesn't mean sleep data can't later
+     * "heal" it via the reconciliation audit.
+     */
+    suspend fun markSessionAsAbandoned(sessionId: String) {
+        client
+            .from("routine_sessions")
+            .update(SessionAbandonment()) {
                 filter { eq("id", sessionId) }
             }
     }
@@ -267,5 +289,10 @@ class RoutineSessionRepository {
         @SerialName("multiplier_applied") val multiplierApplied: Double,
         @SerialName("tokens_earned") val tokensEarned: Int,
         @SerialName("xp_earned") val xpEarned: Int
+    )
+
+    @Serializable
+    private data class SessionAbandonment(
+        @SerialName("session_status") val sessionStatus: RoutineSessionStatus = RoutineSessionStatus.ABANDONED_PENDING_DIAGNOSIS
     )
 }
