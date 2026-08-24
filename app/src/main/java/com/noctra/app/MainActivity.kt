@@ -14,6 +14,7 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.noctra.app.data.repository.UserProfileRepository
+import com.noctra.app.data.utils.RoutinePersistenceHelper
 import com.noctra.app.ui.debug.DebugPanelListener
 import com.noctra.app.utils.DebugSettings
 import com.noctra.app.utils.UserSession
@@ -91,6 +92,54 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         WindDownNotificationScheduler.scheduleNext(applicationContext)
 
         checkOnboardingStatus()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        checkMorningAfterCleanup()
+    }
+
+    /**
+     * Morning After Cleanup (Cleanup & Enforcements, task 9/10).
+     *
+     * Catches the case where the device screen stayed off all night mid-
+     * routine. On the next onResume, if it's been 8+ hours since the last
+     * recorded routine activity, clear the local resume cache and send the
+     * user straight to AnalyticsDashboardFragment — so they never see last
+     * night's exercise screen again.
+     *
+     * FLAG: the spec (Aug 16 backlog) calls for "8 hours since
+     * session_start_time" specifically, but RoutinePersistenceHelper (task
+     * 3) only stores last_activity_timestamp, not a separate session-start
+     * time. Using last_activity_timestamp here as the closest available
+     * proxy. For a routine abandoned mid-sleep these are close in practice,
+     * but they're not literally the same value the spec names — flagging
+     * for leader confirmation; a dedicated session_start_time field may
+     * need to be added to RoutinePersistenceHelper if the distinction
+     * actually matters (e.g. if someone does several steps over 40+ minutes
+     * before falling asleep).
+     */
+    private fun checkMorningAfterCleanup() {
+        if (!RoutinePersistenceHelper.hasActiveSession()) return
+
+        val lastActivity = RoutinePersistenceHelper.getLastActivityTimestamp()
+        if (lastActivity == 0L) return
+
+        val gapMillis = System.currentTimeMillis() - lastActivity
+        val eightHoursMillis = 8L * 60 * 60 * 1000
+
+        if (gapMillis > eightHoursMillis) {
+            RoutinePersistenceHelper.clear()
+
+            val navHostFragment = supportFragmentManager
+                .findFragmentById(R.id.nav_host) as NavHostFragment
+            val navController = navHostFragment.navController
+
+            val navOptions = NavOptions.Builder()
+                .setPopUpTo(navController.graph.id, true)
+                .build()
+            navController.navigate(R.id.analyticsDashboardFragment, null, navOptions)
+        }
     }
 
     private fun checkOnboardingStatus() {
