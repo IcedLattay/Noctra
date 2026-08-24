@@ -7,6 +7,7 @@ import android.os.Build
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.noctra.app.data.utils.RoutinePersistenceHelper
 import com.noctra.app.workers.MissedSessionCheckerWorker
 import com.noctra.app.workers.MorningSyncWorker
 import java.time.Duration
@@ -17,6 +18,7 @@ class NoctraApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        RoutinePersistenceHelper.init(this)
         setupMorningSyncWorker()
         setupMissedSessionWorker()
         createNotificationChannels()
