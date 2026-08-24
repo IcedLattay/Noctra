@@ -7,6 +7,7 @@ import com.noctra.app.data.model.Activity
 import com.noctra.app.data.repository.RewardLedgerRepository
 import com.noctra.app.data.repository.RoutineRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
+import com.noctra.app.data.utils.RoutinePersistenceHelper
 import com.noctra.app.domain.usecase.RewardCalculationUseCase
 import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.Job
@@ -155,6 +156,17 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
                 android.util.Log.e("StreakDebug", "START SESSION FAILED", e)
                 activeSessionId = null
             }
+
+            // Local resume cache — updated regardless of whether the Supabase
+            // insert above succeeded, so the user can still resume a
+            // just-started routine locally even if that insert failed
+            // (e.g. no connectivity). NOTE: if activeSessionId is null here,
+            // the cached session has no known remote ID — checkRecoveryState()
+            // will need to account for that case when it's built.
+            RoutinePersistenceHelper.setActiveSessionId(activeSessionId)
+            RoutinePersistenceHelper.setCurrentStepIndex(0)
+            RoutinePersistenceHelper.setLastActivityTimestamp(System.currentTimeMillis())
+
             // Pre-populate display so the first activity shows the right time before it starts ticking
             _activitySecondsRemaining.value = DEMO_ACTIVITY_DURATION_SECONDS
 
@@ -201,6 +213,12 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
             } else {
                 val nextIndex = _currentStepIndex.value + 1
                 _currentStepIndex.value = nextIndex
+
+                // Local resume cache — keep step index and last-activity time
+                // current so a mid-routine app kill/reopen can recover here.
+                RoutinePersistenceHelper.setCurrentStepIndex(nextIndex)
+                RoutinePersistenceHelper.setLastActivityTimestamp(System.currentTimeMillis())
+
                 _navigationEvent.emit(NavigationEvent.GoToTransition(nextIndex))
             }
         }
@@ -246,6 +264,11 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             cancelAllTimers()
             _sessionState.value = SessionState.Completed
+
+            // Routine finished normally — clear the local resume cache so a
+            // completed session can never be mistaken for a resumable one
+            // (e.g. by a future Resume Dialog check).
+            RoutinePersistenceHelper.clear()
 
             val completionTimestamp = LocalDateTime.now()
                 .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
