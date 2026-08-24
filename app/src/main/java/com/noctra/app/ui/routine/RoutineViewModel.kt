@@ -313,7 +313,40 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
                 delay(1000)
                 _sessionSecondsRemaining.value--
             }
+            // Safety Net Watchdog: the 60-minute session timer has expired
+            // without the user finishing or explicitly resuming. Mark the
+            // session as abandoned (both remotely and in the local cache)
+            // rather than leaving it silently stuck as "in progress."
+            onSafetyNetExpired()
             cancelAllTimers()
+        }
+    }
+
+    /**
+     * Safety Net Watchdog (Cleanup & Enforcements task 10/10).
+     * Called when the 60-minute session timer hits zero. Marks the session
+     * ABANDONED_PENDING_DIAGNOSIS in Supabase and clears the local resume
+     * cache, so no future Resume Dialog check can offer to resume a session
+     * whose Safety Net has already expired.
+     *
+     * NOTE: if activeSessionId is null (e.g. the original startSession()
+     * insert failed offline — see Flag 1), there's nothing to mark remotely;
+     * we still clear the local cache so the app doesn't keep treating this
+     * as a resumable session indefinitely.
+     */
+    private fun onSafetyNetExpired() {
+        viewModelScope.launch {
+            activeSessionId?.let { sessionId ->
+                try {
+                    routineSessionRepository.markSessionAsAbandoned(sessionId)
+                    android.util.Log.d("StreakDebug", "SAFETY NET EXPIRED — session $sessionId marked abandoned")
+                } catch (e: Exception) {
+                    android.util.Log.e("StreakDebug", "Failed to mark session abandoned", e)
+                }
+            }
+            RoutinePersistenceHelper.clear()
+            _sessionState.value = SessionState.Exited
+            _navigationEvent.emit(NavigationEvent.GoToHome)
         }
     }
 
