@@ -8,7 +8,10 @@ import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.activity.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
@@ -16,6 +19,8 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.noctra.app.data.repository.UserProfileRepository
 import com.noctra.app.data.utils.RoutinePersistenceHelper
 import com.noctra.app.ui.debug.DebugPanelListener
+import com.noctra.app.ui.routine.RoutineViewModel
+import com.noctra.app.ui.routine.home.ResumeRoutineDialogFragment
 import com.noctra.app.utils.DebugSettings
 import com.noctra.app.utils.UserSession
 import com.noctra.app.workers.WindDownNotificationScheduler
@@ -60,6 +65,11 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         ActivityResultContracts.RequestPermission()
     ) { /* result ignored */ }
 
+    // Same instance the routine execution fragments obtain via
+    // activityViewModels() — Activity-scoped, so this and those fragments
+    // all share one ViewModel/ViewModelStore.
+    private val routineViewModel: RoutineViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -92,11 +102,112 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         WindDownNotificationScheduler.scheduleNext(applicationContext)
 
         checkOnboardingStatus()
+        registerResumeDialogResultListener()
+        observeRecoveryState()
     }
 
     override fun onResume() {
         super.onResume()
         checkMorningAfterCleanup()
+        checkResumableRoutine()
+    }
+
+    // ─── Global Resume Popup (tasks 7 & 8) ───────────────────────────────────
+
+    /**
+     * Trigger for The Global Resume Popup (task 7/10).
+     *
+     * FLAG: spec says "only if the user is logged in," but no explicit
+     * login-check method was visible anywhere in this codebase (UserSession,
+     * UserProfileRepository). Using onboardingCompleted as the closest
+     * available proxy — same check checkOnboardingStatus() already uses
+     * just below. Confirm with leader if a more precise login-state check
+     * exists or should be added.
+     */
+    private fun checkResumableRoutine() {
+        lifecycleScope.launch {
+            try {
+                val userId = UserSession.getUserId(applicationContext)
+                val profile = UserProfileRepository().getOrCreateProfile(userId)
+                if (!profile.onboardingCompleted) return@launch
+
+                routineViewModel.checkRecoveryState()
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "checkResumableRoutine failed", e)
+            }
+        }
+    }
+
+    /**
+     * Reacts to RoutineViewModel.recoveryState — shows the Resume Dialog
+     * (task 6) whenever checkRecoveryState() determines there's something
+     * resumable. Launched once in onCreate(); repeatOnLifecycle handles
+     * pausing/resuming this collector automatically, so it's safe against
+     * duplicate collectors across multiple onResume() calls.
+     */
+    private fun observeRecoveryState() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                routineViewModel.recoveryState.collect { state ->
+                    if (state is RoutineViewModel.RecoveryState.Resumable) {
+                        showResumeDialogIfNeeded(state)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showResumeDialogIfNeeded(state: RoutineViewModel.RecoveryState.Resumable) {
+        // Guard against showing a duplicate dialog if recoveryState re-emits
+        // while one is already on screen.
+        if (supportFragmentManager.findFragmentByTag(ResumeRoutineDialogFragment.TAG) != null) return
+
+        ResumeRoutineDialogFragment.newInstance(
+            currentStepIndex = state.stepIndex,
+            totalSteps = state.totalSteps,
+            awayMinutes = state.awayMinutes
+        ).show(supportFragmentManager, ResumeRoutineDialogFragment.TAG)
+    }
+
+    /**
+     * Handles the dialog's result — "Resume Routine" (task 7) vs
+     * "Not Now" (task 8).
+     *
+     * FLAG (race condition risk): confirmResume() does async DB work
+     * before it can emit the navigation event that actually jumps into the
+     * right activity fragment. That event is only listened for once
+     * RoutineStartFragment is on screen and subscribed — so this navigates
+     * there immediately after calling confirmResume(), relying on the DB
+     * round-trip taking longer than the synchronous navigation + fragment
+     * subscription. This should hold in practice but isn't strictly
+     * guaranteed. RoutineStartFragment (not available to edit here) may
+     * need a small follow-up change to explicitly know "I was opened to
+     * resume" rather than assuming a fresh Begin Routine tap.
+     *
+     * "Not Now" (task 8): declineResume() deliberately does NOT touch
+     * RoutinePersistenceHelper — the cached session stays intact so a
+     * Passive Resume button can still appear elsewhere (e.g. My Routines
+     * tab), per the spec. That button's own UI logic lives outside this
+     * file.
+     */
+    private fun registerResumeDialogResultListener() {
+        supportFragmentManager.setFragmentResultListener(
+            ResumeRoutineDialogFragment.REQUEST_KEY, this
+        ) { _, bundle ->
+            val resumed = bundle.getBoolean(ResumeRoutineDialogFragment.RESULT_RESUMED)
+            if (resumed) {
+                routineViewModel.confirmResume()
+                navigateToRoutineStart()
+            } else {
+                routineViewModel.declineResume()
+            }
+        }
+    }
+
+    private fun navigateToRoutineStart() {
+        val navHostFragment = supportFragmentManager
+            .findFragmentById(R.id.nav_host) as NavHostFragment
+        navHostFragment.navController.navigate(R.id.routineStartFragment)
     }
 
     /**
