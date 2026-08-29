@@ -8,16 +8,13 @@ import com.noctra.app.utils.UserSession
 import java.time.LocalDate
 
 /**
- * Provisional sync pass (~9:00 AM daily).
+ * Finalization sync pass (~5:00 PM daily, after the 4:00 PM anchor window close).
  *
- * Syncs last night's sleep (yesterday's session date) from Health Connect so the
- * morning recap popup has data to show. The wake-up anchor window (today 4:00 AM -
- * 4:00 PM) is still open at this point, so the record is written with
- * is_partial_data = true; the SleepFinalizationWorker overwrites it after 4:00 PM.
- *
- * All aggregation/scoring/upsert logic lives in the shared SleepSyncManager.
+ * Re-syncs yesterday's session date now that its wake-up anchor window has fully
+ * elapsed, so the record reflects complete data. The syncer's upsert overwrites
+ * the provisional record written by MorningSyncWorker (same user_id + session_date).
  */
-class MorningSyncWorker(
+class SleepFinalizationWorker(
     context: Context,
     params: WorkerParameters
 ) : CoroutineWorker(context, params) {
@@ -27,7 +24,7 @@ class MorningSyncWorker(
     override suspend fun doWork(): Result {
         val userId = UserSession.getUserId(applicationContext) ?: return Result.success()
 
-        // Last night's sleep belongs to yesterday's session date
+        // Yesterday's anchor window closed at 4:00 PM today
         val sessionDate = LocalDate.now().minusDays(1)
 
         return when (val result = sleepSyncManager.syncSessionDate(userId, sessionDate)) {

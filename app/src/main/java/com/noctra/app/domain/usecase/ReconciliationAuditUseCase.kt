@@ -1,5 +1,6 @@
 package com.noctra.app.domain.usecase
 
+import android.util.Log
 import com.noctra.app.data.model.RewardLedger
 import com.noctra.app.data.model.RoutineSession
 import com.noctra.app.data.repository.RewardLedgerRepository
@@ -49,11 +50,12 @@ class ReconciliationAuditUseCase(
         for (date in auditDates) {
             val dateString = date.toString()
             val session = sessionRepository.getSessionsByDate(userId, dateString).firstOrNull()
-            
-            // A. SYNC: Try to get/update sleep data for this night
-            // Note: In a real app, this would query Health Connect via SleepSyncManager
-            // For now, we assume we check the local SleepRecord table or perform a real fetch.
-            
+
+            // A. SYNC: Fetch/refresh this night's sleep data from Health Connect.
+            // The syncer handles aggregation, scoring, and idempotent upsert.
+            // The verdict below always re-runs, even when the sync finds nothing new.
+            syncSleepForDate(userId, date)
+
             // B. VERDICT: Determine if the day was a success
             val finalStatus = determineStatus(userId, date, session)
             
@@ -73,6 +75,26 @@ class ReconciliationAuditUseCase(
         rewardRepository.updateRewardLedger(currentLedger.copy(
             lastUpdated = OffsetDateTime.now().toString()
         ))
+    }
+
+    /**
+     * Syncs this date's sleep data from Health Connect before the verdict runs.
+     * Skipped when the anchor window hasn't opened yet (today's window starts
+     * tomorrow at 4:00 AM). All outcomes are non-fatal: the verdict still
+     * evaluates on whatever data is stored.
+     */
+    private suspend fun syncSleepForDate(userId: String, date: LocalDate) {
+        val windowStart = sleepSyncManager.getWakeUpAnchorWindow(date).first
+        if (Instant.now() < windowStart) return
+
+        when (val result = sleepSyncManager.syncSessionDate(userId, date)) {
+            is SleepSyncManager.SyncResult.Synced -> Unit // record written/refreshed
+            is SleepSyncManager.SyncResult.NoData -> Unit // nothing new; verdict still re-runs
+            is SleepSyncManager.SyncResult.PermissionDenied -> Unit // no sleep access; judge on stored data
+            is SleepSyncManager.SyncResult.HealthConnectUnavailable -> Unit // judge on stored data
+            is SleepSyncManager.SyncResult.Failed ->
+                Log.w("ReconciliationAudit", "Sleep sync failed for $date", result.error)
+        }
     }
 
     private suspend fun determineStatus(userId: String, date: LocalDate, session: RoutineSession?): String {

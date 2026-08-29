@@ -8,6 +8,7 @@ import com.noctra.app.data.repository.InventoryRepository
 import com.noctra.app.data.repository.RewardLedgerRepository
 import com.noctra.app.data.repository.ShopRepository
 import com.noctra.app.data.repository.SleepRecordRepository
+import com.noctra.app.data.repository.SleepSyncManager
 import com.noctra.app.data.repository.UserProfileRepository
 import com.noctra.app.domain.usecase.CompanionEvolutionUseCase
 import com.noctra.app.domain.usecase.DataSeedingUseCase
@@ -31,8 +32,13 @@ class CompanionViewModel(
     private val inventoryRepository: InventoryRepository = InventoryRepository(),
     private val evolutionUseCase: CompanionEvolutionUseCase = CompanionEvolutionUseCase(),
     private val seedingUseCase: DataSeedingUseCase = DataSeedingUseCase(),
-    private val auditUseCase: ReconciliationAuditUseCase = ReconciliationAuditUseCase()
+    private val auditUseCase: ReconciliationAuditUseCase = ReconciliationAuditUseCase(),
+    private val sleepSyncManager: SleepSyncManager = SleepSyncManager()
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "CompanionVM"
+    }
 
     data class ShopItemUiModel(
         val item: ShopItem,
@@ -75,6 +81,20 @@ class CompanionViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
+                // 0. Inline provisional sync of last night (first-open-of-the-day
+                //    trigger). Gated on the recap flag so later resumes don't
+                //    re-hit Health Connect. Silent: result ignored — the 9 AM
+                //    worker is the backup, and the auditor covers the audit range.
+                val sessionDate = java.time.LocalDate.now().minusDays(1).toString()
+                Log.d(TAG, "loadData — lastShownSleepDate: $lastShownSleepDate, sessionDate: $sessionDate")
+                if (lastShownSleepDate != sessionDate) {
+                    Log.d(TAG, "loadData — triggering inline sync for $sessionDate")
+                    val syncResult = sleepSyncManager.syncSessionDate(userId, java.time.LocalDate.now().minusDays(1))
+                    Log.d(TAG, "loadData — syncResult: $syncResult")
+                } else {
+                    Log.d(TAG, "loadData — sync skipped (already synced today)")
+                }
+
                 // 1. Snapshot Ledger BEFORE Audit
                 val oldLedger = rewardRepository.getRewardLedger(userId)
                 
@@ -169,10 +189,16 @@ class CompanionViewModel(
                     )
                 }
 
-                // 5. Morning Popup check
+                // 5. Morning Popup check — the recap is about LAST NIGHT's
+                // session (dated yesterday). Show once per session date:
+                // records get written twice (provisional + finalization), so
+                // the flag — not record existence — is the gate.
                 if (triggerMorningPopup) {
-                    val today = java.time.LocalDate.now().toString()
-                    if (latestSleep != null && latestSleep.sessionDate == today && lastShownSleepDate != today) {
+                    val recapSessionDate = java.time.LocalDate.now().minusDays(1).toString()
+                    if (latestSleep != null &&
+                        latestSleep.sessionDate == recapSessionDate &&
+                        lastShownSleepDate != recapSessionDate
+                    ) {
                         _showMorningPopup.emit(Pair(latestSleep.compositeScore ?: 0, 7))
                     }
                 }

@@ -49,6 +49,63 @@ class CompanionFragment : Fragment() {
     private var isCustomizeMode = false
     private var currentCategory = "Hats"
     
+    // Dialog Queue Logic
+    private sealed class PendingDialog {
+        data class MorningRecap(val score: Int, val xp: Int) : PendingDialog()
+        data class StreakNotice(val type: CompanionViewModel.CompanionNotice) : PendingDialog()
+        data class Evolution(val stageName: String) : PendingDialog()
+    }
+
+    private val dialogQueue = mutableListOf<PendingDialog>()
+    private var isDialogShowing = false
+
+    private fun enqueueDialog(dialog: PendingDialog) {
+        dialogQueue.add(dialog)
+        // Sort by Priority: Recap(0) > Notice(1) > Evolution(2)
+        dialogQueue.sortWith(compareBy { 
+            when(it) {
+                is PendingDialog.MorningRecap -> 0
+                is PendingDialog.StreakNotice -> 1
+                is PendingDialog.Evolution -> 2
+            }
+        })
+        processNextDialog()
+    }
+
+    private fun processNextDialog() {
+        if (isDialogShowing || dialogQueue.isEmpty()) return
+        
+        isDialogShowing = true
+        val next = dialogQueue.removeAt(0)
+        
+        when (next) {
+            is PendingDialog.MorningRecap -> {
+                MorningSleepPopupDialog.newInstance(next.score, next.xp).apply {
+                    setOnDismissCallback { onDialogClosed() }
+                    show(childFragmentManager, "MorningSleepPopup")
+                }
+            }
+            is PendingDialog.StreakNotice -> {
+                StreakNoticeDialogFragment.newInstance(next.type).apply {
+                    setOnDismissCallback { onDialogClosed() }
+                    show(childFragmentManager, "StreakNoticePopup")
+                }
+            }
+            is PendingDialog.Evolution -> {
+                EvolutionDialogFragment.newInstance(next.stageName).apply {
+                    setOnDismissCallback { onDialogClosed() }
+                    show(childFragmentManager, "EvolutionPopup")
+                }
+            }
+        }
+    }
+
+    private fun onDialogClosed() {
+        isDialogShowing = false
+        // Delay slightly to avoid window focus flickers
+        view?.postDelayed({ processNextDialog() }, 300)
+    }
+
     // Store latest equipped items to apply when animations change
     private var currentEquippedItems: Map<String, com.noctra.app.data.model.ShopItem> = emptyMap()
 
@@ -206,45 +263,29 @@ class CompanionFragment : Fragment() {
                 }
                 launch {
                     viewModel.showMorningPopup.collectLatest { (score, xp) ->
-                        showMorningPopup(score, xp)
+                        // Mark this session date's recap as shown. Keyed to the
+                        // SESSION date (last night), not today — records are
+                        // written twice (provisional + finalization), so the
+                        // flag, not record existence, prevents re-showing.
+                        val sessionDate = java.time.LocalDate.now().minusDays(1).toString()
+                        requireContext().getSharedPreferences("noctra_prefs", Context.MODE_PRIVATE)
+                            .edit(commit = false) { putString("last_shown_sleep_date", sessionDate) }
+
+                        enqueueDialog(PendingDialog.MorningRecap(score, xp))
+                    }
+                }
+                launch {
+                    viewModel.showNoticePopup.collectLatest { notice ->
+                        enqueueDialog(PendingDialog.StreakNotice(notice))
                     }
                 }
                 launch {
                     viewModel.showEvolutionPopup.collectLatest { evolution ->
-                        showEvolutionPopup(evolution.stageName)
-                    }
-                }
-                launch {
-                    viewModel.showDevolutionPopup.collectLatest {
-                        showDevolutionPenalty()
+                        enqueueDialog(PendingDialog.Evolution(evolution.stageName))
                     }
                 }
             }
         }
-    }
-
-    private fun showMorningPopup(score: Int, xp: Int) {
-        val dialog = MorningSleepPopupDialog.newInstance(score, xp)
-        dialog.show(childFragmentManager, "MorningSleepPopup")
-        
-        val today = java.time.LocalDate.now().toString()
-        requireContext().getSharedPreferences("noctra_prefs", Context.MODE_PRIVATE)
-            .edit(commit = false) {
-                putString("last_shown_sleep_date", today)
-            }
-    }
-
-    private fun showEvolutionPopup(stageName: String) {
-        val dialog = EvolutionDialogFragment.newInstance(stageName)
-        dialog.show(childFragmentManager, "EvolutionPopup")
-    }
-
-    private fun showDevolutionPenalty() {
-        androidx.appcompat.app.AlertDialog.Builder(requireContext())
-            .setTitle("Shleepy looks tired...")
-            .setMessage("Your companion needs you — complete tonight's routine to start recovering.")
-            .setPositiveButton("I will!") { _, _ -> }
-            .show()
     }
 
     private fun updateUi(state: CompanionViewModel.CompanionUiState) {

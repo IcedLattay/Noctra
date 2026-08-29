@@ -22,6 +22,17 @@ class EvolutionDialogFragment : DialogFragment() {
 
     private val companionViewModel: CompanionViewModel by activityViewModels()
 
+    private var onDismissListener: (() -> Unit)? = null
+
+    fun setOnDismissCallback(listener: () -> Unit) {
+        this.onDismissListener = listener
+    }
+
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        onDismissListener?.invoke()
+    }
+
     private val shleepyStates = mapOf(
         1 to ShleepyState("DEPRIVED", R.raw.deprived_idle, R.raw.deprived_tapped),
         2 to ShleepyState("AWAKENING", R.raw.awakening_idle, R.raw.awakening_tapped),

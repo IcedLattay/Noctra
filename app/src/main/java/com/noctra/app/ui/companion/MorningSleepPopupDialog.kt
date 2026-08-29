@@ -14,6 +14,17 @@ class MorningSleepPopupDialog : DialogFragment() {
     private var _binding: DialogMorningSleepBinding? = null
     private val binding get() = _binding!!
 
+    private var onDismissListener: (() -> Unit)? = null
+
+    fun setOnDismissCallback(listener: () -> Unit) {
+        this.onDismissListener = listener
+    }
+
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        onDismissListener?.invoke()
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,

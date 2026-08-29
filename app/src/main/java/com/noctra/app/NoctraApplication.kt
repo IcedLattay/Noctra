@@ -9,6 +9,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.noctra.app.workers.MissedSessionCheckerWorker
 import com.noctra.app.workers.MorningSyncWorker
+import com.noctra.app.workers.SleepFinalizationWorker
 import java.time.Duration
 import java.time.LocalTime
 import java.util.concurrent.TimeUnit
@@ -17,12 +18,14 @@ class NoctraApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        
+        instance = this
+
         // Initialize Supabase with session persistence
         com.noctra.app.data.supabase.SupabaseClient.init(this)
 
         setupMorningSyncWorker()
         setupMissedSessionWorker()
+        setupSleepFinalizationWorker()
         createNotificationChannels()
     }
 
@@ -49,6 +52,19 @@ class NoctraApplication : Application() {
             "MissedSessionCheckerWorker",
             ExistingPeriodicWorkPolicy.KEEP,
             missedSessionRequest
+        )
+    }
+
+    private fun setupSleepFinalizationWorker() {
+        val finalizationRequest = PeriodicWorkRequestBuilder<SleepFinalizationWorker>(24, TimeUnit.HOURS)
+            .setInitialDelay(calculateDelayUntil(17, 0), TimeUnit.MILLISECONDS)
+            .addTag("SleepFinalizationWorker")
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "SleepFinalizationWorker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            finalizationRequest
         )
     }
 
@@ -93,5 +109,8 @@ class NoctraApplication : Application() {
     companion object {
         const val CHANNEL_WIND_DOWN = "wind_down_reminders"
         const val CHANNEL_MORNING = "morning_sleep_score"
+
+        lateinit var instance: NoctraApplication
+            private set
     }
 }
