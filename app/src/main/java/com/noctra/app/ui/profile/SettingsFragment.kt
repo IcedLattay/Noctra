@@ -94,6 +94,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             requestAlarmPermissionManually()
         }
 
+        // Health Connect row
+        view.findViewById<View>(R.id.row_health_connect).setOnClickListener {
+            findNavController().navigate(R.id.action_settings_to_healthEducation)
+        }
+
         // Privacy Policy + Terms of Use (placeholder URLs)
         view.findViewById<View>(R.id.row_privacy_policy).setOnClickListener {
             openUrl("https://example.com/privacy")

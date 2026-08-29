@@ -188,7 +188,18 @@
             android:id="@+id/settingsFragment"
             android:name="com.noctra.app.ui.profile.SettingsFragment"
             android:label="Settings">
+            <action
+                android:id="@+id/action_settings_to_healthEducation"
+                app:destination="@id/healthSettingsFragment" />
         </fragment>
+
+        <!-- Pre-flight + Grant live ONLY in onboarding_graph.
+             Settings manages permissions via HealthSettingsFragment (read-only
+             statuses + deep link into Health Connect's own settings). -->
+        <fragment
+            android:id="@+id/healthSettingsFragment"
+            android:name="com.noctra.app.ui.health.HealthSettingsFragment"
+            android:label="Health Settings" />
 
         <fragment
             android:id="@+id/routineStartFragment"

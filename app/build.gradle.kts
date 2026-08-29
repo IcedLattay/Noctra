@@ -92,6 +92,9 @@ dependencies {
     // Ktor
     implementation(libs.ktor.android)
 
+    // Health Connect
+    implementation(libs.health.connect.client)
+
     // Firebase
     implementation(libs.firebase.messaging)
 

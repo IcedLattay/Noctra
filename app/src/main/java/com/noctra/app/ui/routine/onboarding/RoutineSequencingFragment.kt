@@ -117,7 +117,7 @@ class RoutineSequencingFragment : Fragment() {
                     viewModel.updateStep(userId, 3)
                 }
             }
-            findNavController().navigate(R.id.action_routineSequencing_to_onboardingSummary)
+            findNavController().navigate(R.id.action_routineSequencing_to_healthEducation)
         }
 
         binding.btnBack.setOnClickListener {
