@@ -207,7 +207,12 @@
                 style="@style/SettingsCard"
                 android:layout_marginTop="8dp">
 
-                <LinearLayout style="@style/SettingsRow">
+                <LinearLayout
+                    android:id="@+id/row_health_connect"
+                    style="@style/SettingsRow"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
                     <ImageView
                         style="@style/SettingsRowIcon"
                         android:src="@drawable/ic_health_pulse" />
@@ -221,14 +226,15 @@
                             style="@style/SettingsRowTitle"
                             android:text="Health Connect Permissions" />
                         <TextView
+                            android:id="@+id/tv_health_status_subtitle"
                             style="@style/SettingsRowSubtitle"
                             android:text="Demo Mode" />
                     </LinearLayout>
 
-                    <View
-                        android:layout_width="12dp"
-                        android:layout_height="12dp"
-                        android:background="@color/noctra_health_yellow" />
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right" />
                 </LinearLayout>
 
                 <View style="@style/SettingsDivider" />
