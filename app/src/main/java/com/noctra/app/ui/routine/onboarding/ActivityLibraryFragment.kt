@@ -63,7 +63,7 @@ class ActivityLibraryFragment : Fragment() {
         // If we are in edit mode and the VM is empty (first entry),
         // we should pre-load the current routine.
         if (viewModel.selectedActivities.value.isEmpty()) {
-            val userId = UserSession.getUserId(requireContext())
+            val userId = UserSession.getUserId(requireContext()) ?: return
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     val activeRoutine = repository.getActiveRoutine(userId)
@@ -102,6 +102,14 @@ class ActivityLibraryFragment : Fragment() {
     private fun setupButtons() {
         binding.btnContinue.setOnClickListener {
             viewModel.confirmSelectionAndProceed()
+
+            if (!viewModel.isEditMode) {
+                val userId = UserSession.getUserId(requireContext())
+                if (userId != null) {
+                    viewModel.updateStep(userId, 2)
+                }
+            }
+
             findNavController().navigate(R.id.action_activityLibrary_to_routineSequencing)
         }
 

@@ -31,50 +31,26 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <ImageView
-        android:id="@+id/ivEvolutionShleepy"
+    <!-- Shleepy Display Area -->
+    <FrameLayout
+        android:id="@+id/shleepyFrame"
         android:layout_width="280dp"
         android:layout_height="280dp"
-        android:scaleType="centerInside"
+        android:clipChildren="true"
+        android:clipToPadding="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:src="@drawable/shleepy_awakening" />
+        app:layout_constraintTop_toTopOf="parent">
 
-    <!-- Overlays for customization -->
-    <ImageView
-        android:id="@+id/ivEquippedOutfit"
-        android:layout_width="280dp"
-        android:layout_height="280dp"
-        android:scaleType="centerInside"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="@id/ivEvolutionShleepy"
-        app:layout_constraintBottom_toBottomOf="@id/ivEvolutionShleepy"
-        app:layout_constraintStart_toStartOf="@id/ivEvolutionShleepy"
-        app:layout_constraintEnd_toEndOf="@id/ivEvolutionShleepy" />
-
-    <ImageView
-        android:id="@+id/ivEquippedHat"
-        android:layout_width="280dp"
-        android:layout_height="280dp"
-        android:scaleType="centerInside"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="@id/ivEvolutionShleepy"
-        app:layout_constraintBottom_toBottomOf="@id/ivEvolutionShleepy"
-        app:layout_constraintStart_toStartOf="@id/ivEvolutionShleepy"
-        app:layout_constraintEnd_toEndOf="@id/ivEvolutionShleepy" />
-
-    <ImageView
-        android:id="@+id/ivEquippedAccessory"
-        android:layout_width="280dp"
-        android:layout_height="280dp"
-        android:scaleType="centerInside"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="@id/ivEvolutionShleepy"
-        app:layout_constraintBottom_toBottomOf="@id/ivEvolutionShleepy"
-        app:layout_constraintStart_toStartOf="@id/ivEvolutionShleepy"
-        app:layout_constraintEnd_toEndOf="@id/ivEvolutionShleepy" />
+        <!-- Lottie Sheep Pet -->
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/petAnimationView"
+            android:layout_width="450dp"
+            android:layout_height="450dp"
+            android:layout_gravity="center"
+            app:lottie_loop="true" />
+    </FrameLayout>
 
     <TextView
         android:id="@+id/tvNewStageName"
@@ -86,7 +62,7 @@
         android:textSize="32sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/ivEvolutionShleepy"
+        app:layout_constraintTop_toBottomOf="@+id/shleepyFrame"
         tools:text="THE CHARGED" />
 
     <Button

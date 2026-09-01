@@ -102,7 +102,7 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
                 if (total == 0) {
                     labelRoutineCompletion.text = "ROUTINE COMPLETION - NO DATA THIS WEEK"
                 } else {
-                    val completed = state.weekSessions.count { it.isCompleted }
+                    val completed = state.weekSessions.count { it.status == "COMPLETED" }
                     val pct = (completed * 100 / total)
                     labelRoutineCompletion.text =
                         "ROUTINE COMPLETION - $completed OF $total NIGHTS ($pct%)"
@@ -190,7 +190,7 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
             val session = byDate[date.toString()]
             when {
                 session == null -> RoutineCompletionRowView.DayStatus.NO_DATA
-                session.isCompleted -> RoutineCompletionRowView.DayStatus.COMPLETED
+                session.status == "COMPLETED" -> RoutineCompletionRowView.DayStatus.COMPLETED
                 else -> RoutineCompletionRowView.DayStatus.INCOMPLETE
             }
         }

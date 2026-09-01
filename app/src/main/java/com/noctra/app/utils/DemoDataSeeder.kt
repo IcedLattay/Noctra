@@ -196,7 +196,7 @@ class DemoDataSeeder(
             sessionDate = sessionDate.toString(),
             startTimestamp = routineStart.toString(),
             completionTimestamp = if (completed) routineStart.plusSeconds(25 * 60).toString() else null,
-            isCompleted = completed,
+            status = if (completed) "COMPLETED" else "MISSED",
             streakAtCompletion = if (completed) rng.nextInt(1, 5) else null,
             multiplierApplied = if (completed) 1.0 else null,
             tokensEarned = if (completed) 50 else null,

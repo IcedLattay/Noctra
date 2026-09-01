@@ -29,6 +29,33 @@
         <action
             android:id="@+id/action_routineSequencing_to_onboardingSummary"
             app:destination="@id/onboardingSummaryFragment" />
+        <action
+            android:id="@+id/action_routineSequencing_to_healthEducation"
+            app:destination="@id/healthEducationFragment" />
+    </fragment>
+
+    <!-- Health flow inside onboarding (per spec: steps 4a/4b before the final step) -->
+    <fragment
+        android:id="@+id/healthEducationFragment"
+        android:name="com.noctra.app.ui.health.HealthEducationFragment"
+        android:label="Health Sync">
+        <action
+            android:id="@+id/action_healthEducation_to_healthGrant"
+            app:destination="@id/healthGrantFragment" />
+        <!-- Skip = skip the health flow entirely, proceed to the summary -->
+        <action
+            android:id="@+id/action_healthEducation_to_onboardingSummary"
+            app:destination="@id/onboardingSummaryFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/healthGrantFragment"
+        android:name="com.noctra.app.ui.health.HealthGrantFragment"
+        android:label="Grant Permissions">
+        <!-- Grant success or Skip-continue both advance to the summary -->
+        <action
+            android:id="@+id/action_healthGrant_to_onboardingSummary"
+            app:destination="@id/onboardingSummaryFragment" />
     </fragment>
 
     <fragment

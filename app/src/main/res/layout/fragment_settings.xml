@@ -93,8 +93,61 @@
                         <TextView
                             android:id="@+id/value_email"
                             style="@style/SettingsRowSubtitle"
-                            android:text="(demo mode)" />
+                            tools:text="me@example.com" />
                     </LinearLayout>
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <!-- Change Password row -->
+                <LinearLayout
+                    android:id="@+id/row_change_password"
+                    style="@style/SettingsRow"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_settings_key" />
+
+                    <TextView
+                        style="@style/SettingsRowTitle"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:text="Change Password" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <!-- Delete Account row -->
+                <LinearLayout
+                    android:id="@+id/row_delete_account"
+                    style="@style/SettingsRow"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_settings_delete" />
+
+                    <TextView
+                        style="@style/SettingsRowTitle"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:text="Delete Account"
+                        android:textColor="@color/noctra_destructive_red" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -154,7 +207,12 @@
                 style="@style/SettingsCard"
                 android:layout_marginTop="8dp">
 
-                <LinearLayout style="@style/SettingsRow">
+                <LinearLayout
+                    android:id="@+id/row_health_connect"
+                    style="@style/SettingsRow"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
                     <ImageView
                         style="@style/SettingsRowIcon"
                         android:src="@drawable/ic_health_pulse" />
@@ -168,14 +226,15 @@
                             style="@style/SettingsRowTitle"
                             android:text="Health Connect Permissions" />
                         <TextView
+                            android:id="@+id/tv_health_status_subtitle"
                             style="@style/SettingsRowSubtitle"
                             android:text="Demo Mode" />
                     </LinearLayout>
 
-                    <View
-                        android:layout_width="12dp"
-                        android:layout_height="12dp"
-                        android:background="@color/noctra_health_yellow" />
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right" />
                 </LinearLayout>
 
                 <View style="@style/SettingsDivider" />
@@ -262,6 +321,70 @@
                         android:layout_height="wrap_content"
                         app:thumbTint="@color/noctra_purple_light"
                         app:trackTint="@color/noctra_purple_faint" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <LinearLayout
+                    android:id="@+id/row_notification_permissions"
+                    style="@style/SettingsRow"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_bell" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="Notification Permissions" />
+                        <TextView
+                            style="@style/SettingsRowSubtitle"
+                            android:text="Manage system notification settings" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <LinearLayout
+                    android:id="@+id/row_alarm_permissions"
+                    style="@style/SettingsRow"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
+
+                    <ImageView
+                        style="@style/SettingsRowIcon"
+                        android:src="@drawable/ic_clock" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            style="@style/SettingsRowTitle"
+                            android:text="Exact Alarm Permissions" />
+                        <TextView
+                            style="@style/SettingsRowSubtitle"
+                            android:text="Required for precise wind-down timing" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -351,6 +474,17 @@
                         android:src="@drawable/ic_chevron_right" />
                 </LinearLayout>
             </LinearLayout>
+
+            <Button
+                android:id="@+id/btn_sign_out"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Sign Out"
+                android:textColor="@color/noctra_destructive_red"
+                android:textAllCaps="false"
+                android:fontFamily="@font/poppinsbold" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

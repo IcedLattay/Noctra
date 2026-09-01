@@ -1,89 +1,137 @@
 package com.noctra.app.workers
 
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.content.Context
-import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
+import android.content.Intent
+import android.os.Build
 import com.noctra.app.data.repository.RoutineRepository
 import com.noctra.app.data.repository.UserProfileRepository
-import com.noctra.app.utils.UserSession
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.time.Duration
+import com.noctra.app.receivers.WindDownNotificationReceiver
+import com.noctra.app.data.supabase.SupabaseClient
+import io.github.jan.supabase.gotrue.auth
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.util.concurrent.TimeUnit
+import java.time.ZoneId
 
 /**
  * WindDownNotificationScheduler
  *
  * Computes when the user's routine window opens
- * (target_bedtime − total_routine_duration_minutes) and enqueues a
- * OneTimeWorkRequest for WindDownNotificationWorker to fire at that time.
+ * (target_bedtime − total_routine_duration_minutes) and schedules an
+ * AlarmManager intent for WindDownNotificationReceiver to fire at that time.
  *
  * Call sites:
  *   - After onboarding completion (first time bedtime + routine are saved)
  *   - After bedtime change in Settings
  *   - After routine edit (total duration may have changed)
- *   - From MainActivity.onCreate() as a safety net (work canceled by OS, fresh install, etc.)
- *   - From WindDownNotificationWorker.doWork() to chain the next day
+ *   - From MainActivity.onCreate() as a safety net
+ *   - From MissedSessionCheckerWorker (Morning Refresh logic)
  *
- * Idempotent: ExistingWorkPolicy.REPLACE means multiple calls collapse to
- * the most recent computation. Safe to call liberally.
+ * Idempotent: AlarmManager with the same PendingIntent replaces the previous alarm.
  */
 object WindDownNotificationScheduler {
 
-    private const val UNIQUE_WORK_NAME = "noctra_wind_down_notification"
+    suspend fun scheduleNext(context: Context) {
+        // Ensure Supabase is initialized before checking user session
+        val auth = SupabaseClient.client.auth
+        auth.awaitInitialization()
 
-    fun scheduleNext(context: Context) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val userId = UserSession.getUserId(context) ?: return@launch
+        // Only schedule if the user actually wants notifications
+        if (!com.noctra.app.utils.NotificationPreferences.isWindDownEnabled(context)) {
+            cancel(context)
+            return
+        }
+
+        // 1. Try to get data from Local Cache first (Fast & Offline)
+        var bedtimeString = com.noctra.app.utils.NotificationPreferences.getCachedBedtime(context)
+        var routineDuration = com.noctra.app.utils.NotificationPreferences.getCachedDuration(context)
+
+        // 2. If cache is empty, fallback to Network (Slow & requires Signal)
+        if (bedtimeString == null || routineDuration == 0) {
+            val userId = com.noctra.app.utils.UserSession.getUserId(context) ?: return
 
             val profile = runCatching {
                 UserProfileRepository().getOrCreateProfile(userId)
-            }.getOrNull() ?: return@launch
-
-            val bedtimeString = profile.targetBedtime ?: return@launch
-
+            }.getOrNull()
+            
             val routine = runCatching {
                 RoutineRepository().getActiveRoutine(userId)
-            }.getOrNull() ?: return@launch
+            }.getOrNull()
 
-            val triggerAt = computeNextTrigger(
-                bedtimeString = bedtimeString,
-                routineDurationMinutes = routine.totalDurationMinutes
+            bedtimeString = profile?.targetBedtime
+            routineDuration = routine?.totalDurationMinutes ?: 0
+
+            // Save to cache for next time
+            if (bedtimeString != null && routineDuration != 0) {
+                com.noctra.app.utils.NotificationPreferences.updateCachedSettings(
+                    context, bedtimeString, routineDuration
+                )
+            }
+        }
+
+        if (bedtimeString == null || routineDuration == 0) return
+
+        val triggerAt = computeNextTrigger(
+            bedtimeString = bedtimeString,
+            routineDurationMinutes = routineDuration
+        )
+
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, WindDownNotificationReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val triggerAtMillis = triggerAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+            } else {
+                // Fallback to non-exact alarm to avoid SecurityException
+                alarmManager.setAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerAtMillis,
+                pendingIntent
             )
-            val initialDelayMs = Duration.between(LocalDateTime.now(), triggerAt).toMillis()
-            if (initialDelayMs <= 0) return@launch  // defensive
-
-            val request = OneTimeWorkRequestBuilder<WindDownNotificationWorker>()
-                .setInitialDelay(initialDelayMs, TimeUnit.MILLISECONDS)
-                .build()
-
-            WorkManager.getInstance(context).enqueueUniqueWork(
-                UNIQUE_WORK_NAME,
-                ExistingWorkPolicy.REPLACE,
-                request
+        } else {
+            alarmManager.setExact(
+                AlarmManager.RTC_WAKEUP,
+                triggerAtMillis,
+                pendingIntent
             )
         }
     }
 
     fun cancel(context: Context) {
-        WorkManager.getInstance(context).cancelUniqueWork(UNIQUE_WORK_NAME)
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, WindDownNotificationReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.cancel(pendingIntent)
     }
 
     /**
      * Computes the next LocalDateTime at which the routine window opens.
-     *
-     * Algorithm:
-     *   1. windowOpen = bedtime − routineDurationMinutes  (LocalTime math)
-     *   2. candidate = today at windowOpen
-     *   3. if candidate is in the past, add 1 day
-     *
-     * This correctly handles bedtimes after midnight (e.g., 1 AM target with
-     * 90-min routine → 11:30 PM window open) because we never wrap dates
-     * during the LocalTime arithmetic; the "is it past now?" check resolves it.
      */
     internal fun computeNextTrigger(
         bedtimeString: String,

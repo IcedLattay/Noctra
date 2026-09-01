@@ -41,6 +41,14 @@ class UserProfileRepository {
     suspend fun markOnboardingComplete(userId: String) {
         client.from("user_profiles").update({
             set("onboarding_completed", true)
+            set("onboarding_step", 4) // All steps done
+            set("updated_at", "now()")
+        }) { filter { eq("user_id", userId) } }
+    }
+
+    suspend fun updateOnboardingStep(userId: String, step: Int) {
+        client.from("user_profiles").update({
+            set("onboarding_step", step)
             set("updated_at", "now()")
         }) { filter { eq("user_id", userId) } }
     }
@@ -48,6 +56,21 @@ class UserProfileRepository {
     suspend fun resetOnboarding(userId: String) {
         client.from("user_profiles").update({
             set("onboarding_completed", false)
+            set("onboarding_step", 0)
+            set("updated_at", "now()")
+        }) { filter { eq("user_id", userId) } }
+    }
+
+    suspend fun updateEmailVerificationStatus(userId: String, verified: Boolean) {
+        client.from("user_profiles").update({
+            set("is_email_verified", verified)
+            set("updated_at", "now()")
+        }) { filter { eq("user_id", userId) } }
+    }
+
+    suspend fun updateEmail(userId: String, email: String) {
+        client.from("user_profiles").update({
+            set("email", email)
             set("updated_at", "now()")
         }) { filter { eq("user_id", userId) } }
     }

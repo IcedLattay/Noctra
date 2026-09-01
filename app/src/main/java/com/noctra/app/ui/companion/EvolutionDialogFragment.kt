@@ -1,6 +1,7 @@
 package com.noctra.app.ui.companion
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -8,9 +9,11 @@ import android.view.animation.AlphaAnimation
 import android.view.animation.Animation
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
+import com.airbnb.lottie.LottieProperty
+import com.airbnb.lottie.model.KeyPath
+import com.airbnb.lottie.value.LottieValueCallback
 import com.noctra.app.R
 import com.noctra.app.databinding.DialogEvolutionBinding
-import com.noctra.app.utils.ShleepyAssetHelper
 
 class EvolutionDialogFragment : DialogFragment() {
 
@@ -18,6 +21,27 @@ class EvolutionDialogFragment : DialogFragment() {
     private val binding get() = _binding!!
 
     private val companionViewModel: CompanionViewModel by activityViewModels()
+
+    private var onDismissListener: (() -> Unit)? = null
+
+    fun setOnDismissCallback(listener: () -> Unit) {
+        this.onDismissListener = listener
+    }
+
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        onDismissListener?.invoke()
+    }
+
+    private val shleepyStates = mapOf(
+        1 to ShleepyState("DEPRIVED", R.raw.deprived_idle, R.raw.deprived_tapped),
+        2 to ShleepyState("AWAKENING", R.raw.awakening_idle, R.raw.awakening_tapped),
+        3 to ShleepyState("CHARGED", R.raw.charged_idle, R.raw.charged_tapped),
+        4 to ShleepyState("OVERDRIVE", R.raw.overdrive_idle, R.raw.overdrive_tapped),
+        5 to ShleepyState("ZEN", R.raw.zen_idle, R.raw.zen_tapped)
+    )
+
+    data class ShleepyState(val name: String, val idleRes: Int, val tappedRes: Int)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,41 +82,72 @@ class EvolutionDialogFragment : DialogFragment() {
         val state = companionViewModel.uiState.value
         val evolution = state.evolutionState ?: return
 
-        // 1. Base Shleepy
-        val shleepyResId = when (evolution.stageLevel) {
-            1 -> R.drawable.shleepy_depleted
-            2 -> R.drawable.shleepy_awakening
-            3 -> R.drawable.shleepy_charged
-            4 -> R.drawable.shleepy_overdrive
-            5 -> R.drawable.shleepy_zenmaster
-            else -> R.drawable.shleepy_depleted
+        // 1. Base Shleepy Animation
+        val shleepyState = shleepyStates[evolution.stageLevel] ?: shleepyStates[1]!!
+        binding.petAnimationView.apply {
+            setAnimation(shleepyState.idleRes)
+            repeatCount = -1
+            playAnimation()
         }
-        binding.ivEvolutionShleepy.setImageResource(shleepyResId)
 
         // 2. Equipped Items
-        val stageSuffix = when (evolution.stageLevel) {
-            1 -> "depleted"
-            2 -> "awakening"
-            3 -> "charged"
-            4 -> "overdrive"
-            5 -> "zenmaster"
-            else -> "depleted"
-        }
+        applyAccessoriesVisibility(state.equippedItems)
+    }
 
-        val categories = mapOf(
-            "HAT" to binding.ivEquippedHat,
-            "OUTFIT" to binding.ivEquippedOutfit,
-            "ACCESSORY" to binding.ivEquippedAccessory
+    private fun applyAccessoriesVisibility(equippedItems: Map<String, com.noctra.app.data.model.ShopItem>) {
+        val petView = binding.petAnimationView
+        
+        // Define all possible hat layers
+        val allHatLayers = listOf("hat_sleeping_hat", "hat_propeller_hat", "hat_floral_crown")
+        
+        // Map category to Lottie layer name
+        val otherCategoryToLayer = mapOf(
+            "OUTFIT" to "outfit_layer",
+            "ACCESSORY" to "accessory_layer"
         )
 
-        categories.forEach { (category, imageView) ->
-            val item = state.equippedItems[category]
-            if (item != null) {
-                ShleepyAssetHelper.applyAccessory(imageView, item, stageSuffix)
-            } else {
-                imageView.visibility = View.GONE
+        // Identify active hat
+        val activeHatLayer = equippedItems["HAT"]?.let { item ->
+            when (item.itemAsset) {
+                "hat_propeller_hat" -> "hat_propeller_hat"
+                "hat_sleeping_hat" -> "hat_sleeping_hat"
+                "hat_floral_crown" -> "hat_floral_crown"
+                else -> null
             }
         }
+
+        val applyOpacity = {
+            // Handle Hats
+            allHatLayers.forEach { layerName ->
+                val opacity = if (layerName == activeHatLayer) 100 else 0
+                try {
+                    petView.addValueCallback(
+                        KeyPath("**", layerName, "**"),
+                        LottieProperty.TRANSFORM_OPACITY,
+                        LottieValueCallback(opacity)
+                    )
+                } catch (e: Exception) {}
+            }
+
+            // Handle Other Categories
+            otherCategoryToLayer.forEach { (category, layerName) ->
+                val isEquipped = equippedItems.containsKey(category)
+                val opacity = if (isEquipped) 100 else 0
+                try {
+                    petView.addValueCallback(
+                        KeyPath("**", layerName, "**"),
+                        LottieProperty.TRANSFORM_OPACITY,
+                        LottieValueCallback(opacity)
+                    )
+                } catch (e: Exception) {}
+            }
+        }
+
+        // Ensure visibility is updated whenever a new composition is loaded
+        petView.addLottieOnCompositionLoadedListener { applyOpacity() }
+        
+        // Also trigger it immediately
+        applyOpacity()
     }
 
     override fun onDestroyView() {

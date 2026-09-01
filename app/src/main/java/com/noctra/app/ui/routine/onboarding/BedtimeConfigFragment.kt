@@ -45,6 +45,12 @@ class BedtimeConfigFragment : Fragment() {
 
         binding.btnContinue.setOnClickListener {
             viewModel.setBedtime(currentBedtime)
+            
+            val userId = com.noctra.app.utils.UserSession.getUserId(requireContext())
+            if (userId != null) {
+                viewModel.updateStep(userId, 1)
+            }
+
             findNavController().navigate(R.id.action_bedtimeConfig_to_activityLibrary)
         }
     }

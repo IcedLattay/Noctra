@@ -91,7 +91,7 @@ class RewardCalculationUseCase(
             longestStreak = max(ledger.longestStreak, newStreak),
             lastSessionDate = today.format(dateFormatter),
             lastUpdated = OffsetDateTime.now().toString(),
-            devolutionPending = false
+            hasFirstMiss = false
         )
 
         repo.updateRewardLedger(updatedLedger)

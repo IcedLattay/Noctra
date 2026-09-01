@@ -112,6 +112,21 @@ class RoutineStartFragment : Fragment() {
                 }
             }
         }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                routineViewModel.isWindowExpired.collect { expired ->
+                    if (expired) {
+                        android.widget.Toast.makeText(
+                            requireContext(),
+                            "The routine window has closed for tonight.",
+                            android.widget.Toast.LENGTH_LONG
+                        ).show()
+                        findNavController().navigate(R.id.action_global_routineHomeFragment)
+                    }
+                }
+            }
+        }
     }
 
     // ─── Setup ────────────────────────────────────────────────────────────────

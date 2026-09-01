@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="192dp"
+    android:height="129dp"
+    android:viewportWidth="192"
+    android:viewportHeight="129">
+    <!-- Cloud Body -->
+    <path android:fillColor="#FFFFFF" android:pathData="M160.9,75.4a14.7,18.4 9.1,1 0 5.6,-35.6a14.7,18.4 9.1,1 0 -5.6,35.6z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M142.4,91.2a14.7,18.4 9.1,1 0 5.6,-35.6a14.7,18.4 9.1,1 0 -5.6,35.6z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M4,93a13.6,21.8 28.5,1 0 23.8,-13.2a13.6,21.8 28.5,1 0 -23.8,13.2z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M16,77a77.3,48.3 356.1,1 0 154.2,-10.4a77.3,48.3 356.1,1 0 -154.2,10.4z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M11.1,53.3a18.5,15.7 21.1,1 0 34.6,-13.1a18.5,15.7 21.1,1 0 -34.6,13.1z" />
+    <!-- Face Area -->
+    <path android:fillColor="#D9D9D9" android:pathData="M157.3,71C161.5,89.8 155.4,103.1 98.1,104.3C40.8,105.5 37,86.7 39.5,71C42.1,55.2 65.8,37.6 98.1,37.6C130.5,37.6 153.1,52.2 157.3,71Z" />
+    <!-- Tears/Cheeks -->
+    <path android:fillColor="#B8B3B3" android:pathData="M114.1,69.1c0,3 4.4,8.7 10.4,9.5c6.1,0.8 11.6,-3.8 11.9,-6c0.3,-2.2 -4.9,-1.7 -11,-2.5c-6.1,-0.8 -10.4,-3 -11.3,-1z" />
+    <path android:fillColor="#B8B3B3" android:pathData="M82.5,68.1c0,3 -4.4,8.7 -10.4,9.5c-6.1,0.8 -11.6,-3.8 -11.9,-6c-0.3,-2.2 4.9,-1.7 11,-2.5c6.1,-0.8 10.4,-3 11.3,-1z" />
+    <!-- Sad Features -->
+    <path android:strokeColor="#7F7F7F" android:strokeWidth="5" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M116.15,69.07c5.78,2.43 9.89,2.75 17.85,2.57M63,70.28c6.12,0.82 10.18,0.03 17.88,-2.28M92.57,71.64c2.67,1.17 3.42,2.26 5.33,2.11M104.03,71.64c-1.86,0.83 -4.58,1.99 -6.13,2.11M88.98,89c6.78,-6.83 10.92,-7.15 19.05,0M97.9,73.75l-0.23,9.21" />
+</vector>

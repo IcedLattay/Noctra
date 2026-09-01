@@ -3,63 +3,39 @@ package com.noctra.app.workers
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.noctra.app.data.model.SleepRecord
-import com.noctra.app.data.repository.SleepRecordRepository
-import com.noctra.app.domain.usecase.SleepQualityProcessingUseCase
+import com.noctra.app.data.repository.SleepSyncManager
 import com.noctra.app.utils.UserSession
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.UUID
-import kotlin.random.Random
 
+/**
+ * Provisional sync pass (~9:00 AM daily).
+ *
+ * Syncs last night's sleep (yesterday's session date) from Health Connect so the
+ * morning recap popup has data to show. The wake-up anchor window (today 4:00 AM -
+ * 4:00 PM) is still open at this point, so the record is written with
+ * is_partial_data = true; the SleepFinalizationWorker overwrites it after 4:00 PM.
+ *
+ * All aggregation/scoring/upsert logic lives in the shared SleepSyncManager.
+ */
 class MorningSyncWorker(
     context: Context,
     params: WorkerParameters
 ) : CoroutineWorker(context, params) {
 
-    private val sleepRecordRepository = SleepRecordRepository()
-    private val sleepQualityUseCase = SleepQualityProcessingUseCase()
+    private val sleepSyncManager = SleepSyncManager()
 
     override suspend fun doWork(): Result {
-        val userId = UserSession.getUserId(applicationContext)
-        
-        // Generate mock data
-        val durationMinutes = Random.nextInt(330, 540) // 5.5 to 9 hours
-        val avgHeartRate = Random.nextDouble(55.0, 75.0)
-        val movementCount = Random.nextInt(0, 50)
-        
-        // Assume a baseline of 60 for HR if not available
-        val hrBaseline = 60.0 
+        val userId = UserSession.getUserId(applicationContext) ?: return Result.success()
 
-        val scores = sleepQualityUseCase.calculateScores(
-            durationMinutes = durationMinutes,
-            avgHeartRate = avgHeartRate,
-            movementCount = movementCount,
-            hrBaseline = hrBaseline
-        )
+        // Last night's sleep belongs to yesterday's session date
+        val sessionDate = LocalDate.now().minusDays(1)
 
-        val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-
-        val mockRecord = SleepRecord(
-            id = UUID.randomUUID().toString(),
-            userId = userId,
-            sessionDate = today,
-            sleepDurationMinutes = durationMinutes,
-            avgHeartRateBpm = avgHeartRate,
-            movementEventCount = movementCount,
-            hrBaselineAtScoring = hrBaseline,
-            durationScore = scores.durationScore,
-            heartRateScore = scores.heartRateScore,
-            movementScore = scores.movementScore,
-            compositeScore = scores.compositeScore,
-            dataCaptureSuccess = true
-        )
-
-        return try {
-            sleepRecordRepository.insertSleepRecord(mockRecord)
-            Result.success()
-        } catch (e: Exception) {
-            Result.retry()
+        return when (val result = sleepSyncManager.syncSessionDate(userId, sessionDate)) {
+            is SleepSyncManager.SyncResult.Synced -> Result.success()
+            is SleepSyncManager.SyncResult.NoData -> Result.success()
+            is SleepSyncManager.SyncResult.PermissionDenied -> Result.success()
+            is SleepSyncManager.SyncResult.HealthConnectUnavailable -> Result.success()
+            is SleepSyncManager.SyncResult.Failed -> Result.retry()
         }
     }
 }

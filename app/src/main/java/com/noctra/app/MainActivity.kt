@@ -18,13 +18,15 @@ import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.noctra.app.data.repository.UserProfileRepository
 import com.noctra.app.data.utils.RoutinePersistenceHelper
+import com.noctra.app.data.supabase.SupabaseClient
+import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.gotrue.handleDeeplinks
 import com.noctra.app.ui.debug.DebugPanelListener
 import com.noctra.app.ui.routine.RoutineViewModel
 import com.noctra.app.ui.routine.home.ResumeRoutineDialogFragment
 import com.noctra.app.utils.DebugSettings
 import com.noctra.app.utils.UserSession
 import com.noctra.app.workers.WindDownNotificationScheduler
-import com.noctra.app.workers.WindDownNotificationWorker
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.noctra.app.data.repository.RewardLedgerRepository
@@ -33,7 +35,6 @@ import com.noctra.app.data.repository.SleepRecordRepository
 import com.noctra.app.data.model.SleepRecord
 import com.noctra.app.data.model.RoutineSession
 import com.noctra.app.domain.usecase.SleepQualityProcessingUseCase
-import com.noctra.app.utils.DemoDataSeeder
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.Instant
@@ -42,28 +43,18 @@ import java.util.UUID
 import kotlin.random.Random
 import kotlinx.coroutines.launch
 import android.widget.Toast
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
 class MainActivity : AppCompatActivity(), DebugPanelListener {
 
-    /** Bottom nav is hidden for onboarding and the entire routine execution chain. */
-    private val executionDestinations = setOf(
-        R.id.bedtimeConfigFragment,
-        R.id.activityLibraryFragment,
-        R.id.routineSequencingFragment,
-        R.id.onboardingSummaryFragment,
-        R.id.routineStartFragment,
-        R.id.healthConnectSetupFragment,
-        R.id.breathingActivityFragment,
-        R.id.audioscapeActivityFragment,
-        R.id.gratitudeJournalingActivityFragment,
-        R.id.genericTimerActivityFragment,
-        R.id.timesUpTransitionFragment,
-        R.id.routineCompletionOverlayFragment
-    )
+    private var isLoading = true
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { /* result ignored */ }
+    ) { _ ->
+        // After notification permission is handled, check for alarm permission
+        requestAlarmPermissionIfNeeded()
+    }
 
     // Same instance the routine execution fragments obtain via
     // activityViewModels() — Activity-scoped, so this and those fragments
@@ -71,6 +62,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     private val routineViewModel: RoutineViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen().setKeepOnScreenCondition { isLoading }
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         DebugSettings.setForceRoutineWindow(true) // TEMP — remove before final submission
@@ -81,29 +73,15 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         val navController = navHostFragment.navController
 
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
-        bottomNav.setupWithNavController(navController)
 
-        // Navigation UI Logic
-        navController.addOnDestinationChangedListener { _, destination, _ ->
-            // 1. Visibility Logic
-            bottomNav.visibility = when {
-                destination.id == R.id.settingsFragment -> View.GONE
-                destination.id in executionDestinations -> View.GONE
-                else -> View.VISIBLE
-            }
+        // Handle deep links from Supabase (e.g. password recovery)
+        handleDeeplinks(intent)
 
-            // 2. Ensure "Companion" stays selected when in Customization
-            if (destination.id == R.id.customizationFragment) {
-                bottomNav.menu.findItem(R.id.companionFragment).isChecked = true
-            }
-        }
-
-        requestNotificationPermissionIfNeeded()
-        WindDownNotificationScheduler.scheduleNext(applicationContext)
-
-        checkOnboardingStatus()
         registerResumeDialogResultListener()
         observeRecoveryState()
+
+        // Check onboarding status and handle permissions if already completed
+        checkOnboardingStatus(navController, bottomNav)
     }
 
     override fun onResume() {
@@ -117,17 +95,16 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     /**
      * Trigger for The Global Resume Popup (task 7/10).
      *
-     * FLAG: spec says "only if the user is logged in," but no explicit
-     * login-check method was visible anywhere in this codebase (UserSession,
-     * UserProfileRepository). Using onboardingCompleted as the closest
-     * available proxy — same check checkOnboardingStatus() already uses
-     * just below. Confirm with leader if a more precise login-state check
-     * exists or should be added.
+     * FLAG: spec says "only if the user is logged in." UserSession.getUserId()
+     * is now nullable per the auth restructure (feature/health-connect-
+     * permission-ui) — a null userId itself is a reasonably direct "not
+     * logged in" signal, used here instead of the old onboardingCompleted
+     * proxy.
      */
     private fun checkResumableRoutine() {
         lifecycleScope.launch {
             try {
-                val userId = UserSession.getUserId(applicationContext)
+                val userId = UserSession.getUserId(applicationContext) ?: return@launch
                 val profile = UserProfileRepository().getOrCreateProfile(userId)
                 if (!profile.onboardingCompleted) return@launch
 
@@ -179,10 +156,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
      * RoutineStartFragment is on screen and subscribed — so this navigates
      * there immediately after calling confirmResume(), relying on the DB
      * round-trip taking longer than the synchronous navigation + fragment
-     * subscription. This should hold in practice but isn't strictly
-     * guaranteed. RoutineStartFragment (not available to edit here) may
-     * need a small follow-up change to explicitly know "I was opened to
-     * resume" rather than assuming a fresh Begin Routine tap.
+     * subscription. Needs on-device testing (Flag 13).
      *
      * "Not Now" (task 8): declineResume() deliberately does NOT touch
      * RoutinePersistenceHelper — the cached session stays intact so a
@@ -219,16 +193,9 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
      * user straight to AnalyticsDashboardFragment — so they never see last
      * night's exercise screen again.
      *
-     * FLAG: the spec (Aug 16 backlog) calls for "8 hours since
-     * session_start_time" specifically, but RoutinePersistenceHelper (task
-     * 3) only stores last_activity_timestamp, not a separate session-start
-     * time. Using last_activity_timestamp here as the closest available
-     * proxy. For a routine abandoned mid-sleep these are close in practice,
-     * but they're not literally the same value the spec names — flagging
-     * for leader confirmation; a dedicated session_start_time field may
-     * need to be added to RoutinePersistenceHelper if the distinction
-     * actually matters (e.g. if someone does several steps over 40+ minutes
-     * before falling asleep).
+     * FLAG: spec calls for "8 hours since session_start_time" specifically,
+     * but RoutinePersistenceHelper only stores last_activity_timestamp.
+     * Using last_activity_timestamp here as the closest available proxy.
      */
     private fun checkMorningAfterCleanup() {
         if (!RoutinePersistenceHelper.hasActiveSession()) return
@@ -253,41 +220,128 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         }
     }
 
-    private fun checkOnboardingStatus() {
-        val navHostFragment = supportFragmentManager
-            .findFragmentById(R.id.nav_host) as NavHostFragment
-        val navController = navHostFragment.navController
-
-        lifecycleScope.launch {
+    private fun handleDeeplinks(intent: android.content.Intent?) {
+        intent?.let {
             try {
-                val userId = UserSession.getUserId(applicationContext)
-                val profile = UserProfileRepository().getOrCreateProfile(userId)
-
-                // Only perform the auto-redirect if we are currently at the start of onboarding.
-                // This prevents overriding deep links (like the routine notification).
-                val currentDest = navController.currentDestination?.id
-                if (profile.onboardingCompleted && currentDest == R.id.bedtimeConfigFragment) {
-                    // If onboarding is done, jump to the Companion screen
-                    // and clear the onboarding screens from the backstack
-                    val navOptions = NavOptions.Builder()
-                        .setPopUpTo(R.id.bedtimeConfigFragment, true)
-                        .build()
-                    navController.navigate(R.id.companionFragment, null, navOptions)
-                }
+                SupabaseClient.client.handleDeeplinks(it)
             } catch (e: Exception) {
-                // If network fails, we'll stay on onboarding or current screen
-                android.util.Log.e("MainActivity", "Onboarding check failed", e)
+                android.util.Log.e("MainActivity", "Deep link handling failed", e)
             }
         }
     }
 
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        handleDeeplinks(intent)
+    }
+
+    private fun checkOnboardingStatus(navController: androidx.navigation.NavController, bottomNav: BottomNavigationView) {
+        lifecycleScope.launch {
+            try {
+                val auth = SupabaseClient.client.auth
+
+                // 1. Wait for Supabase to finish loading from storage
+                auth.awaitInitialization()
+
+                // 2. Double-check the current session status
+                val session = auth.currentSessionOrNull()
+
+                android.util.Log.d("MainActivity", "Session check: ${session?.user?.id != null}")
+
+                val navInflater = navController.navInflater
+                val graph = navInflater.inflate(R.navigation.nav_graph)
+
+                if (session == null) {
+                    // Not logged in, set the Auth Group as start
+                    graph.setStartDestination(R.id.auth_graph)
+                    navController.graph = graph
+                } else {
+                    val userId = UserSession.getUserId(applicationContext) ?: throw Exception("User ID not found")
+                    val profile = UserProfileRepository().getOrCreateProfile(userId)
+                    if (profile.onboardingCompleted) {
+                        // Fully onboarded, set the Main Group as start
+                        graph.setStartDestination(R.id.main_graph)
+                        navController.graph = graph
+
+                        // Handle background tasks for onboarded users
+                        if (com.noctra.app.utils.NotificationPreferences.isWindDownEnabled(applicationContext)) {
+                            requestNotificationPermissionIfNeeded()
+                        }
+                        WindDownNotificationScheduler.scheduleNext(applicationContext)
+                    } else {
+                        // Mid-flow recovery: Set the Onboarding Group as start
+                        // and then adjust the internal start of that group
+                        val onboardingGraph = graph.findNode(R.id.onboarding_graph) as androidx.navigation.NavGraph
+                        val startStep = when (profile.onboardingStep) {
+                            1 -> R.id.activityLibraryFragment
+                            2 -> R.id.routineSequencingFragment
+                            3 -> R.id.onboardingSummaryFragment
+                            else -> R.id.bedtimeConfigFragment
+                        }
+                        onboardingGraph.setStartDestination(startStep)
+
+                        graph.setStartDestination(R.id.onboarding_graph)
+                        navController.graph = graph
+                    }
+                }
+
+                // 3. ONLY after the graph is set, connect the BottomNav
+                setupNavigationUI(navController, bottomNav)
+
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Onboarding check failed", e)
+                // Fallback to default
+                navController.setGraph(R.navigation.nav_graph)
+                setupNavigationUI(navController, bottomNav)
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    private fun setupNavigationUI(navController: androidx.navigation.NavController, bottomNav: BottomNavigationView) {
+        bottomNav.setupWithNavController(navController)
+
+        // Navigation UI Logic
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            // 1. Visibility Logic: Show only for the 4 main tabs
+            val mainTabs = setOf(
+                R.id.companionFragment,
+                R.id.routineHomeFragment,
+                R.id.analyticsDashboardFragment,
+                R.id.userProfileFragment
+            )
+            bottomNav.visibility = if (destination.id in mainTabs) View.VISIBLE else View.GONE
+        }
+    }
+
     private fun requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-        val granted = ContextCompat.checkSelfPermission(
-            this, Manifest.permission.POST_NOTIFICATIONS
-        ) == PackageManager.PERMISSION_GRANTED
-        if (!granted) {
-            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(
+                this, Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!granted) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                // If notifications already granted, still check if alarms are needed
+                requestAlarmPermissionIfNeeded()
+            }
+        } else {
+            // Older version, skip notifications and check alarms
+            requestAlarmPermissionIfNeeded()
+        }
+    }
+
+    private fun requestAlarmPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = getSystemService(android.content.Context.ALARM_SERVICE) as android.app.AlarmManager
+            if (!alarmManager.canScheduleExactAlarms()) {
+                val intent = android.content.Intent().apply {
+                    action = android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM
+                    data = android.net.Uri.fromParts("package", packageName, null)
+                }
+                startActivity(intent)
+            }
         }
     }
 
@@ -295,7 +349,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
 
     override fun onResetOnboarding() {
         lifecycleScope.launch {
-            val userId = UserSession.getUserId(applicationContext)
+            val userId = UserSession.getUserId(applicationContext) ?: return@launch
             UserProfileRepository().resetOnboarding(userId)
             Toast.makeText(this@MainActivity, "Onboarding reset. Restart app to see flow.", Toast.LENGTH_LONG).show()
         }
@@ -307,15 +361,15 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     }
 
     override fun onFireWindDownNotification() {
-        val request = OneTimeWorkRequestBuilder<WindDownNotificationWorker>().build()
-        WorkManager.getInstance(this).enqueue(request)
+        val intent = android.content.Intent(this, com.noctra.app.receivers.WindDownNotificationReceiver::class.java)
+        sendBroadcast(intent)
         Toast.makeText(this, "Notification triggered!", Toast.LENGTH_SHORT).show()
     }
 
     override fun onSimulateMorningSync() {
         lifecycleScope.launch {
             try {
-                val userId = UserSession.getUserId(applicationContext)
+                val userId = UserSession.getUserId(applicationContext) ?: return@launch
 
                 // 1. Generate realistic mock data
                 val durationMinutes = Random.nextInt(330, 540)
@@ -365,7 +419,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     override fun onSimulateMissedNight() {
         lifecycleScope.launch {
             try {
-                val userId = UserSession.getUserId(applicationContext)
+                val userId = UserSession.getUserId(applicationContext) ?: return@launch
                 val yesterday = LocalDate.now().minusDays(1).toString()
 
                 // 1. Record a missed session
@@ -374,22 +428,23 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                     userId = userId,
                     sessionDate = yesterday,
                     startTimestamp = Instant.now().minusSeconds(86400).toString(),
-                    completionStatus = com.noctra.app.data.model.SessionCompletionStatus.MISSED
+                    status = "MISSED"
                 )
                 RoutineSessionRepository().insertSessions(listOf(missedSession))
 
-                // 2. Reset streak and queue devolution penalty
+                // 2. Queue warning (or reset streak if already warned)
                 val repo = RewardLedgerRepository()
                 val ledger = repo.getRewardLedger(userId)
                 if (ledger != null) {
+                    val wasWarned = ledger.hasFirstMiss
                     repo.updateRewardLedger(ledger.copy(
-                        currentStreak = 0,
+                        currentStreak = if (wasWarned) 0 else ledger.currentStreak,
                         hasFirstMiss = true,
                         lastUpdated = OffsetDateTime.now().toString()
                     ))
                 }
 
-                Toast.makeText(this@MainActivity, "Missed night simulated. Streak reset.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, "Missed night simulated.", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 android.util.Log.e("MainActivity", "Simulate Missed Night failed", e)
                 Toast.makeText(this@MainActivity, "Missed night simulation failed: ${e.message}", Toast.LENGTH_LONG).show()
@@ -400,7 +455,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     override fun onTriggerEvolution() {
         lifecycleScope.launch {
             try {
-                val userId = UserSession.getUserId(applicationContext)
+                val userId = UserSession.getUserId(applicationContext) ?: return@launch
                 RewardLedgerRepository().addXp(userId, 5000)
                 Toast.makeText(this@MainActivity, "XP boosted by 5000!", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
@@ -413,12 +468,9 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     override fun onSeedDemoData() {
         lifecycleScope.launch {
             try {
-                val userId = UserSession.getUserId(applicationContext)
-                DemoDataSeeder(SleepRecordRepository(), RoutineSessionRepository()).seedLastSevenDays(
-                    userId,
-                    java.time.LocalTime.of(22, 0)
-                )
-                Toast.makeText(this@MainActivity, "7 days of data seeded!", Toast.LENGTH_SHORT).show()
+                val userId = UserSession.getUserId(applicationContext) ?: return@launch
+                com.noctra.app.domain.usecase.DataSeedingUseCase().seedMockData(userId)
+                Toast.makeText(this@MainActivity, "Shop items and 7 days of data seeded!", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 android.util.Log.e("MainActivity", "Seed Demo Data failed", e)
                 Toast.makeText(this@MainActivity, "Seeding failed: ${e.message}", Toast.LENGTH_LONG).show()
@@ -429,7 +481,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     override fun onClearDemoData() {
         lifecycleScope.launch {
             try {
-                val userId = UserSession.getUserId(applicationContext)
+                val userId = UserSession.getUserId(applicationContext) ?: return@launch
                 SleepRecordRepository().deleteAllForUser(userId)
                 RoutineSessionRepository().deleteAllForUser(userId)
                 Toast.makeText(this@MainActivity, "All analytics data cleared!", Toast.LENGTH_SHORT).show()

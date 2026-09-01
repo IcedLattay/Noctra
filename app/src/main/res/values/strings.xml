@@ -17,4 +17,45 @@
     <string name="companion_good_sleep_quality">Good Sleep Quality</string>
     <string name="morning_dialog_sleep_points_bonus">+%1$d Sleep Points</string>
     <string name="coming_soon">Coming Soon!</string>
+    <string name="back">Back</string>
+
+    <!-- Health Connect Flow -->
+    <string name="health_edu_title">Sync Your Sleep</string>
+    <string name="health_edu_description">Noctra reads your sleep through Health Connect. Two quick things before we start:</string>
+    <string name="health_edu_step_1">1.  Wear your watch to bed and make sure it\'s paired via Bluetooth.</string>
+    <string name="health_edu_step_2">2.  In your watch\'s companion app (Mi Fitness, Zepp, realme Link, or Nothing X), turn on \"Sync with Health Connect\".</string>
+    <string name="health_edu_button">I\'ve linked my watch</string>
+    <string name="health_edu_skip">Skip for now</string>
+
+    <!-- Health Grant Screen (Onboarding) -->
+    <string name="health_grant_header">Health Connect Setup</string>
+    <string name="health_grant_step_indicator">Step 4 of 4</string>
+    <string name="health_grant_why_title">Why Health Connect?</string>
+    <string name="health_grant_why_description">Noctra uses Health Connect to passively monitor your sleep quality each night. This helps us understand if your routine is working and provide personalized insights — all without you having to do anything extra.</string>
+    <string name="health_grant_permission_sleep">Sleep Sessions</string>
+    <string name="health_grant_permission_sleep_desc">To track your sleep quality and duration each night</string>
+    <string name="health_grant_permission_heartrate">Heart Rate</string>
+    <string name="health_grant_permission_heartrate_desc">To measure how relaxed you are during sleep</string>
+    <string name="badge_required">Required</string>
+    <string name="badge_granted">Granted</string>
+    <string name="health_grant_button">Grant Permissions</string>
+    <string name="health_grant_continue">Continue</string>
+    <string name="health_grant_install">Install Health Connect</string>
+    <string name="health_grant_skip">Skip for Now</string>
+    <string name="health_grant_success_title">All Permissions Granted</string>
+    <string name="health_grant_success_description">You\'re ready to track your sleep quality!</string>
+    <string name="health_grant_skip_dialog_title">Continue without Health Connect?</string>
+    <string name="health_grant_skip_dialog_message">Noctra won\'t be able to track your sleep — no sleep scores, morning recaps, or insights. You can connect anytime later in Settings.</string>
+    <string name="health_grant_skip_dialog_continue">Continue</string>
+    <string name="health_grant_skip_dialog_go_back">Go back</string>
+    <string name="health_grant_unsupported">Health Connect isn\'t supported on this device.</string>
+
+    <string name="health_settings_title">Health Connect</string>
+    <string name="health_settings_sleep_label">Sleep access</string>
+    <string name="health_settings_hr_label">Heart rate access</string>
+    <string name="health_settings_status_granted">Granted ✓</string>
+    <string name="health_settings_status_not_shared">Not shared</string>
+    <string name="health_settings_status_disconnected">Permissions are managed in Health Connect — tap the button below to grant or revoke access.</string>
+    <string name="health_settings_status_unavailable">Health Connect isn\'t available on this device</string>
+    <string name="health_settings_manage">Open Health Connect Settings</string>
 </resources>

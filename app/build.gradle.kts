@@ -70,6 +70,7 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.material)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -86,9 +87,13 @@ dependencies {
     // Supabase
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.postgrest)
+    implementation("io.github.jan-tennert.supabase:gotrue-kt:2.4.0")
 
     // Ktor
     implementation(libs.ktor.android)
+
+    // Health Connect
+    implementation(libs.health.connect.client)
 
     // Firebase
     implementation(libs.firebase.messaging)

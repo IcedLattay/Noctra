@@ -8,10 +8,22 @@ import java.time.OffsetDateTime
 class InventoryRepository {
     private val client = SupabaseClient.client
 
+    companion object {
+        private var cachedInventory: List<UserInventoryItem>? = null
+    }
+
     suspend fun getUserInventory(userId: String): List<UserInventoryItem> {
-        return client.from("user_inventory")
-            .select { filter { eq("user_id", userId) } }
-            .decodeList<UserInventoryItem>()
+        cachedInventory?.let { return it }
+
+        return try {
+            val inventory = client.from("user_inventory")
+                .select { filter { eq("user_id", userId) } }
+                .decodeList<UserInventoryItem>()
+            cachedInventory = inventory
+            inventory
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     suspend fun purchaseItem(userId: String, itemId: String) {
@@ -23,6 +35,7 @@ class InventoryRepository {
             isEquipped = false
         )
         client.from("user_inventory").insert(newItem)
+        cachedInventory = null // Invalidate cache
     }
 
     suspend fun equipItem(userId: String, itemId: String, itemIdsInCategory: List<String>) {
@@ -45,6 +58,7 @@ class InventoryRepository {
                 eq("item_id", itemId)
             }
         }
+        cachedInventory = null // Invalidate cache
     }
 
     suspend fun unequipItem(userId: String, itemId: String) {
@@ -56,5 +70,6 @@ class InventoryRepository {
                 eq("item_id", itemId)
             }
         }
+        cachedInventory = null // Invalidate cache
     }
 }
