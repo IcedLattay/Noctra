@@ -374,7 +374,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                     userId = userId,
                     sessionDate = yesterday,
                     startTimestamp = Instant.now().minusSeconds(86400).toString(),
-                    isCompleted = false
+                    completionStatus = com.noctra.app.data.model.SessionCompletionStatus.MISSED
                 )
                 RoutineSessionRepository().insertSessions(listOf(missedSession))
 
@@ -384,7 +384,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                 if (ledger != null) {
                     repo.updateRewardLedger(ledger.copy(
                         currentStreak = 0,
-                        devolutionPending = true,
+                        hasFirstMiss = true,
                         lastUpdated = OffsetDateTime.now().toString()
                     ))
                 }

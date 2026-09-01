@@ -2,6 +2,7 @@ package com.noctra.app.data.repository
 
 import com.noctra.app.data.model.RoutineSession
 import com.noctra.app.data.model.RoutineSessionStatus
+import com.noctra.app.data.model.SessionCompletionStatus
 import com.noctra.app.data.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
@@ -13,6 +14,12 @@ import kotlinx.serialization.Serializable
  *
  * Data Access Layer for:
  *   - routine_sessions  (read + write)
+ *
+ * UPDATED per DB Migration 1 (8/28/26): the is_completed:Boolean column
+ * was dropped and replaced with a status:String column
+ * (PENDING/COMPLETED/MISSED). Every function below that used to filter or
+ * write is_completed now uses SessionCompletionStatus instead — see
+ * RoutineSession.kt for that enum's definition.
  */
 class RoutineSessionRepository {
 
@@ -65,13 +72,8 @@ class RoutineSessionRepository {
     /**
      * Marks a session as ABANDONED_PENDING_DIAGNOSIS — used when the 60-minute
      * Safety Net timer expires before the user finishes or explicitly resumes
-     * the routine (see RoutineSessionStatus in RoutineSession.kt for why this
-     * is a separate field from is_completed / any sleep-data reconciliation
-     * status).
-     *
-     * Does NOT touch is_completed or any reward fields — this only marks the
-     * session as no longer resumable, it doesn't mean sleep data can't later
-     * "heal" it via the reconciliation audit.
+     * the routine. This writes to session_status, NOT completionStatus/status
+     * — those are separate concerns (see RoutineSession.kt).
      */
     suspend fun markSessionAsAbandoned(sessionId: String) {
         client
@@ -93,7 +95,7 @@ class RoutineSessionRepository {
                 filter {
                     eq("user_id", userId)
                     eq("session_date", sessionDate)
-                    eq("is_completed", true)
+                    eq("status", SessionCompletionStatus.COMPLETED)
                 }
             }
             .decodeList<RoutineSession>()
@@ -113,7 +115,7 @@ class RoutineSessionRepository {
             .select {
                 filter {
                     eq("user_id", userId)
-                    eq("is_completed", true)
+                    eq("status", SessionCompletionStatus.COMPLETED)
                 }
                 order("completion_timestamp", Order.DESCENDING)
                 limit(1)
@@ -121,6 +123,15 @@ class RoutineSessionRepository {
             .decodeSingleOrNull<RoutineSession>()
     }
 
+    /**
+     * FLAG: previously filtered is_completed == false, which matched BOTH
+     * "not yet done" and "missed" sessions. Now filters status == PENDING
+     * specifically, which is narrower — a MISSED session for today's date
+     * will no longer be returned here. This seems like the more correct
+     * behavior (a MISSED session isn't "in progress"), but flagging the
+     * behavior change in case something upstream relied on the old,
+     * broader is_completed==false match.
+     */
     suspend fun getInProgressSession(
         userId: String,
         sessionDate: String
@@ -131,7 +142,7 @@ class RoutineSessionRepository {
                 filter {
                     eq("user_id", userId)
                     eq("session_date", sessionDate)
-                    eq("is_completed", false)
+                    eq("status", SessionCompletionStatus.PENDING)
                 }
             }
             .decodeSingleOrNull<RoutineSession>()
@@ -163,7 +174,7 @@ class RoutineSessionRepository {
             .select {
                 filter {
                     eq("user_id", userId)
-                    eq("is_completed", true)
+                    eq("status", SessionCompletionStatus.COMPLETED)
                 }
             }
             .decodeList<RoutineSession>()
@@ -176,7 +187,7 @@ class RoutineSessionRepository {
             .select {
                 filter {
                     eq("user_id", userId)
-                    eq("is_completed", true)
+                    eq("status", SessionCompletionStatus.COMPLETED)
                 }
                 order("session_date", Order.DESCENDING)
             }
@@ -270,7 +281,7 @@ class RoutineSessionRepository {
         @SerialName("routine_config_id") val routineConfigId: String,
         @SerialName("session_date") val sessionDate: String,
         @SerialName("start_timestamp") val startTimestamp: String,
-        @SerialName("is_completed") val isCompleted: Boolean = false
+        @SerialName("status") val status: SessionCompletionStatus = SessionCompletionStatus.PENDING
     )
 
     @Serializable
@@ -278,12 +289,12 @@ class RoutineSessionRepository {
         @SerialName("user_id") val userId: String,
         @SerialName("session_date") val sessionDate: String,
         @SerialName("start_timestamp") val startTimestamp: String,
-        @SerialName("is_completed") val isCompleted: Boolean = false
+        @SerialName("status") val status: SessionCompletionStatus = SessionCompletionStatus.MISSED
     )
 
     @Serializable
     private data class SessionCompletion(
-        @SerialName("is_completed") val isCompleted: Boolean = true,
+        @SerialName("status") val status: SessionCompletionStatus = SessionCompletionStatus.COMPLETED,
         @SerialName("completion_timestamp") val completionTimestamp: String,
         @SerialName("streak_at_completion") val streakAtCompletion: Int,
         @SerialName("multiplier_applied") val multiplierApplied: Double,
