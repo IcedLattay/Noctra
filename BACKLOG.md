@@ -96,3 +96,27 @@ Code expects these schemas (verified in `RoutineSession.kt`, `RewardLedger.kt`, 
 - [ ] Map `session.status == "PENDING" -> PENDING` before the else in `buildCompletionStatuses`
 - [ ] (Optional) append "· N pending" to the completion summary label
 - Already correct, no change needed: summary count (`count { COMPLETED }`) and insight generation (`filter { COMPLETED }`) — PENDING is invisible to both, which is the right semantics until the auditor resolves it
+
+## 9. Data & Connectivity Policy — IN PROGRESS
+
+Cloud-First (Online-Only) architecture. All core operations require active internet.
+
+- [x] `NetworkObserver` utility: `ConnectivityManager`-based, emits `Flow<Boolean>` + `checkNow()` sync check
+- [x] Offline state layout (`layout_offline.xml`): title, description, retry button, hint
+- [x] Offline strings: title, description, retry, hint
+- [x] Offline illustration (`ic_offline_shleepy.xml`): Shleepy sad + crossed-out WiFi, converted from user SVG
+- [x] **Guard `MainActivity`**: check network at startup → if offline, show offline UI and hide `NavHostFragment`
+- [x] **Repository error handling**: try-catch `IOException`/`SocketTimeoutException` in `SleepRecordRepository`, `UserProfileRepository`, `RoutineSessionRepository` → logs and re-throws
+- [x] **Strict block policy**: no local modifications while offline (prevent split-brain)
+- [ ] **Per-tab offline placeholder**: when connectivity drops mid-session, each tab shows a "No internet connection" + retry (with spinner) instead of raw error
+  - [x] Create `layout_no_internet.xml`: centered text + retry button with hidden ProgressBar
+  - [x] Create `ic_refresh.xml`: Material refresh icon for retry button
+  - [x] Create `ui/common/UiState.kt`: sealed class (`Loading`, `Success<T>`, `Offline`)
+  - [x] Update `CompanionViewModel`: catch network errors → emit `Offline`, add `retry()`
+  - [x] Update `CompanionFragment`: observe offline state, toggle placeholder
+  - [x] Update `RoutineHomeViewModel`: add `Offline` variant to sealed class
+  - [x] Update `RoutineHomeFragment`: observe offline state, toggle placeholder
+  - [x] Update `AnalyticsViewModel`: catch network errors → emit `Offline`, add `retry()`
+  - [x] Update `AnalyticsDashboardFragment`: observe offline state, toggle placeholder
+  - [x] Update `UserProfileViewModel`: catch network errors → emit `Offline`, add `retry()`
+  - [x] Update `UserProfileFragment`: observe offline state, toggle placeholder

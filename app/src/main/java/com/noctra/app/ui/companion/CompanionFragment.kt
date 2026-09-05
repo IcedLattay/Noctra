@@ -289,6 +289,19 @@ class CompanionFragment : Fragment() {
     }
 
     private fun updateUi(state: CompanionViewModel.CompanionUiState) {
+        val noInternetView = view?.findViewById<View>(R.id.noInternetView)
+        val companionRoot = view?.findViewById<View>(R.id.companionRoot)
+
+        if (state.isOffline) {
+            noInternetView?.visibility = View.VISIBLE
+            companionRoot?.visibility = View.GONE
+            setupRetryButton()
+            return
+        } else {
+            noInternetView?.visibility = View.GONE
+            companionRoot?.visibility = View.VISIBLE
+        }
+
         with(binding) {
             tvTokenBalance.text = state.tokenBalance.toString()
             
@@ -318,6 +331,22 @@ class CompanionFragment : Fragment() {
             if (state.error != null) {
                 android.widget.Toast.makeText(requireContext(), state.error, android.widget.Toast.LENGTH_LONG).show()
             }
+        }
+    }
+
+    private fun setupRetryButton() {
+        val noInternetView = view?.findViewById<View>(R.id.noInternetView) ?: return
+        val btnRetry = noInternetView.findViewById<android.widget.ImageButton>(R.id.btnRetry)
+        val progressRetry = noInternetView.findViewById<android.widget.ProgressBar>(R.id.progressRetry)
+        val tvRetry = noInternetView.findViewById<TextView>(R.id.tvRetry)
+
+        btnRetry.setOnClickListener {
+            btnRetry.visibility = View.GONE
+            progressRetry.visibility = View.VISIBLE
+            tvRetry.text = "retrying..."
+
+            val userId = UserSession.getUserId(requireContext()) ?: return@setOnClickListener
+            viewModel.retry(userId)
         }
     }
 

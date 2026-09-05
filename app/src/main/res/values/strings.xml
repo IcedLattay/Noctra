@@ -58,4 +58,14 @@
     <string name="health_settings_status_disconnected">Permissions are managed in Health Connect — tap the button below to grant or revoke access.</string>
     <string name="health_settings_status_unavailable">Health Connect isn\'t available on this device</string>
     <string name="health_settings_manage">Open Health Connect Settings</string>
+
+    <!-- Offline State -->
+    <string name="offline_title">No Internet Connection</string>
+    <string name="offline_description">Noctra requires an internet connection to sync your sleep data</string>
+    <string name="offline_retry">Retry</string>
+    <string name="offline_hint">Check your Wi-Fi or mobile data and try again</string>
+
+    <!-- No Internet (per-tab) -->
+    <string name="no_internet_connection">No internet connection</string>
+    <string name="retry">retry</string>
 </resources>

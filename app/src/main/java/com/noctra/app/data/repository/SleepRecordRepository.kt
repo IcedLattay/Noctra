@@ -1,13 +1,17 @@
 package com.noctra.app.data.repository
 
+import android.util.Log
 import com.noctra.app.data.model.SleepRecord
 import com.noctra.app.data.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
+import java.io.IOException
+import java.net.SocketTimeoutException
 import java.time.LocalDate
 
 class SleepRecordRepository {
     private val client = SupabaseClient.client
+    private val tag = "SleepRecordRepo"
 
     /**
      * Returns all sleep records for the given user within the date range (inclusive).
@@ -18,16 +22,24 @@ class SleepRecordRepository {
         startDate: String,
         endDate: String
     ): List<SleepRecord> {
-        return client.from("sleep_records")
-            .select {
-                filter {
-                    eq("user_id", userId)
-                    gte("session_date", startDate)
-                    lte("session_date", endDate)
+        return try {
+            client.from("sleep_records")
+                .select {
+                    filter {
+                        eq("user_id", userId)
+                        gte("session_date", startDate)
+                        lte("session_date", endDate)
+                    }
+                    order("session_date", Order.ASCENDING)
                 }
-                order("session_date", Order.ASCENDING)
-            }
-            .decodeList<SleepRecord>()
+                .decodeList<SleepRecord>()
+        } catch (e: IOException) {
+            Log.e(tag, "Network error fetching records in range", e)
+            throw e
+        } catch (e: SocketTimeoutException) {
+            Log.e(tag, "Timeout fetching records in range", e)
+            throw e
+        }
     }
 
     /**
@@ -35,13 +47,21 @@ class SleepRecordRepository {
      * Used by the Last Night card.
      */
     suspend fun getMostRecentRecord(userId: String): SleepRecord? {
-        return client.from("sleep_records")
-            .select {
-                filter { eq("user_id", userId) }
-                order("session_date", Order.DESCENDING)
-                limit(1)
-            }
-            .decodeSingleOrNull<SleepRecord>()
+        return try {
+            client.from("sleep_records")
+                .select {
+                    filter { eq("user_id", userId) }
+                    order("session_date", Order.DESCENDING)
+                    limit(1)
+                }
+                .decodeSingleOrNull<SleepRecord>()
+        } catch (e: IOException) {
+            Log.e(tag, "Network error fetching most recent record", e)
+            throw e
+        } catch (e: SocketTimeoutException) {
+            Log.e(tag, "Timeout fetching most recent record", e)
+            throw e
+        }
     }
 
     suspend fun getLatestSleepRecord(userId: String): SleepRecord? {
@@ -52,7 +72,15 @@ class SleepRecordRepository {
      * Inserts a single record. Uses upsert to handle re-syncs or duplicate simulation.
      */
     suspend fun insertRecord(record: SleepRecord) {
-        client.from("sleep_records").upsert(record, onConflict = "id")
+        try {
+            client.from("sleep_records").upsert(record, onConflict = "id")
+        } catch (e: IOException) {
+            Log.e(tag, "Network error inserting record", e)
+            throw e
+        } catch (e: SocketTimeoutException) {
+            Log.e(tag, "Timeout inserting record", e)
+            throw e
+        }
     }
 
     suspend fun insertSleepRecord(record: SleepRecord) {
@@ -63,15 +91,31 @@ class SleepRecordRepository {
      * Inserts multiple records in one call. Used by dev seed function.
      */
     suspend fun insertRecords(records: List<SleepRecord>) {
-        client.from("sleep_records").upsert(records, onConflict = "id")
+        try {
+            client.from("sleep_records").upsert(records, onConflict = "id")
+        } catch (e: IOException) {
+            Log.e(tag, "Network error inserting records", e)
+            throw e
+        } catch (e: SocketTimeoutException) {
+            Log.e(tag, "Timeout inserting records", e)
+            throw e
+        }
     }
 
     /**
      * Deletes all sleep records for a user. Used by dev seed function (re-seed).
      */
     suspend fun deleteAllForUser(userId: String) {
-        client.from("sleep_records").delete {
-            filter { eq("user_id", userId) }
+        try {
+            client.from("sleep_records").delete {
+                filter { eq("user_id", userId) }
+            }
+        } catch (e: IOException) {
+            Log.e(tag, "Network error deleting records", e)
+            throw e
+        } catch (e: SocketTimeoutException) {
+            Log.e(tag, "Timeout deleting records", e)
+            throw e
         }
     }
 }

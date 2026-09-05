@@ -1,6 +1,8 @@
 package com.noctra.app.ui.companion
 
+import android.app.Application
 import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.noctra.app.data.model.ShopItem
@@ -14,6 +16,7 @@ import com.noctra.app.domain.usecase.CompanionEvolutionUseCase
 import com.noctra.app.domain.usecase.DataSeedingUseCase
 import com.noctra.app.domain.usecase.ReconciliationAuditUseCase
 import com.noctra.app.data.model.RewardLedger
+import com.noctra.app.utils.NetworkObserver
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -25,20 +28,23 @@ import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 
 class CompanionViewModel(
-    private val userProfileRepository: UserProfileRepository = UserProfileRepository(),
-    private val rewardRepository: RewardLedgerRepository = RewardLedgerRepository(),
-    private val sleepRecordRepository: SleepRecordRepository = SleepRecordRepository(),
-    private val shopRepository: ShopRepository = ShopRepository(),
-    private val inventoryRepository: InventoryRepository = InventoryRepository(),
-    private val evolutionUseCase: CompanionEvolutionUseCase = CompanionEvolutionUseCase(),
-    private val seedingUseCase: DataSeedingUseCase = DataSeedingUseCase(),
-    private val auditUseCase: ReconciliationAuditUseCase = ReconciliationAuditUseCase(),
-    private val sleepSyncManager: SleepSyncManager = SleepSyncManager()
-) : ViewModel() {
+    application: Application
+) : AndroidViewModel(application) {
 
     companion object {
         private const val TAG = "CompanionVM"
     }
+
+    private val networkObserver = NetworkObserver(application)
+    private val userProfileRepository = UserProfileRepository()
+    private val rewardRepository = RewardLedgerRepository()
+    private val sleepRecordRepository = SleepRecordRepository()
+    private val shopRepository = ShopRepository()
+    private val inventoryRepository = InventoryRepository()
+    private val evolutionUseCase = CompanionEvolutionUseCase()
+    private val seedingUseCase = DataSeedingUseCase()
+    private val auditUseCase = ReconciliationAuditUseCase()
+    private val sleepSyncManager = SleepSyncManager()
 
     data class ShopItemUiModel(
         val item: ShopItem,
@@ -49,6 +55,7 @@ class CompanionViewModel(
 
     data class CompanionUiState(
         val isLoading: Boolean = false,
+        val isOffline: Boolean = false,
         val displayName: String = "User",
         val evolutionState: CompanionEvolutionUseCase.EvolutionState? = null,
         val tokenBalance: Int = 0,
@@ -77,9 +84,18 @@ class CompanionViewModel(
     // session flag to prevent dialog loop
     private var noticeHandledThisSession = false
 
+    fun retry(userId: String) {
+        _uiState.update { it.copy(isOffline = false, isLoading = true) }
+        loadData(userId, null)
+    }
+
     fun loadData(userId: String, lastShownSleepDate: String?) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            if (!networkObserver.checkNow()) {
+                _uiState.update { it.copy(isLoading = false, isOffline = true) }
+                return@launch
+            }
+            _uiState.update { it.copy(isLoading = true, isOffline = false) }
             try {
                 // 0. Inline provisional sync of last night (first-open-of-the-day
                 //    trigger). Gated on the recap flag so later resumes don't
@@ -116,8 +132,9 @@ class CompanionViewModel(
                 userProfileRepository.getOrCreateProfile(userId)
                 refreshData(userId, lastShownSleepDate, triggerMorningPopup = true)
             } catch (e: Exception) {
-                Log.e("CompanionVM", "Load failed", e)
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                Log.e(TAG, "Load failed", e)
+                val isOffline = !networkObserver.checkNow()
+                _uiState.update { it.copy(isLoading = false, isOffline = isOffline, error = if (!isOffline) e.message else null) }
             }
         }
     }
@@ -204,8 +221,9 @@ class CompanionViewModel(
                 }
             }
         } catch (e: Exception) {
-            Log.e("CompanionVM", "Refresh failed", e)
-            _uiState.update { it.copy(isLoading = false, error = e.message) }
+            Log.e(TAG, "Refresh failed", e)
+            val isOffline = !networkObserver.checkNow()
+            _uiState.update { it.copy(isLoading = false, isOffline = isOffline, error = if (!isOffline) e.message else null) }
         }
     }
 

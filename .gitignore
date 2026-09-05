@@ -33,3 +33,6 @@ google-services.json
 # Mac/Windows junk
 .DS_Store
 Thumbs.db
+
+# Supabase
+supabase_migrations.sql

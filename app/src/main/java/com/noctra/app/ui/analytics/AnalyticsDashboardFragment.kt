@@ -49,6 +49,9 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         val labelRoutineCompletion = view.findViewById<TextView>(R.id.label_routine_completion)
         val insightText = view.findViewById<TextView>(R.id.insight_text)
 
+        val mainContent = view.findViewById<View>(R.id.mainContent)
+        val noInternetView = view.findViewById<View>(R.id.noInternetView)
+
 
         // Week navigation
         btnPrev.setOnClickListener { viewModel.previousWeek(requireContext()) }
@@ -56,6 +59,17 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
 
         lifecycleScope.launch {
             viewModel.state.collect { state ->
+                // Handle offline state
+                if (state.isOffline) {
+                    noInternetView.visibility = View.VISIBLE
+                    mainContent.visibility = View.GONE
+                    setupRetryButton(view)
+                    return@collect
+                } else {
+                    noInternetView.visibility = View.GONE
+                    mainContent.visibility = View.VISIBLE
+                }
+
                 weekRangeLabel.text = state.weekRangeLabel
                 btnNext.alpha = if (state.canGoForward) 1.0f else 0.3f
 
@@ -216,6 +230,20 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
             java.time.LocalTime.parse(stored)
         } catch (e: Exception) {
             null
+        }
+    }
+
+    private fun setupRetryButton(view: View) {
+        val noInternetView = view.findViewById<View>(R.id.noInternetView) ?: return
+        val btnRetry = noInternetView.findViewById<android.widget.ImageButton>(R.id.btnRetry)
+        val progressRetry = noInternetView.findViewById<android.widget.ProgressBar>(R.id.progressRetry)
+        val tvRetry = noInternetView.findViewById<TextView>(R.id.tvRetry)
+
+        btnRetry.setOnClickListener {
+            btnRetry.visibility = View.GONE
+            progressRetry.visibility = View.VISIBLE
+            tvRetry.text = "retrying..."
+            viewModel.retry(requireContext())
         }
     }
 }

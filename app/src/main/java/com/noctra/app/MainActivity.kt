@@ -20,6 +20,7 @@ import io.github.jan.supabase.gotrue.handleDeeplinks
 import com.noctra.app.ui.debug.DebugPanelListener
 import com.noctra.app.utils.DebugSettings
 import com.noctra.app.utils.UserSession
+import com.noctra.app.utils.NetworkObserver
 import com.noctra.app.workers.WindDownNotificationScheduler
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -42,6 +43,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 class MainActivity : AppCompatActivity(), DebugPanelListener {
 
     private var isLoading = true
+    private lateinit var networkObserver: NetworkObserver
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -55,6 +57,8 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        networkObserver = NetworkObserver(applicationContext)
+
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.nav_host) as NavHostFragment
         val navController = navHostFragment.navController
@@ -64,8 +68,51 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         // Handle deep links from Supabase (e.g. password recovery)
         handleDeeplinks(intent)
 
-        // Check onboarding status and handle permissions if already completed
+        // Check connectivity before proceeding
+        checkConnectivityAndInit(navController, bottomNav)
+    }
+
+    private fun checkConnectivityAndInit(
+        navController: androidx.navigation.NavController,
+        bottomNav: BottomNavigationView
+    ) {
+        if (!networkObserver.checkNow()) {
+            showOfflineUI()
+            return
+        }
         checkOnboardingStatus(navController, bottomNav)
+    }
+
+    private fun showOfflineUI() {
+        isLoading = false
+        val navHost = findViewById<View>(R.id.nav_host)
+        val offlineView = findViewById<View>(R.id.offlineView)
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
+
+        navHost.visibility = View.GONE
+        bottomNav.visibility = View.GONE
+        offlineView.visibility = View.VISIBLE
+
+        offlineView.findViewById<android.widget.Button>(R.id.btnRetry).setOnClickListener {
+            if (networkObserver.checkNow()) {
+                hideOfflineUI()
+                val navHostFragment = supportFragmentManager
+                    .findFragmentById(R.id.nav_host) as NavHostFragment
+                val navController = navHostFragment.navController
+                val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
+                checkOnboardingStatus(navController, bottomNav)
+            }
+        }
+    }
+
+    private fun hideOfflineUI() {
+        val navHost = findViewById<View>(R.id.nav_host)
+        val offlineView = findViewById<View>(R.id.offlineView)
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
+
+        offlineView.visibility = View.GONE
+        navHost.visibility = View.VISIBLE
+        bottomNav.visibility = View.VISIBLE
     }
 
     private fun handleDeeplinks(intent: android.content.Intent?) {

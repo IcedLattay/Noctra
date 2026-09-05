@@ -1,6 +1,8 @@
 package com.noctra.app.ui.analytics
 
+import android.app.Application
 import android.content.Context
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.noctra.app.data.model.RoutineSession
@@ -9,6 +11,7 @@ import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.data.repository.SleepRecordRepository
 import com.noctra.app.data.repository.UserProfileRepository
 import com.noctra.app.domain.usecase.InsightGenerationUseCase
+import com.noctra.app.utils.NetworkObserver
 import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,12 +21,13 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 
-class AnalyticsViewModel : ViewModel() {
+class AnalyticsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val sleepRepo = SleepRecordRepository()
     private val sessionRepo = RoutineSessionRepository()
     private val profileRepo = UserProfileRepository()
     private val insightUseCase = InsightGenerationUseCase()
+    private val networkObserver = NetworkObserver(application)
 
     private val _state = MutableStateFlow(AnalyticsUiState())
     val state = _state.asStateFlow()
@@ -61,6 +65,10 @@ class AnalyticsViewModel : ViewModel() {
 
     private suspend fun loadWeek(userId: String?, weekStart: LocalDate) {
         if (userId == null) return
+        if (!networkObserver.checkNow()) {
+            _state.value = _state.value.copy(isOffline = true)
+            return
+        }
         try {
             val weekEnd = weekStart.plusDays(6)
 
@@ -99,6 +107,9 @@ class AnalyticsViewModel : ViewModel() {
             )
         } catch (e: Exception) {
             android.util.Log.e("AnalyticsViewModel", "Failed to load week", e)
+            if (!networkObserver.checkNow()) {
+                _state.value = _state.value.copy(isOffline = true)
+            }
         }
     }
 
@@ -106,6 +117,11 @@ class AnalyticsViewModel : ViewModel() {
         val startFmt = DateTimeFormatter.ofPattern("MMM d")
         val endFmt = DateTimeFormatter.ofPattern("MMM d, yyyy")
         return "${start.format(startFmt)} - ${end.format(endFmt)}"
+    }
+
+    fun retry(context: Context) {
+        _state.value = _state.value.copy(isOffline = false)
+        load(context)
     }
 }
 
@@ -118,5 +134,6 @@ data class AnalyticsUiState(
     val weekSessions: List<RoutineSession> = emptyList(),
     val targetBedtime: String? = null,
     val insightResult: InsightGenerationUseCase.Result? = null,
-    val canGoForward: Boolean = false
+    val canGoForward: Boolean = false,
+    val isOffline: Boolean = false
 )

@@ -36,9 +36,23 @@ class UserProfileFragment : Fragment(R.layout.fragment_user_profile) {
         val avatarShleepy = view.findViewById<ImageView>(R.id.avatar_shleepy)
         val statusAvatar = view.findViewById<ImageView>(R.id.status_avatar)
 
+        val mainContent = view.findViewById<View>(R.id.mainContent)
+        val noInternetView = view.findViewById<View>(R.id.noInternetView)
+
         // Observe profile data
         lifecycleScope.launch {
             viewModel.profileData.collect { state ->
+                // Handle offline state
+                if (state.isOffline) {
+                    noInternetView.visibility = View.VISIBLE
+                    mainContent.visibility = View.GONE
+                    setupRetryButton(view)
+                    return@collect
+                } else {
+                    noInternetView.visibility = View.GONE
+                    mainContent.visibility = View.VISIBLE
+                }
+
                 displayName.text = state.displayName
                 email.text = state.email ?: "(demo mode)"
                 currentStreak.text = state.currentStreak.toString()
@@ -78,5 +92,19 @@ class UserProfileFragment : Fragment(R.layout.fragment_user_profile) {
     override fun onResume() {
         super.onResume()
         viewModel.loadProfile(requireContext())
+    }
+
+    private fun setupRetryButton(view: View) {
+        val noInternetView = view.findViewById<View>(R.id.noInternetView) ?: return
+        val btnRetry = noInternetView.findViewById<android.widget.ImageButton>(R.id.btnRetry)
+        val progressRetry = noInternetView.findViewById<android.widget.ProgressBar>(R.id.progressRetry)
+        val tvRetry = noInternetView.findViewById<TextView>(R.id.tvRetry)
+
+        btnRetry.setOnClickListener {
+            btnRetry.visibility = View.GONE
+            progressRetry.visibility = View.VISIBLE
+            tvRetry.text = "retrying..."
+            viewModel.retry(requireContext())
+        }
     }
 }
