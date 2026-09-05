@@ -58,4 +58,49 @@
     <string name="health_settings_status_disconnected">Permissions are managed in Health Connect — tap the button below to grant or revoke access.</string>
     <string name="health_settings_status_unavailable">Health Connect isn\'t available on this device</string>
     <string name="health_settings_manage">Open Health Connect Settings</string>
+
+    <!-- Social / Friends / Leaderboard -->
+    <string name="social_leaderboard_title">Friends Leaderboard</string>
+    <string name="social_compete_with_friends">Compete with Friends</string>
+    <string name="social_compete_subtitle">Build the longest streak and support each other!</string>
+    <string name="social_add_by_email">Add by Email</string>
+    <string name="social_friend_requests">Friend Requests</string>
+    <string name="social_no_friends">No friends yet</string>
+    <string name="social_no_friends_hint">Add friends by email to see your leaderboard</string>
+    <string name="social_no_pending_requests">No pending requests</string>
+    <string name="social_received">Received</string>
+    <string name="social_sent">Sent</string>
+    <string name="social_day_streak">%1$d day streak</string>
+    <string name="social_your_rank">Your Rank</string>
+
+    <!-- Add Friend Bottom Sheet -->
+    <string name="add_friend_title">Add Friend</string>
+    <string name="add_friend_instruction">Who would you like to add as a friend?</string>
+    <string name="add_friend_subtitle">Enter their email address to send a friend request</string>
+    <string name="add_friend_email_hint">friend@email.com</string>
+    <string name="add_friend_send">Send Friend Request</string>
+    <string name="add_friend_success">Request Sent!</string>
+    <string name="add_friend_success_subtitle">They\'ll be notified to accept your request</string>
+    <string name="add_friend_error_not_found">No user found with that email address</string>
+    <string name="add_friend_error_self">You cannot add yourself as a friend</string>
+    <string name="add_friend_error_duplicate">A friend request already exists with this user</string>
+
+    <!-- Friend Requests -->
+    <string name="friend_request_accept">Accept</string>
+    <string name="friend_request_decline">Decline</string>
+    <string name="friend_request_cancel">Cancel</string>
+    <string name="friend_request_accepted">Friend request accepted!</string>
+    <string name="friend_request_declined">Request declined</string>
+    <string name="friend_request_cancelled">Request cancelled</string>
+
+    <!-- Remove Friend -->
+    <string name="remove_friend_title">Remove Friend?</string>
+    <string name="remove_friend_message">Are you sure you want to remove %1$s from your friends?</string>
+    <string name="remove_friend_confirm">Remove Friend</string>
+    <string name="remove_friend_cancel">Never Mind</string>
+    <string name="remove_friend_success">Friend removed</string>
+
+    <!-- Encouragement -->
+    <string name="encouragement_sent">Encouragement sent!</string>
+    <string name="encouragement_already_sent">You\'ve already sent encouragement today</string>
 </resources>
