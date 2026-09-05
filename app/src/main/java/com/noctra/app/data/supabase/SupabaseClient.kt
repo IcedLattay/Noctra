@@ -6,6 +6,7 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.gotrue.Auth
 import io.github.jan.supabase.gotrue.SettingsSessionManager
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.serializer.KotlinXSerializer
 import kotlinx.serialization.json.Json
 
@@ -25,6 +26,7 @@ object SupabaseClient {
                 ignoreUnknownKeys = true
             })
             install(Postgrest)
+            install(Realtime)
             install(Auth) {
                 // Use the default session manager - it's the most compatible in v2.4.0
                 // It automatically handles SharedPreferences for you.
