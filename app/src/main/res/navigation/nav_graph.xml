@@ -182,7 +182,24 @@
             <action
                 android:id="@+id/action_profile_to_settings"
                 app:destination="@id/settingsFragment" />
+            <action
+                android:id="@+id/action_profile_to_social"
+                app:destination="@id/socialFragment" />
         </fragment>
+
+        <fragment
+            android:id="@+id/socialFragment"
+            android:name="com.noctra.app.ui.social.SocialFragment"
+            android:label="Friends Leaderboard">
+            <action
+                android:id="@+id/action_social_to_friendRequests"
+                app:destination="@id/friendRequestsFragment" />
+        </fragment>
+
+        <fragment
+            android:id="@+id/friendRequestsFragment"
+            android:name="com.noctra.app.ui.social.FriendRequestsFragment"
+            android:label="Friend Requests" />
 
         <fragment
             android:id="@+id/settingsFragment"
