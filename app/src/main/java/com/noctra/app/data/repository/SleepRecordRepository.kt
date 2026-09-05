@@ -44,6 +44,21 @@ class SleepRecordRepository {
             .decodeSingleOrNull<SleepRecord>()
     }
 
+    /**
+     * Returns the sleep record for a specific date, or null if none exists.
+     */
+    suspend fun getSleepRecordForDate(userId: String, date: String): SleepRecord? {
+        return client.from("sleep_records")
+            .select {
+                filter {
+                    eq("user_id", userId)
+                    eq("session_date", date)
+                }
+                limit(1)
+            }
+            .decodeSingleOrNull<SleepRecord>()
+    }
+
     suspend fun getLatestSleepRecord(userId: String): SleepRecord? {
         return getMostRecentRecord(userId)
     }
