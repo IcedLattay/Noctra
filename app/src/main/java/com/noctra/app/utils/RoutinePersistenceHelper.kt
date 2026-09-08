@@ -68,12 +68,21 @@ object RoutinePersistenceHelper {
     // ─── Convenience ──────────────────────────────────────────────────────
 
     /**
-     * True if there's a session ID cached locally — i.e. a routine was
-     * started and not yet cleared. Does NOT check timing/expiry; callers
-     * (e.g. checkRecoveryState()) are responsible for the gap-based logic.
+     * True if there's a resumable session tracked locally — a routine was
+     * started and not yet cleared.
+     *
+     * FIXED (bug found via on-device testing): this used to check
+     * getActiveSessionId() != null. That broke whenever the original
+     * Supabase insert in startSession() failed (network issue, or the
+     * session_status deserialization crash) — activeSessionId stays null,
+     * gets written to the cache as null, and hasActiveSession() would then
+     * report false even though the user WAS mid-routine locally. Now checks
+     * the timestamp instead, since that's always set when a session starts
+     * locally, regardless of whether the remote insert succeeded — matching
+     * Flag 1's intent (resumability shouldn't depend on a remote ID).
      */
     fun hasActiveSession(): Boolean {
-        return getActiveSessionId() != null
+        return getLastActivityTimestamp() != 0L
     }
 
     /**

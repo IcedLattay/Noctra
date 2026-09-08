@@ -196,6 +196,16 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
      * FLAG: spec calls for "8 hours since session_start_time" specifically,
      * but RoutinePersistenceHelper only stores last_activity_timestamp.
      * Using last_activity_timestamp here as the closest available proxy.
+     *
+     * FIXED (Flag 25, crash found via on-device testing): blindly navigating
+     * to analyticsDashboardFragment crashed the app if the user was sitting
+     * on the Login screen (auth_graph) with a stale cached session —
+     * analyticsDashboardFragment only exists inside main_graph, so
+     * NavController threw IllegalArgumentException and killed the app on
+     * every resume. This looked like a login failure but was actually a
+     * crash loop unrelated to auth. Now wrapped in try/catch so a failed
+     * navigation attempt degrades gracefully instead of crashing — the
+     * cache still gets cleared either way, which is the important part.
      */
     private fun checkMorningAfterCleanup() {
         if (!RoutinePersistenceHelper.hasActiveSession()) return
@@ -209,14 +219,21 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         if (gapMillis > eightHoursMillis) {
             RoutinePersistenceHelper.clear()
 
-            val navHostFragment = supportFragmentManager
-                .findFragmentById(R.id.nav_host) as NavHostFragment
-            val navController = navHostFragment.navController
+            try {
+                val navHostFragment = supportFragmentManager
+                    .findFragmentById(R.id.nav_host) as NavHostFragment
+                val navController = navHostFragment.navController
 
-            val navOptions = NavOptions.Builder()
-                .setPopUpTo(navController.graph.id, true)
-                .build()
-            navController.navigate(R.id.analyticsDashboardFragment, null, navOptions)
+                val navOptions = NavOptions.Builder()
+                    .setPopUpTo(navController.graph.id, true)
+                    .build()
+                navController.navigate(R.id.analyticsDashboardFragment, null, navOptions)
+            } catch (e: Exception) {
+                // Not logged in yet, or otherwise not in main_graph — the
+                // cache is already cleared above, which is what actually
+                // matters here. Nothing else to do if we can't navigate.
+                android.util.Log.w("MainActivity", "checkMorningAfterCleanup: navigation skipped (not in main_graph)", e)
+            }
         }
     }
 
