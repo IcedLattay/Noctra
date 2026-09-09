@@ -65,11 +65,11 @@ RENAME COLUMN devolution_pending TO has_first_miss;
 -- Step 1: Create friendships table
 CREATE TABLE IF NOT EXISTS friendships (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  requester_id UUID REFERENCES user_profiles(user_id) ON DELETE CASCADE,
-  receiver_id UUID REFERENCES user_profiles(user_id) ON DELETE CASCADE,
-  status TEXT DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'ACCEPTED', 'DECLINED')),
+  requester_id TEXT REFERENCES user_profiles(user_id) ON DELETE CASCADE,
+  receiver_id TEXT REFERENCES user_profiles(user_id) ON DELETE CASCADE,
+  status TEXT DEFAULT 'PENDING',
   created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(requester_id, receiver_id)
+  updated_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Step 2: Create encouragement_reactions table

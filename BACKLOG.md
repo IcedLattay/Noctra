@@ -78,6 +78,12 @@ The popup must never re-show after the finalization pass rewrites the record.
 ## 6. Misc
 
 - [ ] `backend/` directory is empty (only `.idea/`) — confirm whether a backend service is planned or Supabase-only is final
+- [ ] Onboarding never shows the Health Connect permission screens (Pre-flight + Grant) — investigate nav wiring
+- [x] Cross-account inventory bleed: unequipping on account A also appears unequipped on account B. Was a reads-only bug: `getUserInventory(userId)` returned the static cache without checking ownership, and logout cleared nothing. Fixed by keying the cache on user ID + `clearCache()` on logout. (`ShopRepository.cachedItems` audited — harmless, global catalog.)
+- [x] Stale previous-account flash on login: activity-scoped VMs (`Companion`, `Social`, `Routine`) survive logout and render old state until fresh data arrives. Fixed with `onLogout()` resets on all three, called from `performLogout()` alongside the cache clear.
+- [ ] Settings: revisit the target bedtime edit button design
+- [ ] My Routines tab layout change
+- [ ] Profile screen picture should reflect the user's own Shleepy
 
 ## 7. DB migrations (validated against code — user to run in Supabase)
 
@@ -86,6 +92,8 @@ Code expects these schemas (verified in `RoutineSession.kt`, `RewardLedger.kt`, 
 - [ ] **REQUIRED — routine_sessions status**: add `status TEXT DEFAULT 'PENDING'`, backfill from `is_completed` (true→COMPLETED, false→MISSED), then drop `is_completed`. Code has zero `is_completed` references; session inserts/auditor fail without `status`
 - [ ] **REQUIRED — reward_ledger rename**: `devolution_pending` → `has_first_miss` (matches `RewardLedger.kt:13`). Without it, every ledger write (streaks/tokens/XP) fails on unknown column
 - [ ] **OPTIONAL — routine_sessions.was_healed** (BOOLEAN DEFAULT false): zero code references today; safe to add now, but the Kotlin model needs a matching `@SerialName("was_healed")` field when the heal/restore feature is built
+- [x] **DONE — friendships**: table created per SDD ERD (`id`, `requester_id`/`receiver_id` TEXT FK → `user_profiles`, `status`, `created_at`/`updated_at`) + Realtime publication + RLS policies
+- [ ] **LATER — encouragement_reactions**: only needed when the encouragement feature gets a UI (parked for future update)
 - Timing: run BEFORE on-device testing — current code writes both columns immediately
 
 ## 8. Analytics: PENDING state in completion chart — NOTED, NOT STARTED
@@ -108,7 +116,7 @@ Cloud-First (Online-Only) architecture. All core operations require active inter
 - [x] **Guard `MainActivity`**: check network at startup → if offline, show offline UI and hide `NavHostFragment`
 - [x] **Repository error handling**: try-catch `IOException`/`SocketTimeoutException` in `SleepRecordRepository`, `UserProfileRepository`, `RoutineSessionRepository` → logs and re-throws
 - [x] **Strict block policy**: no local modifications while offline (prevent split-brain)
-- [ ] **Per-tab offline placeholder**: when connectivity drops mid-session, each tab shows a "No internet connection" + retry (with spinner) instead of raw error
+- [x] **Per-tab offline placeholder**: when connectivity drops mid-session, each tab shows a "No internet connection" + retry (with spinner) instead of raw error
   - [x] Create `layout_no_internet.xml`: centered text + retry button with hidden ProgressBar
   - [x] Create `ic_refresh.xml`: Material refresh icon for retry button
   - [x] Create `ui/common/UiState.kt`: sealed class (`Loading`, `Success<T>`, `Offline`)
@@ -120,3 +128,41 @@ Cloud-First (Online-Only) architecture. All core operations require active inter
   - [x] Update `AnalyticsDashboardFragment`: observe offline state, toggle placeholder
   - [x] Update `UserProfileViewModel`: catch network errors → emit `Offline`, add `retry()`
   - [x] Update `UserProfileFragment`: observe offline state, toggle placeholder
+
+## 10. Leaderboard & Friends — IN PROGRESS
+
+Split from the SDD's single `SocialFragment` into two screens per wireframe (see `SDD_DEVIATIONS.md`).
+
+Done:
+- [x] `LeaderboardFragment` + `fragment_leaderboard.xml` per wireframe (gradient banner, ranked cards, medal placeholders, "Your Rank" pill, grey placeholder slots)
+- [x] SDD ranking: natural top-10 position; pinned at bottom (top 9 + user) only when ranked outside top 10
+- [x] Own card always present via `getOwnProfile()`; list padded to 10 with placeholder cards
+- [x] Pull-to-refresh (`SwipeRefreshLayout`, 10s spinner cap) instead of Realtime auto-refresh (deferred, see below)
+- [x] Trophy icon on Profile → leaderboard; bottom nav auto-hides (not in `mainTabs`)
+- [x] Supabase `friendships` table + Realtime + RLS (see §7)
+
+Pending assets (from user):
+- [x] Real medal icons (`ic_medal_gold/silver/bronze`, with rank numerals baked in)
+- [x] Current streak flame icon (`ic_flame`)
+- [x] Longest streak torch icon (`longest_streak`)
+- [x] Total routines icon (`ic_checklist`)
+- [x] Add by Email envelope icon (reused `ic_auth_email` from login screen)
+- [x] Remove-friend icon (`ic_remove_friend`, `#D4183D` stroke)
+- [x] Request accept check icon (`ic_check`, tinted white on purple circle)
+- [x] Request decline cross icon (`ic_cross` on grey circle)
+- [x] Add-friend sheet Shleepy illustration (`add_friend_illustration.png`; PNG chosen over vector since illustration relies on radial gradients)
+
+Still to build:
+- [x] Friends screen redesign (`SocialFragment` per wireframe, badge on Friend Requests button)
+- [x] Friend avatars: frozen Charged-stage Shleepy with equipped wearables (`ShleepyAvatarView`) on friend + request rows
+- [ ] Reconsider Add by Email / Friend Requests button placement — side-by-side labels are cramped; may stack vertically instead
+- [x] Badge count on Profile tab icon (pending request count → bottom nav badge)
+- [x] Pull-to-refresh on Friends and Friend Requests screens (same pattern as leaderboard)
+- [ ] Temp cleanup: mock scaffolding + `LeaderboardDebug` logs in `SocialViewModel` (see `SDD_DEVIATIONS.md`)
+
+Parked for future update:
+- Encouragement feature (logic exists, no UI entry point after split)
+- Tonight's completion badge on cards
+- My Progress summary (needs a home after split)
+- Friend request push notifications (`FriendRequestNotificationWorker`)
+- Realtime auto-refresh (manual refresh covers it for now)

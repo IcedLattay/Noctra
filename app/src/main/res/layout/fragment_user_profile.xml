@@ -59,8 +59,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
-            android:layout_marginTop="-8dp"
             android:visibility="gone"
+            android:elevation="4dp"
             app:layout_constraintEnd_toStartOf="@id/icon_settings"
             app:layout_constraintTop_toTopOf="parent">
 
@@ -158,8 +158,8 @@
                     android:orientation="horizontal">
 
                     <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
                         android:src="@drawable/ic_flame"
                         android:contentDescription="Current streak" />
 

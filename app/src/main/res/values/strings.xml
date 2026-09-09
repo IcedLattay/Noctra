@@ -104,7 +104,7 @@
     <string name="friend_request_cancelled">Request cancelled</string>
 
     <!-- Remove Friend -->
-    <string name="remove_friend_title">Remove Friend?</string>
+    <string name="remove_friend_title">Remove %1$s?</string>
     <string name="remove_friend_message">Are you sure you want to remove %1$s from your friends?</string>
     <string name="remove_friend_confirm">Remove Friend</string>
     <string name="remove_friend_cancel">Never Mind</string>

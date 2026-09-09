@@ -11,6 +11,7 @@ material = "1.10.0"
 activityKtx = "1.13.0"
 constraintlayout = "2.1.4"
 coreSplashScreen = "1.0.1"
+swiperefresh = "1.1.0"
 
 # Noctra dependencies
 navigation = "2.7.7"
@@ -34,6 +35,7 @@ material = { group = "com.google.android.material", name = "material", version.r
 androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activityKtx" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashScreen" }
+androidx-swiperefresh = { group = "androidx.swiperefreshlayout", name = "swiperefreshlayout", version.ref = "swiperefresh" }
 
 # Navigation
 navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigation" }

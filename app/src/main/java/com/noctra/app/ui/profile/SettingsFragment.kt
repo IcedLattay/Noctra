@@ -277,6 +277,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     private fun performLogout() {
         lifecycleScope.launch {
+            com.noctra.app.data.repository.InventoryRepository.clearCache()
+            val vmProvider = androidx.lifecycle.ViewModelProvider(requireActivity())
+            vmProvider.get(com.noctra.app.ui.companion.CompanionViewModel::class.java).onLogout()
+            vmProvider.get(com.noctra.app.ui.social.SocialViewModel::class.java).onLogout()
+            vmProvider.get(com.noctra.app.ui.routine.RoutineViewModel::class.java).onLogout()
             com.noctra.app.data.supabase.SupabaseClient.client.auth.signOut()
             // Navigate specifically to the Auth Group and clear the backstack
             findNavController().navigate(R.id.auth_graph, null,

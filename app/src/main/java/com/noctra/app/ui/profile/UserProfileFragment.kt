@@ -35,6 +35,7 @@ class UserProfileFragment : Fragment(R.layout.fragment_user_profile) {
         val editIcon = view.findViewById<ImageView>(R.id.icon_edit_name)
         val settingsIcon = view.findViewById<ImageView>(R.id.icon_settings)
         val addFriendIcon = view.findViewById<ImageView>(R.id.icon_add_friend)
+        val trophyIcon = view.findViewById<ImageView>(R.id.icon_trophy)
         val badgeContainer = view.findViewById<FrameLayout>(R.id.badge_container)
         val textBadgeCount = view.findViewById<TextView>(R.id.text_badge_count)
 
@@ -91,6 +92,10 @@ class UserProfileFragment : Fragment(R.layout.fragment_user_profile) {
             findNavController().navigate(R.id.action_profile_to_social)
         }
 
+        trophyIcon.setOnClickListener {
+            findNavController().navigate(R.id.action_profile_to_leaderboard)
+        }
+
         viewModel.loadProfile(requireContext())
 
         // Load pending request count for badge
@@ -109,6 +114,17 @@ class UserProfileFragment : Fragment(R.layout.fragment_user_profile) {
                     textBadgeCount?.text = count.toString()
                 } else {
                     badgeContainer?.visibility = View.GONE
+                }
+                // Bottom nav tab badge (SDD: pending count on the Profile tab)
+                val bottomNav = requireActivity().findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(
+                    R.id.bottom_nav
+                )
+                val tabBadge = bottomNav.getOrCreateBadge(R.id.userProfileFragment)
+                if (count > 0) {
+                    tabBadge.number = count
+                    tabBadge.isVisible = true
+                } else {
+                    tabBadge.isVisible = false
                 }
             } catch (e: Exception) {
                 // Ignore errors

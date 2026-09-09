@@ -1,113 +1,127 @@
 package com.noctra.app.ui.social
 
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.noctra.app.R
-import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.launch
 
 class SocialFragment : Fragment(R.layout.fragment_social) {
 
-    private val viewModel: SocialViewModel by viewModels()
-    private lateinit var leaderboardAdapter: LeaderboardAdapter
+    private val viewModel: SocialViewModel by activityViewModels()
+    private lateinit var friendAdapter: FriendAdapter
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val btnBack = view.findViewById<ImageView>(R.id.btn_back)
-        val btnFriendRequestsBell = view.findViewById<ImageView>(R.id.btn_friend_requests_bell)
-        val badgeContainer = view.findViewById<LinearLayout>(R.id.badge_container)
-        val textBadgeCount = view.findViewById<TextView>(R.id.text_badge_count)
-        val recyclerLeaderboard = view.findViewById<RecyclerView>(R.id.recycler_leaderboard)
-        val emptyState = view.findViewById<LinearLayout>(R.id.empty_state)
-        val btnAddByEmail = view.findViewById<MaterialButton>(R.id.btn_add_by_email)
-        val btnFriendRequestsBottom = view.findViewById<MaterialButton>(R.id.btn_friend_requests)
+        val btnBack = view.findViewById<View>(R.id.btn_back)
+        val btnAddByEmail = view.findViewById<TextView>(R.id.btn_add_by_email)
+        val recyclerFriends = view.findViewById<RecyclerView>(R.id.recycler_friends)
 
-        // Setup back button
         btnBack.setOnClickListener {
             findNavController().navigateUp()
         }
 
-        // Setup friend requests button
-        btnFriendRequestsBell.setOnClickListener {
-            findNavController().navigate(R.id.action_social_to_friendRequests)
-        }
-        btnFriendRequestsBottom.setOnClickListener {
-            findNavController().navigate(R.id.action_social_to_friendRequests)
-        }
-
-        // Setup add by email button
         btnAddByEmail.setOnClickListener {
-            val bottomSheet = AddFriendBottomSheet()
-            bottomSheet.show(parentFragmentManager, "add_friend")
+            AddFriendBottomSheet().show(parentFragmentManager, "add_friend")
         }
 
-        // Setup leaderboard RecyclerView
-        leaderboardAdapter = LeaderboardAdapter { entry ->
-            viewModel.sendEncouragement(requireContext(), entry.userId)
-        }
-        recyclerLeaderboard.apply {
+        friendAdapter = FriendAdapter(
+            onRemoveClick = { friend -> confirmRemoveFriend(friend) },
+            onBannerClick = {
+                findNavController().navigate(R.id.action_social_to_friendRequests)
+            }
+        )
+        recyclerFriends.apply {
             layoutManager = LinearLayoutManager(requireContext())
-            adapter = leaderboardAdapter
+            adapter = friendAdapter
         }
 
-        // Load data
+        val swipeRefresh = view.findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.swipe_refresh)
+        swipeRefresh.setOnRefreshListener {
+            viewModel.loadAll(requireContext())
+        }
+
         viewModel.loadAll(requireContext())
 
-        // Observe leaderboard state
+        lifecycleScope.launch {
+            viewModel.isLoading.collect { loading ->
+                swipeRefresh.isRefreshing = loading
+            }
+        }
+
+        // Avatar equipment -> adapter
+        lifecycleScope.launch {
+            viewModel.avatarEquipment.collect { map ->
+                friendAdapter.equipment = map
+                friendAdapter.notifyDataSetChanged()
+            }
+        }
+
+        // Friend list (exclude own card and leaderboard placeholders).
+        // The list always shows: the banner header must stay reachable
+        // even with zero friends.
         lifecycleScope.launch {
             viewModel.leaderboardState.collect { state ->
-                if (state.hasFriends) {
-                    recyclerLeaderboard.visibility = View.VISIBLE
-                    emptyState.visibility = View.GONE
-                    leaderboardAdapter.submitList(state.entries)
-                } else {
-                    recyclerLeaderboard.visibility = View.GONE
-                    emptyState.visibility = View.VISIBLE
-                }
+                val friends = state.entries.filter { !it.isCurrentUser && !it.isPlaceholder }
+                friendAdapter.submitList(friends)
             }
         }
 
-        // Observe pending request count for badge
+        // Pending request badge on the banner (capped at 9+)
         lifecycleScope.launch {
             viewModel.pendingRequestCount.collect { count ->
-                if (count > 0) {
-                    badgeContainer.visibility = View.VISIBLE
-                    textBadgeCount.text = count.toString()
-                } else {
-                    badgeContainer.visibility = View.GONE
-                }
+                friendAdapter.setPendingBadge(count)
             }
         }
 
-        // Observe action results
+        // Action result toasts
         lifecycleScope.launch {
             viewModel.actionResult.collect { result ->
                 when (result) {
                     is ActionResult.Success -> {
                         Toast.makeText(requireContext(), result.message, Toast.LENGTH_SHORT).show()
-                        viewModel.clearActionResult()
                     }
                     is ActionResult.Error -> {
                         Toast.makeText(requireContext(), result.message, Toast.LENGTH_SHORT).show()
-                        viewModel.clearActionResult()
                     }
-                    null -> {}
                 }
             }
         }
+    }
+
+    private fun confirmRemoveFriend(friend: LeaderboardEntryUiModel) {
+        if (friend.friendshipId.isEmpty()) return
+        val dialog = android.app.Dialog(requireContext())
+        dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_remove_friend)
+        dialog.window?.apply {
+            setBackgroundDrawableResource(android.R.color.transparent)
+            setLayout(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        dialog.findViewById<TextView>(R.id.text_title).text =
+            getString(R.string.remove_friend_title, friend.displayName)
+        dialog.findViewById<TextView>(R.id.text_message).text =
+            getString(R.string.remove_friend_message, friend.displayName)
+        dialog.findViewById<View>(R.id.btn_confirm).setOnClickListener {
+            dialog.dismiss()
+            viewModel.removeFriend(friend.friendshipId)
+        }
+        dialog.findViewById<View>(R.id.btn_cancel).setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.show()
     }
 
     override fun onResume() {

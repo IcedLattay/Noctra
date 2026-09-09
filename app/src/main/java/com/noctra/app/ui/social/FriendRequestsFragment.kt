@@ -38,6 +38,17 @@ class FriendRequestsFragment : Fragment(R.layout.fragment_friend_requests) {
             findNavController().navigateUp()
         }
 
+        val swipeRefresh = view.findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.swipe_refresh)
+        swipeRefresh.setOnRefreshListener {
+            viewModel.loadAll(requireContext())
+        }
+
+        lifecycleScope.launch {
+            viewModel.isLoading.collect { loading ->
+                swipeRefresh.isRefreshing = loading
+            }
+        }
+
         // Setup adapters
         receivedAdapter = FriendRequestAdapter(
             isIncoming = true,
@@ -67,7 +78,19 @@ class FriendRequestsFragment : Fragment(R.layout.fragment_friend_requests) {
             adapter = sentAdapter
         }
 
+        // Avatar equipment -> both adapters
+        lifecycleScope.launch {
+            viewModel.avatarEquipment.collect { map ->
+                receivedAdapter.equipment = map
+                receivedAdapter.notifyDataSetChanged()
+                sentAdapter.equipment = map
+                sentAdapter.notifyDataSetChanged()
+            }
+        }
+
         // Setup tabs
+        tabLayout.addTab(tabLayout.newTab().setText(getString(R.string.social_received)))
+        tabLayout.addTab(tabLayout.newTab().setText(getString(R.string.social_sent)))
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 when (tab?.position) {
@@ -109,13 +132,10 @@ class FriendRequestsFragment : Fragment(R.layout.fragment_friend_requests) {
                 when (result) {
                     is ActionResult.Success -> {
                         Toast.makeText(requireContext(), result.message, Toast.LENGTH_SHORT).show()
-                        viewModel.clearActionResult()
                     }
                     is ActionResult.Error -> {
                         Toast.makeText(requireContext(), result.message, Toast.LENGTH_SHORT).show()
-                        viewModel.clearActionResult()
                     }
-                    null -> {}
                 }
             }
         }

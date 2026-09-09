@@ -3,15 +3,24 @@ package com.noctra.app.ui.social
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.noctra.app.data.model.ShopItem
 import com.noctra.app.data.repository.FriendshipRepository
+import com.noctra.app.data.repository.InventoryRepository
 import com.noctra.app.data.repository.RewardLedgerRepository
+import com.noctra.app.data.repository.ShopRepository
 import com.noctra.app.data.repository.SleepRecordRepository
 import com.noctra.app.domain.usecase.LeaderboardRankingUseCase
 import com.noctra.app.domain.usecase.LeaderboardEntry
 import com.noctra.app.domain.usecase.LeaderboardResult
 import com.noctra.app.utils.UserSession
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -20,6 +29,8 @@ class SocialViewModel : ViewModel() {
     private val friendshipRepository = FriendshipRepository()
     private val rewardLedgerRepository = RewardLedgerRepository()
     private val sleepRecordRepository = SleepRecordRepository()
+    private val inventoryRepository = InventoryRepository()
+    private val shopRepository = ShopRepository()
     private val leaderboardRankingUseCase = LeaderboardRankingUseCase()
 
     private var currentUserId: String? = null
@@ -47,8 +58,8 @@ class SocialViewModel : ViewModel() {
 
     // ─── Action Results ─────────────────────────────────────────────────────
 
-    private val _actionResult = MutableStateFlow<ActionResult?>(null)
-    val actionResult: StateFlow<ActionResult?> = _actionResult.asStateFlow()
+    private val _actionResult = MutableSharedFlow<ActionResult>(extraBufferCapacity = 1)
+    val actionResult: SharedFlow<ActionResult> = _actionResult.asSharedFlow()
 
     // ─── Loading State ──────────────────────────────────────────────────────
 
@@ -70,6 +81,19 @@ class SocialViewModel : ViewModel() {
         }
     }
 
+    // Clears per-user UI state so the next login never flashes the
+    // previous account's data while fresh data loads
+    fun onLogout() {
+        currentUserId = null
+        _leaderboardState.value = LeaderboardUiState()
+        _myProgressState.value = MyProgressUiState()
+        _incomingRequests.value = emptyList()
+        _outgoingRequests.value = emptyList()
+        _pendingRequestCount.value = 0
+        _avatarEquipment.value = emptyMap()
+        _isLoading.value = false
+    }
+
     // ─── Data Loading ───────────────────────────────────────────────────────
 
     fun loadAll(context: Context) {
@@ -88,17 +112,55 @@ class SocialViewModel : ViewModel() {
         }
     }
 
+    // Avatar equipment: userId -> (category -> equipped ShopItem)
+    private val _avatarEquipment =
+        MutableStateFlow<Map<String, Map<String, ShopItem>>>(emptyMap())
+    val avatarEquipment: StateFlow<Map<String, Map<String, ShopItem>>> =
+        _avatarEquipment.asStateFlow()
+
     private suspend fun refreshAll(userId: String) {
-        // Load all data concurrently
-        viewModelScope.launch { loadLeaderboard(userId) }
-        viewModelScope.launch { loadMyProgress(userId) }
-        viewModelScope.launch { loadPendingRequests(userId) }
+        // Load all data concurrently, then resolve avatar equipment
+        // once the user lists are known
+        coroutineScope {
+            awaitAll(
+                async { loadLeaderboard(userId) },
+                async { loadMyProgress(userId) },
+                async { loadPendingRequests(userId) }
+            )
+        }
+        loadAvatarEquipment()
+    }
+
+    private suspend fun loadAvatarEquipment() {
+        try {
+            val userIds = (
+                leaderboardState.value.entries.map { it.userId } +
+                    incomingRequests.value.map { it.userId } +
+                    outgoingRequests.value.map { it.userId }
+                )
+                .filter { it.isNotEmpty() }
+                .toSet()
+                .toList()
+            if (userIds.isEmpty()) return
+
+            val equipped = inventoryRepository.getEquippedItemIds(userIds)
+            val catalog = shopRepository.getAllShopItems().associateBy { it.itemId }
+            _avatarEquipment.value = equipped.mapValues { (_, itemIds) ->
+                itemIds.mapNotNull { catalog[it] }.associateBy { it.category }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("SocialVM", "Error loading avatar equipment", e)
+        }
     }
 
     private suspend fun loadLeaderboard(userId: String) {
         try {
             val friends = friendshipRepository.getAcceptedFriends(userId)
-            val result = leaderboardRankingUseCase.execute(friends, userId)
+            android.util.Log.d("LeaderboardDebug", "Friends loaded: ${friends.size}")
+            val ownProfile = friendshipRepository.getOwnProfile(userId)
+            android.util.Log.d("LeaderboardDebug", "Own profile loaded: $ownProfile")
+            val result = leaderboardRankingUseCase.execute(friends, userId, ownProfile)
+            android.util.Log.d("LeaderboardDebug", "Result entries: ${result.entries.size}, userRank: ${result.userRank}")
 
             _leaderboardState.value = LeaderboardUiState(
                 entries = result.entries.map { entry ->
@@ -108,7 +170,8 @@ class SocialViewModel : ViewModel() {
                         displayName = entry.displayName,
                         currentStreak = entry.currentStreak,
                         isCurrentUser = entry.isCurrentUser,
-                        isTopThree = entry.rank <= 3
+                        isTopThree = entry.rank <= 3,
+                        friendshipId = entry.friendshipId
                     )
                 },
                 userRank = result.userRank,
@@ -116,7 +179,7 @@ class SocialViewModel : ViewModel() {
                 hasFriends = friends.isNotEmpty()
             )
         } catch (e: Exception) {
-            e.printStackTrace()
+            android.util.Log.e("LeaderboardDebug", "Error loading leaderboard", e)
         }
     }
 
@@ -185,27 +248,24 @@ class SocialViewModel : ViewModel() {
 
     // ─── Friend Request Actions ─────────────────────────────────────────────
 
-    fun sendFriendRequest(context: Context, email: String) {
-        val userId = UserSession.getUserId(context) ?: return
+    // Direct call (no shared-flow event) — the bottom sheet is the only
+    // caller and surfaces the result inline, so nothing should toast
+    suspend fun sendFriendRequest(context: Context, email: String): Result<Unit> {
+        val userId = UserSession.getUserId(context)
+            ?: return Result.failure(Exception("Not logged in"))
 
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val result = friendshipRepository.sendFriendRequest(userId, email)
-                if (result.isSuccess) {
-                    _actionResult.value = ActionResult.Success("Friend request sent!")
-                    // Refresh outgoing requests
-                    loadPendingRequests(userId)
-                } else {
-                    _actionResult.value = ActionResult.Error(
-                        result.exceptionOrNull()?.message ?: "Failed to send request"
-                    )
-                }
-            } catch (e: Exception) {
-                _actionResult.value = ActionResult.Error("Failed to send request")
-            } finally {
-                _isLoading.value = false
+        _isLoading.value = true
+        return try {
+            val result = friendshipRepository.sendFriendRequest(userId, email)
+            if (result.isSuccess) {
+                // Refresh outgoing requests
+                loadPendingRequests(userId)
             }
+            result
+        } catch (e: Exception) {
+            Result.failure(e)
+        } finally {
+            _isLoading.value = false
         }
     }
 
@@ -215,10 +275,10 @@ class SocialViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 friendshipRepository.acceptFriendRequest(friendshipId)
-                _actionResult.value = ActionResult.Success("Friend request accepted!")
+                _actionResult.emit(ActionResult.Success("Friend request accepted!"))
                 refreshAll(userId)
             } catch (e: Exception) {
-                _actionResult.value = ActionResult.Error("Failed to accept request")
+                _actionResult.emit(ActionResult.Error("Failed to accept request"))
             }
         }
     }
@@ -229,10 +289,10 @@ class SocialViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 friendshipRepository.declineFriendRequest(friendshipId)
-                _actionResult.value = ActionResult.Success("Request declined")
+                _actionResult.emit(ActionResult.Success("Request declined"))
                 loadPendingRequests(userId)
             } catch (e: Exception) {
-                _actionResult.value = ActionResult.Error("Failed to decline request")
+                _actionResult.emit(ActionResult.Error("Failed to decline request"))
             }
         }
     }
@@ -243,10 +303,10 @@ class SocialViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 friendshipRepository.cancelFriendRequest(friendshipId)
-                _actionResult.value = ActionResult.Success("Request cancelled")
+                _actionResult.emit(ActionResult.Success("Request cancelled"))
                 loadPendingRequests(userId)
             } catch (e: Exception) {
-                _actionResult.value = ActionResult.Error("Failed to cancel request")
+                _actionResult.emit(ActionResult.Error("Failed to cancel request"))
             }
         }
     }
@@ -257,10 +317,10 @@ class SocialViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 friendshipRepository.removeFriend(friendshipId)
-                _actionResult.value = ActionResult.Success("Friend removed")
+                _actionResult.emit(ActionResult.Success("Friend removed"))
                 refreshAll(userId)
             } catch (e: Exception) {
-                _actionResult.value = ActionResult.Error("Failed to remove friend")
+                _actionResult.emit(ActionResult.Error("Failed to remove friend"))
             }
         }
     }
@@ -274,23 +334,19 @@ class SocialViewModel : ViewModel() {
             try {
                 val result = friendshipRepository.sendReaction(userId, friendUserId)
                 if (result.isSuccess) {
-                    _actionResult.value = ActionResult.Success("Encouragement sent!")
+                    _actionResult.emit(ActionResult.Success("Encouragement sent!"))
                 } else {
-                    _actionResult.value = ActionResult.Error(
+                    _actionResult.emit(ActionResult.Error(
                         result.exceptionOrNull()?.message ?: "Already sent today"
-                    )
+                    ))
                 }
             } catch (e: Exception) {
-                _actionResult.value = ActionResult.Error("Failed to send encouragement")
+                _actionResult.emit(ActionResult.Error("Failed to send encouragement"))
             }
         }
     }
 
     // ─── UI State Classes ───────────────────────────────────────────────────
-
-    fun clearActionResult() {
-        _actionResult.value = null
-    }
 
     override fun onCleared() {
         super.onCleared()
@@ -321,7 +377,9 @@ data class LeaderboardEntryUiModel(
     val displayName: String,
     val currentStreak: Int,
     val isCurrentUser: Boolean = false,
-    val isTopThree: Boolean = false
+    val isTopThree: Boolean = false,
+    val isPlaceholder: Boolean = false,
+    val friendshipId: String = ""
 )
 
 data class MyProgressUiState(

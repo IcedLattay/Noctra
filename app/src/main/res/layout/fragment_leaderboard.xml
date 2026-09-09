@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_friends_screen"
+    android:background="@color/white"
     android:orientation="vertical">
 
     <!-- Top bar -->
@@ -31,28 +31,13 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="12dp"
-            android:text="Friends"
+            android:text="Friends Leaderboard"
             android:textColor="@color/noctra_purple_dark"
             android:textSize="20sp"
             android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/btn_add_by_email"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:drawableStart="@drawable/ic_auth_email"
-            android:drawableTint="#522ABE"
-            android:drawablePadding="6dp"
-            android:padding="8dp"
-            android:text="Add by Email"
-            android:textColor="#522ABE"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:maxLines="1" />
     </LinearLayout>
 
-    <!-- Friend list with pull-to-refresh (banner + label are header items) -->
+    <!-- Leaderboard list with pull-to-refresh (banner is a header item inside) -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipe_refresh"
         android:layout_width="match_parent"
@@ -61,11 +46,13 @@
         android:layout_marginTop="8dp">
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler_friends"
+            android:id="@+id/recycler_leaderboard"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:clipChildren="false"
             android:clipToPadding="false"
             android:paddingHorizontal="20dp"
+            android:paddingTop="12dp"
             android:paddingBottom="16dp" />
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
@@ -83,7 +70,7 @@
         <ImageView
             android:layout_width="80dp"
             android:layout_height="80dp"
-            android:src="@drawable/ic_add_friend"
+            android:src="@drawable/ic_trophy"
             android:alpha="0.3"
             android:contentDescription="@null" />
 
@@ -101,7 +88,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:text="Add friends by email to grow your circle"
+            android:text="Add friends from your profile to see the leaderboard"
             android:textColor="@color/noctra_text_muted"
             android:textSize="14sp" />
     </LinearLayout>

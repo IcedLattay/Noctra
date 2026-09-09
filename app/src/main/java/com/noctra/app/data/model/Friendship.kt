@@ -9,5 +9,6 @@ data class Friendship(
     @SerialName("requester_id") val requesterId: String,
     @SerialName("receiver_id") val receiverId: String,
     val status: String = "PENDING",
-    @SerialName("created_at") val createdAt: String? = null
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null
 )

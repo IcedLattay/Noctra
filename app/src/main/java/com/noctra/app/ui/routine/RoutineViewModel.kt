@@ -149,6 +149,27 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
 
     // ─── Public Lifecycle ─────────────────────────────────────────────────────
 
+    // Clears per-user session state so the next login never flashes the
+    // previous account's routine while fresh data loads
+    fun onLogout() {
+        sessionTimerJob?.cancel()
+        activityTimerJob?.cancel()
+        sessionTimerJob = null
+        activityTimerJob = null
+        _isInitialized.value = false
+        _isWindowExpired.value = false
+        activities = emptyList()
+        routineConfigId = ""
+        currentStreak = 0
+        _sessionState.value = SessionState.Ready
+        _currentStepIndex.value = 0
+        _sessionSecondsRemaining.value = SESSION_DURATION_SECONDS
+        _activitySecondsRemaining.value = 0
+        _rewardResult.value = null
+        activeSessionId = null
+        sessionStartTimestamp = ""
+    }
+
     fun startSession() {
         if (_isWindowExpired.value) {
             android.util.Log.e("RoutineViewModel", "Attempted to start session outside of window.")

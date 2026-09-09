@@ -68,12 +68,13 @@ class FriendshipRepository {
                 return Result.failure(Exception("A friend request already exists with this user"))
             }
 
-            // 3. Insert friend request
+            // 3. Insert friend request (map form so the DB default fills `id`;
+            // our client's explicitNulls would otherwise send id=null)
             client.from("friendships").insert(
-                Friendship(
-                    requesterId = requesterId,
-                    receiverId = receiver.userId,
-                    status = "PENDING"
+                mapOf(
+                    "requester_id" to requesterId,
+                    "receiver_id" to receiver.userId,
+                    "status" to "PENDING"
                 )
             )
 
@@ -145,6 +146,10 @@ class FriendshipRepository {
         // Fetch latest routine session for each friend to get streak
         val friendWithProfiles = mutableListOf<FriendWithProfile>()
         for (friendId in friendIds) {
+            val friendship = friendships.find {
+                (it.requesterId == userId && it.receiverId == friendId) ||
+                    (it.requesterId == friendId && it.receiverId == userId)
+            }
             val profile = profiles.find { it.userId == friendId }
             val latestSession = client.from("routine_sessions")
                 .select {
@@ -165,12 +170,33 @@ class FriendshipRepository {
                     userId = friendId,
                     displayName = profile?.displayName ?: "Unknown",
                     currentStreak = streak,
-                    lastCompletedTimestamp = latestSession?.completionTimestamp
+                    lastCompletedTimestamp = latestSession?.completionTimestamp,
+                    friendshipId = friendship?.id ?: ""
                 )
             )
         }
 
         return friendWithProfiles
+    }
+
+    // ─── Own Profile ────────────────────────────────────────────────────────
+
+    suspend fun getOwnProfile(userId: String): FriendWithProfile? {
+        val profile = client.from("user_profiles")
+            .select {
+                filter { eq("user_id", userId) }
+                limit(1)
+            }
+            .decodeSingleOrNull<UserProfile>()
+
+        val streak = calculateStreak(userId)
+
+        return FriendWithProfile(
+            userId = userId,
+            displayName = profile?.displayName ?: "You",
+            currentStreak = streak,
+            lastCompletedTimestamp = null
+        )
     }
 
     private suspend fun calculateStreak(userId: String): Int {
@@ -301,10 +327,10 @@ class FriendshipRepository {
             }
 
             client.from("encouragement_reactions").insert(
-                EncouragementReaction(
-                    senderId = senderId,
-                    receiverId = receiverId,
-                    reactionDate = today
+                mapOf(
+                    "sender_id" to senderId,
+                    "receiver_id" to receiverId,
+                    "reaction_date" to today
                 )
             )
 
@@ -412,7 +438,8 @@ class FriendshipRepository {
         val userId: String,
         val displayName: String,
         val currentStreak: Int,
-        val lastCompletedTimestamp: String?
+        val lastCompletedTimestamp: String?,
+        val friendshipId: String = ""
     )
 
     @Serializable

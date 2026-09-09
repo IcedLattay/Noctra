@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.activityViewModels
@@ -35,7 +34,6 @@ class AddFriendBottomSheet : BottomSheetDialogFragment() {
         val inputEmail = view.findViewById<TextInputEditText>(R.id.input_email)
         val textError = view.findViewById<TextView>(R.id.text_error)
         val btnSendRequest = view.findViewById<MaterialButton>(R.id.btn_send_request)
-        val successState = view.findViewById<LinearLayout>(R.id.success_state)
 
         btnSendRequest.setOnClickListener {
             val email = inputEmail.text.toString().trim()
@@ -55,31 +53,20 @@ class AddFriendBottomSheet : BottomSheetDialogFragment() {
             textError.visibility = View.GONE
             btnSendRequest.isEnabled = false
 
-            viewModel.sendFriendRequest(requireContext(), email)
-
-            // Show success state
-            successState.visibility = View.VISIBLE
-            inputLayoutEmail.visibility = View.GONE
-            btnSendRequest.visibility = View.GONE
-            textError.visibility = View.GONE
-
-            // Dismiss after delay
-            view.postDelayed({
-                dismiss()
-            }, 2000)
-        }
-
-        // Observe action results for errors
-        lifecycleScope.launch {
-            viewModel.actionResult.collect { result ->
-                when (result) {
-                    is ActionResult.Error -> {
-                        textError.text = result.message
-                        textError.visibility = View.VISIBLE
-                        btnSendRequest.isEnabled = true
-                        viewModel.clearActionResult()
-                    }
-                    else -> {}
+            lifecycleScope.launch {
+                val result = viewModel.sendFriendRequest(requireContext(), email)
+                if (result.isSuccess) {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.add_friend_success),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    dismiss()
+                } else {
+                    textError.text = result.exceptionOrNull()?.message
+                        ?: "Failed to send request"
+                    textError.visibility = View.VISIBLE
+                    btnSendRequest.isEnabled = true
                 }
             }
         }

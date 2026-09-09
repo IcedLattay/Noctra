@@ -89,6 +89,14 @@ class CompanionViewModel(
         loadData(userId, null)
     }
 
+    // Clears per-user UI state so the next login never flashes the
+    // previous account's data while fresh data loads
+    fun onLogout() {
+        _uiState.value = CompanionUiState()
+        previousStageLevel = null
+        noticeHandledThisSession = false
+    }
+
     fun loadData(userId: String, lastShownSleepDate: String?) {
         viewModelScope.launch {
             if (!networkObserver.checkNow()) {

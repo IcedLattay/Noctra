@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="32dp"
+    android:background="@drawable/bg_dialog_rounded"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/text_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textColor="@android:color/black"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        tools:text="Remove Luezyl Dom?" />
+
+    <TextView
+        android:id="@+id/text_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:textColor="@color/noctra_text_muted"
+        android:textSize="14sp"
+        tools:text="Are you sure you want to remove Luezyl Dom from your friends?" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_confirm"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="20dp"
+        android:text="Remove Friend"
+        android:textColor="@color/white"
+        app:backgroundTint="#E63956"
+        app:cornerRadius="24dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_cancel"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:text="Never Mind"
+        android:textColor="@android:color/black"
+        app:backgroundTint="#EBEBEB"
+        app:cornerRadius="24dp" />
+
+</LinearLayout>

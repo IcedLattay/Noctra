@@ -9,20 +9,48 @@ class InventoryRepository {
     private val client = SupabaseClient.client
 
     companion object {
+        private var cachedUserId: String? = null
         private var cachedInventory: List<UserInventoryItem>? = null
+
+        fun clearCache() {
+            cachedUserId = null
+            cachedInventory = null
+        }
     }
 
     suspend fun getUserInventory(userId: String): List<UserInventoryItem> {
-        cachedInventory?.let { return it }
+        if (cachedUserId == userId) {
+            cachedInventory?.let { return it }
+        }
 
         return try {
             val inventory = client.from("user_inventory")
                 .select { filter { eq("user_id", userId) } }
                 .decodeList<UserInventoryItem>()
+            cachedUserId = userId
             cachedInventory = inventory
             inventory
         } catch (e: Exception) {
             emptyList()
+        }
+    }
+
+    // Uncached batch read for friend avatars — never touches cachedInventory,
+    // which strictly holds the current user's rows
+    suspend fun getEquippedItemIds(userIds: List<String>): Map<String, List<String>> {
+        if (userIds.isEmpty()) return emptyMap()
+        return try {
+            client.from("user_inventory")
+                .select {
+                    filter {
+                        isIn("user_id", userIds)
+                        eq("is_equipped", true)
+                    }
+                }
+                .decodeList<UserInventoryItem>()
+                .groupBy({ it.userId }, { it.itemId })
+        } catch (e: Exception) {
+            emptyMap()
         }
     }
 

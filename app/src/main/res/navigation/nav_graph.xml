@@ -185,7 +185,15 @@
             <action
                 android:id="@+id/action_profile_to_social"
                 app:destination="@id/socialFragment" />
+            <action
+                android:id="@+id/action_profile_to_leaderboard"
+                app:destination="@id/leaderboardFragment" />
         </fragment>
+
+        <fragment
+            android:id="@+id/leaderboardFragment"
+            android:name="com.noctra.app.ui.social.LeaderboardFragment"
+            android:label="Friends Leaderboard" />
 
         <fragment
             android:id="@+id/socialFragment"
