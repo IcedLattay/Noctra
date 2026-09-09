@@ -17,12 +17,6 @@ import kotlinx.coroutines.launch
 
 class LeaderboardFragment : Fragment(R.layout.fragment_leaderboard) {
 
-    // TEMP MOCK PREVIEW — set to false to go back to real data
-    private val SHOW_MOCK = false
-    // Change this streak to preview different ranks:
-    // 26 = top 3 (#2, with medal), 19 = middle (#4, no medal), 1 = pinned bottom
-    private val MOCK_USER_STREAK = 26
-
     private val viewModel: SocialViewModel by activityViewModels()
     private lateinit var leaderboardAdapter: LeaderboardAdapter
     private var scrolledToTopOnLoad = false
@@ -67,7 +61,7 @@ class LeaderboardFragment : Fragment(R.layout.fragment_leaderboard) {
 
         lifecycleScope.launch {
             viewModel.leaderboardState.collect { state ->
-                val base = if (SHOW_MOCK) buildMockEntries(state) else state.entries
+                val base = state.entries
                 if (base.isNotEmpty()) {
                     recyclerLeaderboard.visibility = View.VISIBLE
                     emptyState.visibility = View.GONE
@@ -109,42 +103,5 @@ class LeaderboardFragment : Fragment(R.layout.fragment_leaderboard) {
             )
         }
         return entries + placeholders
-    }
-
-    // TEMP MOCK PREVIEW — delete this whole function when going back to real data
-    private fun buildMockEntries(state: LeaderboardUiState): List<LeaderboardEntryUiModel> {
-        val realUser = state.entries.find { it.isCurrentUser }
-        val all = listOf(
-            Triple("mock-1", "Gerard Grant", 28),
-            Triple("mock-2", "Earl Guimoc", 24),
-            Triple("mock-3", "Carmel Estrada", 21),
-            Triple("mock-4", "Mesha Lao", 18),
-            Triple("mock-5", "Luezyl Dom", 17),
-            Triple("mock-6", "Dean Di Laurentis", 15),
-            Triple("mock-7", "Tom Brown", 14),
-            Triple("mock-8", "Amy White", 12),
-            Triple("mock-9", "Chris Black", 10)
-        ).map { (id, name, streak) ->
-            LeaderboardEntryUiModel(
-                userId = id,
-                rank = 0,
-                displayName = name,
-                currentStreak = streak,
-                isCurrentUser = false
-            )
-        }.toMutableList()
-        all.add(
-            LeaderboardEntryUiModel(
-                userId = realUser?.userId ?: "mock-you",
-                rank = 0,
-                displayName = realUser?.displayName ?: "You",
-                currentStreak = MOCK_USER_STREAK,
-                isCurrentUser = true
-            )
-        )
-        return all.sortedByDescending { it.currentStreak }
-            .mapIndexed { index, entry ->
-                entry.copy(rank = index + 1, isTopThree = index < 3)
-            }
     }
 }

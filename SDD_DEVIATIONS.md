@@ -169,7 +169,7 @@ Deviations from the Software Design Description (SDD) discovered during implemen
 
 ## Temp Code to Remove Before Release
 
-- `LeaderboardFragment.SHOW_MOCK`, `MOCK_USER_STREAK`, `buildMockEntries()` — mock preview scaffolding, currently off.
+- ~~Leaderboard mock scaffolding + debug logs — removed.~~
 - `LeaderboardDebug` log calls in `SocialViewModel.loadLeaderboard()` — added during debugging.
 - `FriendshipRepository` realtime `filter` deprecation warnings (2) — still functional, migrate to the new `filter` method when convenient.
 

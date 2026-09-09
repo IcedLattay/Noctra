@@ -156,11 +156,8 @@ class SocialViewModel : ViewModel() {
     private suspend fun loadLeaderboard(userId: String) {
         try {
             val friends = friendshipRepository.getAcceptedFriends(userId)
-            android.util.Log.d("LeaderboardDebug", "Friends loaded: ${friends.size}")
             val ownProfile = friendshipRepository.getOwnProfile(userId)
-            android.util.Log.d("LeaderboardDebug", "Own profile loaded: $ownProfile")
             val result = leaderboardRankingUseCase.execute(friends, userId, ownProfile)
-            android.util.Log.d("LeaderboardDebug", "Result entries: ${result.entries.size}, userRank: ${result.userRank}")
 
             _leaderboardState.value = LeaderboardUiState(
                 entries = result.entries.map { entry ->
@@ -179,7 +176,7 @@ class SocialViewModel : ViewModel() {
                 hasFriends = friends.isNotEmpty()
             )
         } catch (e: Exception) {
-            android.util.Log.e("LeaderboardDebug", "Error loading leaderboard", e)
+            e.printStackTrace()
         }
     }
 
