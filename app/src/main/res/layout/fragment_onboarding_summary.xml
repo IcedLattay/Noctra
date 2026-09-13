@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F5F4FF"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:scrollbars="none">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -42,7 +44,7 @@
             android:layout_gravity="center_horizontal"
             android:text="Your personalized sleep routine is ready"
             android:textSize="14sp"
-            android:textColor="#7B6FA0"
+            android:textColor="@color/noctra_text_muted"
             android:fontFamily="@font/poppinsregular"
             android:layout_marginBottom="32dp" />
 
@@ -73,7 +75,7 @@
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:layout_gravity="center"
-                        android:src="@drawable/ic_alarm_clock"
+                        android:src="@drawable/ic_summary_moon"
                         android:contentDescription="Bedtime icon" />
 
                 </FrameLayout>
@@ -88,7 +90,7 @@
                         android:layout_height="wrap_content"
                         android:text="Target Bedtime"
                         android:textSize="12sp"
-                        android:textColor="#7B6FA0"
+                        android:textColor="@android:color/black"
                         android:fontFamily="@font/poppinsregular" />
 
                     <TextView
@@ -98,7 +100,7 @@
                         android:text="10:00"
                         android:textSize="20sp"
                         android:textStyle="bold"
-                        android:textColor="#16056E"
+                        android:textColor="@android:color/black"
                         android:fontFamily="@font/poppinsbold" />
 
                 </LinearLayout>
@@ -132,7 +134,7 @@
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:layout_gravity="center"
-                        android:src="@drawable/ic_clock"
+                        android:src="@drawable/ic_summary_clock"
                         android:contentDescription="Duration icon" />
 
                 </FrameLayout>
@@ -147,7 +149,7 @@
                         android:layout_height="wrap_content"
                         android:text="Routine Duration"
                         android:textSize="12sp"
-                        android:textColor="#5C4A00"
+                        android:textColor="@android:color/black"
                         android:fontFamily="@font/poppinsregular" />
 
                     <TextView
@@ -157,7 +159,7 @@
                         android:text="23 minutes"
                         android:textSize="20sp"
                         android:textStyle="bold"
-                        android:textColor="#16056E"
+                        android:textColor="@android:color/black"
                         android:fontFamily="@font/poppinsbold" />
 
                 </LinearLayout>
@@ -191,7 +193,7 @@
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:layout_marginEnd="8dp"
-                        android:src="@drawable/ic_alarm_clock"
+                        android:src="@drawable/ic_summary_check_circle"
                         android:contentDescription="Routine icon" />
 
                     <TextView
@@ -200,7 +202,7 @@
                         android:text="Your Routine (3 activities)"
                         android:textSize="14sp"
                         android:textStyle="bold"
-                        android:textColor="#16056E"
+                        android:textColor="@android:color/black"
                         android:fontFamily="@font/poppinsbold" />
 
                 </LinearLayout>
@@ -221,7 +223,7 @@
                         android:layout_height="wrap_content"
                         android:text="1."
                         android:textSize="13sp"
-                        android:textColor="#7B6FA0"
+                        android:textColor="@android:color/black"
                         android:fontFamily="@font/poppinsregular"
                         android:layout_marginEnd="10dp" />
 
@@ -233,7 +235,7 @@
                         android:text="Deep Breathing"
                         android:textSize="13sp"
                         android:textStyle="bold"
-                        android:textColor="#5C25F0"
+                        android:textColor="@android:color/black"
                         android:fontFamily="@font/poppinsbold" />
 
                     <TextView
@@ -242,7 +244,7 @@
                         android:layout_height="wrap_content"
                         android:text="5m"
                         android:textSize="13sp"
-                        android:textColor="#7B6FA0"
+                        android:textColor="@android:color/black"
                         android:fontFamily="@font/poppinsregular" />
 
                 </LinearLayout>
@@ -263,7 +265,7 @@
                         android:layout_height="wrap_content"
                         android:text="2."
                         android:textSize="13sp"
-                        android:textColor="#7B6FA0"
+                        android:textColor="@android:color/black"
                         android:fontFamily="@font/poppinsregular"
                         android:layout_marginEnd="10dp" />
 
@@ -275,7 +277,7 @@
                         android:text="Brain Dump"
                         android:textSize="13sp"
                         android:textStyle="bold"
-                        android:textColor="#5C25F0"
+                        android:textColor="@android:color/black"
                         android:fontFamily="@font/poppinsbold" />
 
                     <TextView
@@ -284,7 +286,7 @@
                         android:layout_height="wrap_content"
                         android:text="3m"
                         android:textSize="13sp"
-                        android:textColor="#7B6FA0"
+                        android:textColor="@android:color/black"
                         android:fontFamily="@font/poppinsregular" />
 
                 </LinearLayout>
@@ -304,7 +306,7 @@
                         android:layout_height="wrap_content"
                         android:text="3."
                         android:textSize="13sp"
-                        android:textColor="#7B6FA0"
+                        android:textColor="@android:color/black"
                         android:fontFamily="@font/poppinsregular"
                         android:layout_marginEnd="10dp" />
 
@@ -316,7 +318,7 @@
                         android:text="Calming Sounds"
                         android:textSize="13sp"
                         android:textStyle="bold"
-                        android:textColor="#5C25F0"
+                        android:textColor="@android:color/black"
                         android:fontFamily="@font/poppinsbold" />
 
                     <TextView
@@ -325,10 +327,71 @@
                         android:layout_height="wrap_content"
                         android:text="15m"
                         android:textSize="13sp"
-                        android:textColor="#7B6FA0"
+                        android:textColor="@android:color/black"
                         android:fontFamily="@font/poppinsregular" />
 
                 </LinearLayout>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Health data status card -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#F8F6FF">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Health Data"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/black"
+                    android:fontFamily="@font/poppinsbold"
+                    android:layout_marginBottom="10dp" />
+
+                <TextView
+                    android:id="@+id/tv_health_sleep"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/noctra_text_muted"
+                    android:fontFamily="@font/poppinsregular"
+                    android:layout_marginTop="4dp"
+                    android:drawablePadding="6dp"
+                    tools:text="Sleep Segments: Granted" />
+
+                <TextView
+                    android:id="@+id/tv_health_heart"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/noctra_text_muted"
+                    android:fontFamily="@font/poppinsregular"
+                    android:layout_marginTop="4dp"
+                    android:drawablePadding="6dp"
+                    tools:text="Heart Rate: Not shared" />
+
+                <TextView
+                    android:id="@+id/tv_health_stages"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/noctra_text_muted"
+                    android:fontFamily="@font/poppinsregular"
+                    android:layout_marginTop="4dp"
+                    android:drawablePadding="6dp"
+                    tools:text="Sleep Stages: Granted" />
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>

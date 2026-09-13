@@ -167,11 +167,17 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                     } else {
                         // Mid-flow recovery: Set the Onboarding Group as start
                         // and then adjust the internal start of that group
+                        android.util.Log.d(
+                            "MainActivity",
+                            "Onboarding resume: userId=$userId step=${profile.onboardingStep} completed=${profile.onboardingCompleted}"
+                        )
                         val onboardingGraph = graph.findNode(R.id.onboarding_graph) as androidx.navigation.NavGraph
                         val startStep = when (profile.onboardingStep) {
                             1 -> R.id.activityLibraryFragment
                             2 -> R.id.routineSequencingFragment
-                            3 -> R.id.onboardingSummaryFragment
+                            3 -> R.id.healthEducationFragment
+                            4 -> R.id.healthGrantFragment
+                            5 -> R.id.onboardingSummaryFragment
                             else -> R.id.bedtimeConfigFragment
                         }
                         onboardingGraph.setStartDestination(startStep)

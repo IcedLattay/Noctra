@@ -40,3 +40,6 @@ supabase_migrations.sql
 # Temp/revision docs
 *revisions*
 ~$*
+
+# Noctra logs
+NoctraLogs.bt

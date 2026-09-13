@@ -70,7 +70,7 @@ class UserProfileRepository {
         try {
             client.from("user_profiles").update({
                 set("onboarding_completed", true)
-                set("onboarding_step", 4)
+                set("onboarding_step", 5)
                 set("updated_at", "now()")
             }) { filter { eq("user_id", userId) } }
         } catch (e: IOException) {
@@ -93,6 +93,38 @@ class UserProfileRepository {
             throw e
         } catch (e: SocketTimeoutException) {
             Log.e(tag, "Timeout updating onboarding step", e)
+            throw e
+        }
+    }
+
+    suspend fun saveDraft(userId: String, bedtime: String, activityIds: List<String>) {
+        try {
+            client.from("user_profiles").update({
+                set("draft_bedtime", bedtime)
+                set<List<String>>("draft_activity_ids", activityIds)
+                set("updated_at", "now()")
+            }) { filter { eq("user_id", userId) } }
+        } catch (e: IOException) {
+            Log.e(tag, "Network error saving onboarding draft", e)
+            throw e
+        } catch (e: SocketTimeoutException) {
+            Log.e(tag, "Timeout saving onboarding draft", e)
+            throw e
+        }
+    }
+
+    suspend fun clearDraft(userId: String) {
+        try {
+            client.from("user_profiles").update({
+                set<String?>("draft_bedtime", null)
+                set<List<String>?>("draft_activity_ids", null)
+                set("updated_at", "now()")
+            }) { filter { eq("user_id", userId) } }
+        } catch (e: IOException) {
+            Log.e(tag, "Network error clearing onboarding draft", e)
+            throw e
+        } catch (e: SocketTimeoutException) {
+            Log.e(tag, "Timeout clearing onboarding draft", e)
             throw e
         }
     }

@@ -46,6 +46,17 @@ class ActivityLibraryFragment : Fragment() {
         setupButtons()
         loadActivities()
         observeSelection()
+
+        // Fresh-process resume: restore the saved draft unless edit mode
+        // preloaded the active routine (or state already exists)
+        if (!viewModel.isEditMode) {
+            val userId = UserSession.getUserId(requireContext())
+            if (userId != null) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    viewModel.restoreDraftIfEmpty(userId)
+                }
+            }
+        }
     }
 
     private fun setupEditMode() {
@@ -74,9 +85,10 @@ class ActivityLibraryFragment : Fragment() {
     }
 
     private fun setupAdapter() {
-        adapter = ActivityGridAdapter { activity ->
-            viewModel.toggleActivity(activity)
-        }
+        adapter = ActivityGridAdapter(
+            onActivityClick = { activity -> viewModel.toggleActivity(activity) },
+            onInfoClick = { activity -> showActivityDetails(activity) }
+        )
         binding.rvActivities.layoutManager = GridLayoutManager(requireContext(), 2)
         binding.rvActivities.adapter = adapter
     }
@@ -89,14 +101,11 @@ class ActivityLibraryFragment : Fragment() {
                 val userId = UserSession.getUserId(requireContext())
                 if (userId != null) {
                     viewModel.updateStep(userId, 2)
+                    viewModel.saveDraft(userId)
                 }
             }
 
             findNavController().navigate(R.id.action_activityLibrary_to_routineSequencing)
-        }
-
-        binding.btnBack.setOnClickListener {
-            findNavController().popBackStack()
         }
 
         // Start disabled
@@ -133,6 +142,19 @@ class ActivityLibraryFragment : Fragment() {
                     else -> "Exactly 3 activities required"
                 }
 
+                // Update 3-segment progress bar
+                val segments = listOf(
+                    binding.progressSegment1,
+                    binding.progressSegment2,
+                    binding.progressSegment3
+                )
+                segments.forEachIndexed { index, segment ->
+                    segment.setBackgroundResource(
+                        if (index < count) R.drawable.bg_progress_segment_active
+                        else R.drawable.bg_progress_segment_inactive
+                    )
+                }
+
                 // Update continue button
                 val ready = count == 3
                 binding.btnContinue.isEnabled = ready
@@ -146,6 +168,14 @@ class ActivityLibraryFragment : Fragment() {
                 adapter.setSelected(selected.map { it.activityId }.toSet())
             }
         }
+    }
+
+    private fun showActivityDetails(activity: com.noctra.app.data.model.Activity) {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setTitle(activity.label)
+            .setMessage("${activity.description}\n\nDuration: ${activity.defaultDurationMinutes} minutes")
+            .setPositiveButton("Got it", null)
+            .show()
     }
 
     override fun onDestroyView() {

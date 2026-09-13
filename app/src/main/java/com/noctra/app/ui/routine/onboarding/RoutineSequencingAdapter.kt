@@ -1,36 +1,36 @@
 package com.noctra.app.ui.routine.onboarding
 
-import android.annotation.SuppressLint
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.noctra.app.data.model.Activity
 import com.noctra.app.databinding.ItemSequencingRowBinding
 
-class RoutineSequencingAdapter() : ListAdapter<Activity, RoutineSequencingAdapter.ViewHolder>(DIFF) {
-
-    var touchHelper: ItemTouchHelper? = null
+class RoutineSequencingAdapter(
+    private val onMove: (from: Int, to: Int) -> Unit
+) : ListAdapter<Activity, RoutineSequencingAdapter.ViewHolder>(DIFF) {
 
     inner class ViewHolder(val binding: ItemSequencingRowBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
-        @SuppressLint("ClickableViewAccessibility")
         fun bind(activity: Activity, position: Int) {
             binding.tvStepNumber.text = "${position + 1}"
             binding.tvActivityLabel.text = activity.label
+            binding.tvActivityDescription.text = activity.description
             binding.tvActivityDuration.text = "${activity.defaultDurationMinutes} minutes"
 
-            // Drag handle — start drag on touch down
-            binding.ivDragHandle.setOnTouchListener { _, event ->
-                if (event.actionMasked == MotionEvent.ACTION_DOWN) {
-                    touchHelper?.startDrag(this)
-                }
-                false
+            // Chevron steppers — tap to move one slot
+            binding.btnMoveUp.setOnClickListener {
+                val from = adapterPosition
+                if (from != RecyclerView.NO_POSITION && from > 0) onMove(from, from - 1)
             }
+            binding.btnMoveDown.setOnClickListener {
+                val from = adapterPosition
+                if (from != RecyclerView.NO_POSITION && from < itemCount - 1) onMove(from, from + 1)
+            }
+
         }
     }
 

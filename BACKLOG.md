@@ -75,13 +75,41 @@ The popup must never re-show after the finalization pass rewrites the record.
 - [ ] Baseline learning: null for the first 7 nights, then learned from the user's sleep history (design per comments in `SleepQualityProcessingUseCase`)
 - [ ] Composite fallback weights when components are missing are a guess — validate against spec
 
-## 6. Misc
+## 6. Misc (do FIRST on return: verify step-5 fixes on device — granted-state swap, black headings, left-aligned why-body, skip→summary flow)
+
+- [x] Verify step-5 fixes on device — done (all fixes verified, navigation crash fixed)
 
 - [ ] `backend/` directory is empty (only `.idea/`) — confirm whether a backend service is planned or Supabase-only is final
-- [ ] Onboarding never shows the Health Connect permission screens (Pre-flight + Grant) — investigate nav wiring
+- [x] Onboarding skipped Health Connect screens on resume: step mapping predated them (3 → summary). Renumbered with health steps (3 → Pre-flight, 4 → Grant, 5 → Summary) + step saves on all health exits
+- [x] Sequencing Confirm crashed (`action_routineSequencing_to_healthEducation` not found): `nav_graph.xml` carried a stale inline copy of the whole onboarding graph without health screens, shadowing `onboarding_graph.xml`. Replaced with `<include>`, ported the `editMode` arg, made Confirm edit-aware (edit flow pops back to Routine tab instead of entering onboarding-only health flow)
+- [ ] Edit Routine flow doesn't persist the re-sequenced routine (pre-existing gap, noted in code as next phase) — fix: call `updateRoutineConfiguration` on edit-mode Confirm
+- [x] Onboarding step counters updated to 5 steps, summary excluded (bedtime 1/5, library 2/5, sequencing 3/5, pre-flight 4/5 per wireframe, grant 5/5)
+- [x] Onboarding draft persistence: `draft_bedtime` + `draft_activity_ids` on `user_profiles` (Migration 4 — run it), saved per advance, restored when the shared ViewModel is empty, cleared on complete. Active routine config untouched until Summary. Verified on device.
+- [x] Onboarding is one-way (forward only): Back buttons removed (Library, Sequencing, TEMP health backs). No logout button — not standard in setup funnels; abandon-and-resume covers it
+- [ ] Login always resumes onboarding at step 1 instead of the saved step — undiagnosed; suspects: stale APK, wrong account's row, or write lost to app-kill timing. `MainActivity` now logs `Onboarding resume: userId/step/completed` — reproduce and send the line
+- [x] Activity Library 3-segment progress bar now tracks selection state (observer updated everything except the segments)
+- [ ] Activity cards still use purple circle placeholders — replace with per-activity illustrations
+- [x] Step 1: hint card text ("This is the time…") to black — done
+- [x] Step 2: activity names on cards to black — done
+- [x] Step 2: move the activity details dialog here from step 3 (info icon button at top-right of cards); info button + dialog removed from Sequencing — done
+- [ ] Step 2 wireframe update needed: info icon button on activity cards (replaces long-press)
+- [x] Step 5 "skipped popup": investigated — not a bug. Both permissions were already granted, so HC instantly returns the full set and one-shot flow advances. Behaves correctly.
+- [x] Step 5 auto-skip: if all permissions already granted when step 5 opens, skips straight to Summary — done
+- [x] Step 3: removed "Tap ⓘ for details" from instructions — done
+- [x] Step 1: Continue button font weight → regular — done
+- [x] Summary: replace card icons — done (user-provided SVGs: moon/clock/checkmark-in-circle)
+- [x] Summary: fix checkmark icon visibility (white stroke → black) — done
+- [x] Step 5: icon colors — sleep #522ABE, heart #FB2C36, stages #615FFF — done
+- [x] Skip bottom sheet: Continue button → flat purple, Go back text → black — done
+- [x] Step 4 + 5: Skip this step button → black text, same style both screens — done
+- [x] Summary → Main navigation crash: nested graphs can't cross-navigate; fixed by rebuilding nav graph — done
+- [ ] Summary: polish/finalize the permissions-status card UI (user to provide wireframe; current state: light purple bg, green/grey status icons + colored text)
+- [ ] Activity details dialog, fleshed-out design (a basic name + description + duration dialog exists on Sequencing via the info button; long-press is reserved for drag, so the dialog opens from ⓘ only)
+- [x] Checkmark badge on selected cards removed (selected = purple stroke only); dimmed unselectable cards no longer ripple
 - [x] Cross-account inventory bleed: unequipping on account A also appears unequipped on account B. Was a reads-only bug: `getUserInventory(userId)` returned the static cache without checking ownership, and logout cleared nothing. Fixed by keying the cache on user ID + `clearCache()` on logout. (`ShopRepository.cachedItems` audited — harmless, global catalog.)
 - [x] Stale previous-account flash on login: activity-scoped VMs (`Companion`, `Social`, `Routine`) survive logout and render old state until fresh data arrives. Fixed with `onLogout()` resets on all three, called from `performLogout()` alongside the cache clear.
 - [ ] Settings: revisit the target bedtime edit button design
+- [ ] Dead field cleanup: `user_profiles.health_connect_granted` is never read or written (live permission checks cover all decisions) — remove from model (and DB if desired)
 - [ ] My Routines tab layout change
 - [ ] Profile screen picture should reflect the user's own Shleepy
 
@@ -94,6 +122,7 @@ Code expects these schemas (verified in `RoutineSession.kt`, `RewardLedger.kt`, 
 - [ ] **OPTIONAL — routine_sessions.was_healed** (BOOLEAN DEFAULT false): zero code references today; safe to add now, but the Kotlin model needs a matching `@SerialName("was_healed")` field when the heal/restore feature is built
 - [x] **DONE — friendships**: table created per SDD ERD (`id`, `requester_id`/`receiver_id` TEXT FK → `user_profiles`, `status`, `created_at`/`updated_at`) + Realtime publication + RLS policies
 - [ ] **LATER — encouragement_reactions**: only needed when the encouragement feature gets a UI (parked for future update)
+- [ ] **REQUIRED — user_profiles drafts**: `draft_bedtime TEXT`, `draft_activity_ids JSONB` (mid-onboarding resume; covered by existing own-row RLS, no new policies)
 - Timing: run BEFORE on-device testing — current code writes both columns immediately
 
 ## 8. Analytics: PENDING state in completion chart — NOTED, NOT STARTED
@@ -142,6 +171,9 @@ Done:
 - [x] Supabase `friendships` table + Realtime + RLS (see §7)
 
 Pending assets (from user):
+- [x] Grant screen heart-rate row icon (`ic_heart_rate`, native `#00A63E`)
+- [ ] Pre-flight step icons: bluetooth + sync/refresh (temp: `ic_health_pulse`, `ic_nav_performance`)
+- [x] Grant screen: sleep stages icon (`ic_sleep_stages`), Grant button shield icon (`ic_shield`, white-tinted)
 - [x] Real medal icons (`ic_medal_gold/silver/bronze`, with rank numerals baked in)
 - [x] Current streak flame icon (`ic_flame`)
 - [x] Longest streak torch icon (`longest_streak`)

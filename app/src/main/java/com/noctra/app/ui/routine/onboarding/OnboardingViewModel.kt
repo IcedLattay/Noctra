@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 class OnboardingViewModel : ViewModel() {
 
     private val profileRepository = UserProfileRepository()
+    private val routineRepository = RoutineRepository()
 
     // Step 1
     private val _targetBedtime = MutableStateFlow("22:00") // default 10:00 PM
@@ -33,6 +34,61 @@ class OnboardingViewModel : ViewModel() {
     fun updateStep(userId: String, step: Int) {
         viewModelScope.launch {
             profileRepository.updateOnboardingStep(userId, step)
+        }
+    }
+
+    // ─── Draft persistence ────────────────────────────────────────────────
+    // Each step saves its own data on advance so a resume (fresh process,
+    // empty ViewModel) can restore real picks instead of blanks. The active
+    // routine config is untouched — only the Summary writes that.
+
+    private var draftRestored = false
+
+    fun saveDraft(userId: String) {
+        viewModelScope.launch {
+            try {
+                val ids = _orderedActivities.value
+                    .ifEmpty { _selectedActivities.value }
+                    .map { it.activityId }
+                profileRepository.saveDraft(userId, _targetBedtime.value, ids)
+            } catch (e: Exception) {
+                // Drafts are best-effort; the in-memory state is authoritative
+                // until Summary persists everything
+            }
+        }
+    }
+
+    // Restores bedtime + activities from the draft once per ViewModel
+    // lifetime. No-op when state already exists (normal forward flow) or
+    // when no draft was ever saved. Never overwrites edit-mode preloads —
+    // callers must skip this in edit mode.
+    suspend fun restoreDraftIfEmpty(userId: String): Boolean {
+        if (draftRestored) return false
+        draftRestored = true
+
+        if (_selectedActivities.value.isNotEmpty()) return false
+
+        return try {
+            val profile = profileRepository.getOrCreateProfile(userId)
+            val draftIds = profile.draftActivityIds.orEmpty()
+            val draftBedtime = profile.draftBedtime
+
+            if (draftBedtime != null) {
+                _targetBedtime.value = draftBedtime
+            }
+
+            if (draftIds.isEmpty()) return draftBedtime != null
+
+            val library = routineRepository.getActivityLibrary()
+            val byId = library.associateBy { it.activityId }
+            val ordered = draftIds.mapNotNull { byId[it] }
+            if (ordered.isEmpty()) return draftBedtime != null
+
+            _selectedActivities.value = ordered.toList()
+            _orderedActivities.value = ordered.toList()
+            true
+        } catch (e: Exception) {
+            false
         }
     }
 

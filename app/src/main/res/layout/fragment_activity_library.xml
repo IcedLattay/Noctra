@@ -7,7 +7,7 @@
     android:background="#F5F4FF">
 
     <!-- Scrollable content -->
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -52,7 +52,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Step 2 of 3"
+                        android:text="Step 2 of 5"
                         android:textSize="13sp"
                         android:textColor="#7B6FA0" />
 
@@ -146,10 +146,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false"
-                android:layout_marginBottom="24dp" />
+                android:layout_marginBottom="32dp" />
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
     <!-- Bottom buttons — fixed outside scroll -->
     <LinearLayout
@@ -168,19 +168,8 @@
             android:text="Select exactly 3 activities"
             android:textSize="15sp"
             android:textColor="#FFFFFF"
-            android:layout_marginBottom="10dp"
             app:backgroundTint="#5C25F0"
             app:cornerRadius="28dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnBack"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="Back"
-            android:textSize="15sp"
-            android:textColor="#7B6FA0"
-            app:backgroundTint="#E0DCF0"
-            app:cornerRadius="24dp" />
 
     </LinearLayout>
 

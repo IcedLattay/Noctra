@@ -10,7 +10,7 @@ Deviations from the Software Design Description (SDD) discovered during implemen
 
 **Decision:** Split into two separate screens per wireframe — a "Leaderboard" screen (ranked list) and a separate "Friends" screen (manage requests, add friend). Two buttons on Profile tab to access each.
 
-**Status:** Both screens implemented. `LeaderboardFragment` via the trophy icon, Friends screen (`SocialFragment`) via the add-friend icon on Profile. Friends screen: back + title bar with "Add by Email" text action (top-right), full-width `#3D1FA3` Friend Requests banner (white circle with `#3D1FA3` people icon, badge capped at "9+", chevron) as a scrolling header item + "YOUR FRIENDS" label inside `FriendAdapter`, friend rows (avatar, name, remove icon with confirmation dialog). The list always renders (banner stays reachable with zero friends). Screen background is an estimated vertical gradient `#EEEAF7` → white (confirm against wireframe). Temp icons: `ic_add_friend` (envelope), `ic_remove_circle` (remove).
+**Status:** Both screens implemented. `LeaderboardFragment` via the trophy icon, Friends screen (`SocialFragment`) via the add-friend icon on Profile. Friends screen: back + title bar with "Add by Email" text action (top-right, envelope reuses login's `ic_auth_email`), full-width `#3D1FA3` Friend Requests banner (white circle with `#3D1FA3` people icon, badge capped at "9+", chevron) as a scrolling header item + "YOUR FRIENDS" label inside `FriendAdapter`, friend rows (Shleepy avatar, black name, remove icon with confirmation dialog). The list always renders (banner stays reachable with zero friends). Screen background is an estimated vertical gradient `#EEEAF7` → white (confirm against wireframe).
 
 ---
 
@@ -115,13 +115,6 @@ Deviations from the Software Design Description (SDD) discovered during implemen
 
 ---
 
-## Leaderboard Layout Details (wireframe)
-
-- Medal placeholders sit at the top-right corner, right edge flush with the card edge, vertically straddling the top border.
-- Name/streak block is 20dp from the rank number.
-- Every card has the same 12dp top margin so gaps stay even (pill/medal overlap is calculated from that shared value).
-- List pins to the top on first load only (`scrolledToTopOnLoad` in `LeaderboardFragment`); later refreshes preserve scroll position.
-
 ---
 
 ## Manual Refresh Instead of Realtime Auto-Refresh
@@ -146,8 +139,20 @@ Deviations from the Software Design Description (SDD) discovered during implemen
 ## Friend Requests Screen (wireframe, Received tab)
 
 - Same lavender gradient background as Friends screen; white tab bar with `#522ABE` indicator and selected text.
-- Request rows reuse the friend outline (1dp `#CBCBCB`): cream avatar square, bold name + muted email, grey circle decline (`✕`) + purple circle accept (`✓`).
-- Accept/decline glyphs are temp text on circle buttons until SVG assets arrive. Sent tab untouched (wireframe pending).
+- Request rows reuse the friend outline (1dp `#CBCBCB`): Shleepy avatar, black bold name + muted email, grey circle decline + purple circle accept (real `ic_cross` / `ic_check` SVGs).
+- Sent tab built per wireframe (single cancel button); missing-tabs bug fixed (tabs were never added to the `TabLayout`).
+
+---
+
+## Health Connect: One-Shot Grant (decision)
+
+The Grant button fires the request popup exactly once; whatever comes back (all, partial, denied) is final and advances to Summary — the sync pipeline redistributes scoring around actual grants. This also sidesteps a device-verified quirk where re-requests flash and die with an empty result. Repeat management lives in Health Settings (deep link). Row pills are static "Read only" labels (access type); the granted-state screen, Continue logic, and status re-checks were removed.
+
+**Subsequent updates:**
+- Pills removed from step 5 cards entirely — no badges on the rows now.
+- If all data is already granted when step 5 opens, it skips straight to Summary on arrival (no Grant button shown). Saves the current step so resume is clean.
+- Summary now carries a Health Data status card: live per-datum status (Sleep Segments: Granted ✓ / Not shared, Heart Rate: same, Sleep Stages mirrors sleep). Refreshes on every resume so post-grant changes reflect.
+- "Manage in Settings" link removed from Summary — just the status rows.
 
 ---
 
@@ -167,11 +172,61 @@ Deviations from the Software Design Description (SDD) discovered during implemen
 
 ---
 
+## Onboarding — Resume Step Renumbering (bugfix)
+
+**Problem:** resume-step numbering predated the health screens (3 meant Summary), so resumes skipped Pre-flight + Grant.
+
+**Fix:** 3 → Pre-flight, 4 → Grant, 5 → Summary, with step saves on every health exit (continue + both skips). `markOnboardingComplete` stamps 5 (was a stale 4).
+
+---
+
+## Onboarding — Single Graph Source of Truth (bugfix)
+
+**Problem:** `nav_graph.xml` carried a stale inline duplicate of the whole onboarding graph (no health screens/actions), shadowing `onboarding_graph.xml` — Sequencing Confirm crashed, and the edit flow would have too.
+
+**Fix:** inline copy replaced with `<include>`; `editMode` arg ported; edit-mode Confirm pops back to the Routine tab instead of entering onboarding-only health flow. (Pre-existing gap, not fixed: edit flow never persists the re-sequence.)
+
+---
+
+## Onboarding — One-Way Flow (UX decision)
+
+No Back buttons anywhere in onboarding (removed from Library, Sequencing, TEMP health backs); no logout button (not standard in setup funnels). System-back gesture left alone. Resume relies on saved step + drafts.
+
+---
+
+## Onboarding — Draft Persistence (new)
+
+Each step saves its own draft on advance (`draft_bedtime` + `draft_activity_ids` on `user_profiles`, Migration 4) and restores when the shared ViewModel is empty (fresh-process resume). The active routine config is untouched until Summary, which also clears the draft.
+
+---
+
+## Onboarding — Wireframe Deltas Worth Recording
+
+- Step counting excludes the summary (5 steps; SDD-era copy said "of 3"/"of 4").
+- Grant rows describe *data* read, not permissions: the Sleep Stages row is display-only (no such permission; mirrors Sleep).
+- Skip uses a shared bottom sheet on both health screens (not a system dialog).
+- Add-friend success is toast + dismiss (SDD specifies an in-sheet confirmation state).
+- Activity details dialog moved from step 3 (Sequencing) to step 2 (Library) — opened via info icon button at top-right of each card (not long-press, not on Sequencing).
+- Step 5 cards have no pills — status is shown on Summary instead.
+- Summary carries a Health Data status card (live per-datum status with green/grey icons + colored text) — not in SDD.
+
+---
+
 ## Temp Code to Remove Before Release
 
 - ~~Leaderboard mock scaffolding + debug logs — removed.~~
-- `LeaderboardDebug` log calls in `SocialViewModel.loadLeaderboard()` — added during debugging.
+- ~~Friends/Requests mock scaffolding — removed.~~
 - `FriendshipRepository` realtime `filter` deprecation warnings (2) — still functional, migrate to the new `filter` method when convenient.
+
+---
+
+## Onboarding — Summary → Main Navigation (bugfix)
+
+**SDD spec:** Not addressed — nested navigation graphs weren't considered.
+
+**Problem:** `onboarding_graph` is a nested graph inside `nav_graph`. Nested graphs are isolated — they cannot navigate to destinations in other nested graphs (`main_graph`). Every approach failed: actions defined in `onboarding_graph` pointing to `main_graph` destinations, global actions at root level (NavController still scoped to nested graph), `popBackStack()` to root (root's start destination was still `onboarding_graph`).
+
+**Fix:** Rebuild the entire nav graph from `OnboardingSummaryFragment`. Inflate a fresh `nav_graph`, set `main_graph` as the start destination, and replace `navController.graph`. Same thing `MainActivity` does on startup — no cross-graph navigation needed.
 
 ---
 

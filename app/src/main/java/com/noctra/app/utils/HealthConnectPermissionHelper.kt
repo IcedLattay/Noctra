@@ -78,4 +78,27 @@ object HealthConnectPermissionHelper {
 
     fun hasHeartRatePermission(granted: Set<String>): Boolean =
         READ_HEART_RATE_PERMISSION in granted
+
+    // ------------------------------------------------------------------
+    // Management deep link
+    // ------------------------------------------------------------------
+
+    /**
+     * Opens Health Connect's per-app management page for this app (the
+     * full Settings screen with live toggles). Used when the one-shot
+     * request popup can no longer show — Health Connect suppresses
+     * re-prompts after denials, and Google prescribes Settings routing
+     * from that point on. Falls back to general HC settings.
+     */
+    fun openAppManagement(context: Context) {
+        val intent = Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS").apply {
+            putExtra(Intent.EXTRA_PACKAGE_NAME, context.packageName)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            context.startActivity(Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS))
+        }
+    }
 }

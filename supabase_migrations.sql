@@ -107,3 +107,16 @@ CREATE POLICY "reactions_select" ON encouragement_reactions
 
 CREATE POLICY "reactions_insert" ON encouragement_reactions
   FOR INSERT WITH CHECK (auth.uid() = sender_id);
+
+-- ============================================================
+-- MIGRATION 4: onboarding draft columns on user_profiles
+-- ============================================================
+-- What this does:
+--   1. Adds draft_bedtime + draft_activity_ids for mid-onboarding resume.
+--      Drafts never touch the active routine config — only the Summary
+--      writes that. Covered by existing own-row RLS policies, no new
+--      policies needed.
+-- ============================================================
+
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS draft_bedtime TEXT;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS draft_activity_ids JSONB;

@@ -40,8 +40,9 @@ class OnboardingSummaryFragment : Fragment() {
         // After the notification popup is dealt with, check for alarm permission
         requestAlarmPermission()
         
-        // Final navigation
-        findNavController().navigate(R.id.action_onboardingSummary_to_routineHome)
+        // Final navigation — re-initialize the Activity's nav graph
+        // (nested graphs can't navigate to destinations in other nested graphs)
+        reinitNavGraphToMain()
     }
 
     override fun onCreateView(
@@ -56,6 +57,7 @@ class OnboardingSummaryFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         populateSummary()
+        loadHealthStatus()
 
         if (viewModel.isEditMode) {
             binding.tvTitle.text = "Review Changes"
@@ -89,6 +91,56 @@ class OnboardingSummaryFragment : Fragment() {
             binding.tvActivity3Name.text = it.label
             binding.tvActivity3Duration.text = "${it.defaultDurationMinutes}m"
         }
+    }
+
+    // Live Health Connect status so users see exactly what was granted
+    // (stages mirrors sleep — same permission) and where to change it
+    private fun loadHealthStatus() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val b = _binding ?: return@launch
+            try {
+                val context = requireContext()
+                if (!com.noctra.app.utils.HealthConnectPermissionHelper.isAvailable(context)) {
+                    return@launch
+                }
+                val client = androidx.health.connect.client.HealthConnectClient
+                    .getOrCreate(context)
+                val granted = com.noctra.app.utils.HealthConnectPermissionHelper
+                    .getGrantedPermissions(client)
+                val hasSleep = com.noctra.app.utils.HealthConnectPermissionHelper
+                    .hasSleepPermission(granted)
+                val hasHr = com.noctra.app.utils.HealthConnectPermissionHelper
+                    .hasHeartRatePermission(granted)
+                if (_binding == null) return@launch
+                setHealthRow(b.tvHealthSleep, "Sleep Segments", hasSleep)
+                setHealthRow(b.tvHealthHeart, "Heart Rate", hasHr)
+                setHealthRow(b.tvHealthStages, "Sleep Stages", hasSleep)
+            } catch (e: Exception) {
+                // Leave placeholder text on failure
+            }
+        }
+    }
+
+    private fun setHealthRow(view: android.widget.TextView, label: String, granted: Boolean) {
+        val color = if (granted) 0xFF16A34A.toInt() else 0xFF999999.toInt()
+        view.text = if (granted) {
+            "$label: ${getString(R.string.health_settings_status_granted)}"
+        } else {
+            "$label: ${getString(R.string.health_settings_status_not_shared)}"
+        }
+        view.setTextColor(color)
+        val drawable = if (granted) {
+            androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_check_circle_green)
+        } else {
+            androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_cancel_circle)
+        }
+        drawable?.setTint(color)
+        view.setCompoundDrawablesRelativeWithIntrinsicBounds(drawable, null, null, null)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadHealthStatus()
     }
 
     private fun formatBedtime(hhmm: String): String {
@@ -136,6 +188,13 @@ class OnboardingSummaryFragment : Fragment() {
                 // 3. Mark onboarding complete
                 profileRepository.markOnboardingComplete(userId)
 
+                // 3b. Clear the onboarding draft (best-effort, never blocks)
+                try {
+                    profileRepository.clearDraft(userId)
+                } catch (e: Exception) {
+                    android.util.Log.e("OnboardingSummary", "Draft clear failed", e)
+                }
+
                 // 4. Schedule the first notification immediately
                 com.noctra.app.workers.WindDownNotificationScheduler.scheduleNext(requireContext())
 
@@ -171,12 +230,12 @@ class OnboardingSummaryFragment : Fragment() {
             } else {
                 // Already granted, check alarms next
                 requestAlarmPermission()
-                findNavController().navigate(R.id.action_onboardingSummary_to_routineHome)
+                reinitNavGraphToMain()
             }
         } else {
             // Older version, check alarms and then navigate
             requestAlarmPermission()
-            findNavController().navigate(R.id.action_onboardingSummary_to_routineHome)
+            reinitNavGraphToMain()
         }
     }
 
@@ -190,6 +249,22 @@ class OnboardingSummaryFragment : Fragment() {
                 }
                 startActivity(intent)
             }
+        }
+    }
+
+    // Re-initialize the Activity's nav graph to the main flow.
+    // Nested graphs can't navigate to destinations in other nested graphs,
+    // so the only clean way out is to rebuild the graph from the root —
+    // the same thing MainActivity does on startup.
+    private fun reinitNavGraphToMain() {
+        try {
+            val navController = findNavController()
+            val graph = navController.navInflater.inflate(R.navigation.nav_graph)
+            graph.setStartDestination(R.id.main_graph)
+            navController.graph = graph
+        } catch (e: Exception) {
+            android.util.Log.e("OnboardingSummary", "Graph reinit failed", e)
+            requireActivity().finish()
         }
     }
 

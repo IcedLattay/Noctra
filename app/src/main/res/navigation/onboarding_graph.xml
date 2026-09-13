@@ -17,6 +17,10 @@
         android:id="@+id/activityLibraryFragment"
         android:name="com.noctra.app.ui.routine.onboarding.ActivityLibraryFragment"
         android:label="Choose Activities">
+        <argument
+            android:name="editMode"
+            app:argType="boolean"
+            android:defaultValue="false" />
         <action
             android:id="@+id/action_activityLibrary_to_routineSequencing"
             app:destination="@id/routineSequencingFragment" />

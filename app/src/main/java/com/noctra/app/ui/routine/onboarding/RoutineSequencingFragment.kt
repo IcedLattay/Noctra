@@ -38,12 +38,32 @@ class RoutineSequencingFragment : Fragment() {
         setupRecyclerView()
         observeActivities()
         setupButtons()
+
+        // Fresh-process resume: restore the saved draft unless edit mode
+        // preloaded the active routine (or state already exists)
+        if (!viewModel.isEditMode) {
+            val userId = com.noctra.app.utils.UserSession.getUserId(requireContext())
+            if (userId != null) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    viewModel.restoreDraftIfEmpty(userId)
+                }
+            }
+        }
+    }
+    // Single move path: the ViewModel emission re-submits the list and
+    // DiffUtil animates the move. Never notifyItemMoved manually here —
+    // double-handling (manual + diff) cancels the move out.
+    private fun moveItem(from: Int, to: Int) {
+        viewModel.reorderActivities(from, to)
     }
 
     private fun setupRecyclerView() {
-        adapter = RoutineSequencingAdapter()
+        adapter = RoutineSequencingAdapter(
+            onMove = ::moveItem
+        )
 
-        // ItemTouchHelper for drag-to-reorder
+        // ItemTouchHelper for drag-to-reorder. Long-press anywhere on a
+        // card starts the drag; details open via the info button.
         val callback = object : ItemTouchHelper.SimpleCallback(
             ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0
         ) {
@@ -52,15 +72,40 @@ class RoutineSequencingFragment : Fragment() {
                 viewHolder: RecyclerView.ViewHolder,
                 target: RecyclerView.ViewHolder
             ): Boolean {
-                val from = viewHolder.adapterPosition
-                val to = target.adapterPosition
-                viewModel.reorderActivities(from, to)
-                adapter.notifyItemMoved(from, to)
+                moveItem(viewHolder.adapterPosition, target.adapterPosition)
                 return true
             }
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 // No swipe action
+            }
+
+            // Clamp the drag so the card stays fully inside the list —
+            // it can never be dragged out and cropped by the edges
+            override fun onChildDraw(
+                c: android.graphics.Canvas,
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                dX: Float,
+                dY: Float,
+                actionState: Int,
+                isCurrentlyActive: Boolean
+            ) {
+                var finalDx = dX
+                var finalDy = dY
+                if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
+                    val itemView = viewHolder.itemView
+                    val marginPx = 8f * recyclerView.resources.displayMetrics.density
+                    finalDx = 0f
+                    finalDy = dY.coerceIn(
+                        -itemView.top.toFloat() + marginPx,
+                        (recyclerView.height - itemView.bottom).toFloat() - marginPx
+                    )
+                }
+                super.onChildDraw(
+                    c, recyclerView, viewHolder,
+                    finalDx, finalDy, actionState, isCurrentlyActive
+                )
             }
 
             // Visual feedback while dragging
@@ -81,11 +126,7 @@ class RoutineSequencingFragment : Fragment() {
             }
         }
 
-        touchHelper = ItemTouchHelper(callback)
-        touchHelper.attachToRecyclerView(binding.rvSequence)
-
-        // Give adapter a reference so drag handle works
-        adapter.touchHelper = touchHelper
+        ItemTouchHelper(callback).attachToRecyclerView(binding.rvSequence)
 
         binding.rvSequence.layoutManager = LinearLayoutManager(requireContext())
         binding.rvSequence.adapter = adapter
@@ -94,8 +135,17 @@ class RoutineSequencingFragment : Fragment() {
     private fun observeActivities() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.orderedActivities.collect { activities ->
-                // submitList needs a new list instance to detect changes
-                adapter.submitList(activities.toList())
+                // submitList needs a new list instance to detect changes.
+                // DiffUtil moves don't rebind holders, so patch just the
+                // rank numbers on commit — a full rebind would kill an
+                // in-progress drag and force-release the card.
+                adapter.submitList(activities.toList()) {
+                    for (i in 0 until adapter.itemCount) {
+                        val holder = binding.rvSequence
+                            .findViewHolderForAdapterPosition(i) as? RoutineSequencingAdapter.ViewHolder
+                        holder?.binding?.tvStepNumber?.text = "${i + 1}"
+                    }
+                }
 
                 val total = viewModel.getTotalDurationMinutes()
                 binding.tvTotalDuration.text = "$total minutes"
@@ -111,18 +161,22 @@ class RoutineSequencingFragment : Fragment() {
 
     private fun setupButtons() {
         binding.btnConfirm.setOnClickListener {
-            if (!viewModel.isEditMode) {
+            if (viewModel.isEditMode) {
+                // Edit flow: return to the Routine tab instead of entering
+                // the onboarding-only health flow
+                if (!findNavController().popBackStack(R.id.routineHomeFragment, false)) {
+                    findNavController().navigate(R.id.action_routineSequencing_to_healthEducation)
+                }
+            } else {
                 val userId = com.noctra.app.utils.UserSession.getUserId(requireContext())
                 if (userId != null) {
                     viewModel.updateStep(userId, 3)
+                    viewModel.saveDraft(userId)
                 }
+                findNavController().navigate(R.id.action_routineSequencing_to_healthEducation)
             }
-            findNavController().navigate(R.id.action_routineSequencing_to_healthEducation)
         }
 
-        binding.btnBack.setOnClickListener {
-            findNavController().popBackStack()
-        }
     }
 
     override fun onDestroyView() {

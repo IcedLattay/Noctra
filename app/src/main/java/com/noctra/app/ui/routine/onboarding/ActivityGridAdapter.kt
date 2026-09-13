@@ -11,7 +11,8 @@ import com.noctra.app.data.model.Activity
 import com.noctra.app.databinding.ItemActivityCardBinding
 
 class ActivityGridAdapter(
-    private val onActivityClick: (Activity) -> Unit
+    private val onActivityClick: (Activity) -> Unit,
+    private val onInfoClick: (Activity) -> Unit = {}
 ) : ListAdapter<Activity, ActivityGridAdapter.ViewHolder>(DIFF) {
 
     private var selectedIds: Set<String> = emptySet()
@@ -39,20 +40,21 @@ class ActivityGridAdapter(
             }
             binding.ivActivityIcon.setImageResource(iconRes)
 
-            // Selected state: stroke color + checkmark
+            // Selected state: stroke color only (no checkmark badge)
             binding.root.strokeColor = if (isSelected)
                 ContextCompat.getColor(binding.root.context, R.color.noctra_purple)
             else
                 ContextCompat.getColor(binding.root.context, R.color.noctra_lavender_border)
 
-            binding.ivCheckSelected.visibility =
-                if (isSelected) android.view.View.VISIBLE else android.view.View.GONE
-
-            // Dim unselectable cards when 3 already chosen
+            // Dim unselectable cards when 3 already chosen, and kill the
+            // ripple so they don't look pressable
             val maxReached = selectedIds.size >= 3
-            binding.root.alpha = if (maxReached && !isSelected) 0.5f else 1.0f
+            val enabled = !maxReached || isSelected
+            binding.root.alpha = if (enabled) 1.0f else 0.5f
+            binding.root.isClickable = enabled
 
             binding.root.setOnClickListener { onActivityClick(activity) }
+            binding.btnInfo.setOnClickListener { onInfoClick(activity) }
         }
     }
 
