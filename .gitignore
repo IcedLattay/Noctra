@@ -42,4 +42,4 @@ supabase_migrations.sql
 ~$*
 
 # Noctra logs
-NoctraLogs.bt
+NoctraLogs.bat
