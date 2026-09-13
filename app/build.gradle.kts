@@ -71,6 +71,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.flexbox)
     implementation(libs.androidx.swiperefresh)
     implementation(libs.material)
     testImplementation(libs.junit)
