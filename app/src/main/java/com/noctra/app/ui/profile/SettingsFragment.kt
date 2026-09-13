@@ -95,8 +95,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
 
         // Health Connect row
+        val healthStatusDot = view.findViewById<View>(R.id.health_status_dot)
+        val healthSubtitle = view.findViewById<TextView>(R.id.tv_health_status_subtitle)
+
         view.findViewById<View>(R.id.row_health_connect).setOnClickListener {
-            findNavController().navigate(R.id.action_settings_to_healthEducation)
+            // TODO: Navigate to new Health Connect screen (wireframe pending)
         }
 
         // Privacy Policy + Terms of Use (placeholder URLs)
@@ -128,6 +131,22 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 displayName.text = state.displayName
                 emailValue.text = state.email ?: com.noctra.app.data.supabase.SupabaseClient.client.auth.currentUserOrNull()?.email ?: "(demo mode)"
                 bedtimePill.text = formatBedtime(state.targetBedtime)
+
+                // Health Connect status
+                healthSubtitle.text = state.healthConnectSubtitle
+                when (state.healthConnectStatus) {
+                    HealthConnectStatus.FullyConnected -> {
+                        healthStatusDot.setBackgroundResource(R.drawable.bg_status_green_dot)
+                        healthStatusDot.visibility = View.VISIBLE
+                    }
+                    HealthConnectStatus.Partial -> {
+                        healthStatusDot.setBackgroundResource(R.drawable.bg_status_yellow_dot)
+                        healthStatusDot.visibility = View.VISIBLE
+                    }
+                    HealthConnectStatus.Disconnected -> {
+                        healthStatusDot.visibility = View.GONE
+                    }
+                }
             }
         }
 
@@ -158,6 +177,12 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
 
         viewModel.loadProfile(ctx)
+        viewModel.checkHealthConnectStatus(ctx)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.checkHealthConnectStatus(requireContext())
     }
 
     private fun setupDialogSize(dialog: androidx.appcompat.app.AlertDialog) {

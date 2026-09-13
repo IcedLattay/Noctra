@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.noctra.app.data.repository.SleepRecordRepository
+import com.noctra.app.utils.HealthConnectPermissionHelper
+import androidx.health.connect.client.HealthConnectClient
 import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.data.repository.AuthRepository
 import com.noctra.app.utils.DemoDataSeeder
@@ -145,6 +147,47 @@ class SettingsViewModel : ViewModel() {
         }
     }
 
+    fun checkHealthConnectStatus(context: Context) {
+        viewModelScope.launch {
+            try {
+                if (!HealthConnectPermissionHelper.isAvailable(context)) {
+                    _profileState.value = _profileState.value.copy(
+                        healthConnectStatus = HealthConnectStatus.Disconnected,
+                        healthConnectSubtitle = "Not available on this device"
+                    )
+                    return@launch
+                }
+
+                val client = HealthConnectClient.getOrCreate(context)
+                val granted = HealthConnectPermissionHelper.getGrantedPermissions(client)
+                val hasSleep = HealthConnectPermissionHelper.hasSleepPermission(granted)
+                val hasHeartRate = HealthConnectPermissionHelper.hasHeartRatePermission(granted)
+
+                val status = when {
+                    hasSleep && hasHeartRate -> HealthConnectStatus.FullyConnected
+                    hasSleep || hasHeartRate -> HealthConnectStatus.Partial
+                    else -> HealthConnectStatus.Disconnected
+                }
+
+                val subtitle = when (status) {
+                    HealthConnectStatus.FullyConnected -> "Connected \u00b7 Sleep & Heart Rate"
+                    HealthConnectStatus.Partial -> if (hasSleep) "Connected \u00b7 Sleep" else "Connected \u00b7 Heart Rate"
+                    HealthConnectStatus.Disconnected -> "Not connected"
+                }
+
+                _profileState.value = _profileState.value.copy(
+                    healthConnectStatus = status,
+                    healthConnectSubtitle = subtitle
+                )
+            } catch (e: Exception) {
+                _profileState.value = _profileState.value.copy(
+                    healthConnectStatus = HealthConnectStatus.Disconnected,
+                    healthConnectSubtitle = "Not connected"
+                )
+            }
+        }
+    }
+
     fun resetState() {
         _settingsState.value = SettingsState.Idle
     }
@@ -162,5 +205,13 @@ data class SettingsUiState(
     val displayName: String = "",
     val email: String? = null,
     val targetBedtime: String? = null,
-    val isEmailVerified: Boolean = false
+    val isEmailVerified: Boolean = false,
+    val healthConnectStatus: HealthConnectStatus = HealthConnectStatus.Disconnected,
+    val healthConnectSubtitle: String = "Not connected"
 )
+
+enum class HealthConnectStatus {
+    Disconnected,
+    Partial,
+    FullyConnected
+}
