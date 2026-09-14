@@ -1,5 +1,7 @@
 # Noctra — Backlog
 
+**NEXT SESSION**: Merge remote branch into local branch to continue where we left off.
+
 Tracked items from the sleep-data sync design discussion (auditor/syncer flow).
 
 ## 1. Health Connect Syncer (steps 2–3 of the audit flow) — IN PROGRESS
