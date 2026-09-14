@@ -34,7 +34,7 @@ class SettingsViewModel : ViewModel() {
             try {
                 val userId = UserSession.getUserId(context) ?: return@launch
                 val profile = userProfileRepository.getOrCreateProfile(userId)
-                _profileState.value = SettingsUiState(
+                _profileState.value = _profileState.value.copy(
                     displayName = profile.displayName,
                     email = profile.email,
                     targetBedtime = profile.targetBedtime,

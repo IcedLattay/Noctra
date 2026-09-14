@@ -5,42 +5,36 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.health.connect.client.HealthConnectClient
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.noctra.app.R
-import com.noctra.app.databinding.FragmentHealthSettingsBinding
 import com.noctra.app.utils.HealthConnectPermissionHelper
 import kotlinx.coroutines.launch
 
-/**
- * Read-only permission status + a single deep link into Health Connect's own
- * settings, where granting AND revoking both happen. Noctra never changes
- * permissions from this screen — HC is the single source of truth.
- */
 class HealthSettingsFragment : Fragment() {
-
-    private var _binding: FragmentHealthSettingsBinding? = null
-    private val binding get() = _binding!!
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentHealthSettingsBinding.inflate(inflater, container, false)
-        return binding.root
+        return inflater.inflate(R.layout.fragment_health_settings, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.toolbar.setNavigationOnClickListener {
+        view.findViewById<View>(R.id.btn_back).setOnClickListener {
             findNavController().navigateUp()
         }
 
-        binding.btnManagePermissions.setOnClickListener { openHealthConnectSettings() }
+        view.findViewById<View>(R.id.btn_open_health_connect).setOnClickListener {
+            openHealthConnectSettings()
+        }
     }
 
     override fun onResume() {
@@ -50,51 +44,40 @@ class HealthSettingsFragment : Fragment() {
 
     private fun refreshStatus() {
         val context = requireContext()
-        viewLifecycleOwner.lifecycleScope.launch {
-            val b = _binding ?: return@launch
+        val view = view ?: return
 
+        viewLifecycleOwner.lifecycleScope.launch {
             if (!HealthConnectPermissionHelper.isAvailable(context)) {
-                setRow(b.tvSleepStatus, granted = false)
-                setRow(b.tvHrStatus, granted = false)
-                b.tvOverallStatus.text =
-                    getString(R.string.health_settings_status_unavailable)
-                b.btnManagePermissions.isEnabled = false
+                updateBadge(view.findViewById(R.id.badge_sleep), granted = false)
+                updateBadge(view.findViewById(R.id.badge_heart_rate), granted = false)
+                updateBadge(view.findViewById(R.id.badge_sleep_stages), granted = false)
                 return@launch
             }
 
-            b.btnManagePermissions.isEnabled = true
-            b.tvOverallStatus.text =
-                getString(R.string.health_settings_status_disconnected)
-
             val client = HealthConnectClient.getOrCreate(context)
             val granted = HealthConnectPermissionHelper.getGrantedPermissions(client)
-            setRow(
-                b.tvSleepStatus,
-                granted = HealthConnectPermissionHelper.hasSleepPermission(granted)
-            )
-            setRow(
-                b.tvHrStatus,
-                granted = HealthConnectPermissionHelper.hasHeartRatePermission(granted)
-            )
+            val hasSleep = HealthConnectPermissionHelper.hasSleepPermission(granted)
+            val hasHeartRate = HealthConnectPermissionHelper.hasHeartRatePermission(granted)
+
+            updateBadge(view.findViewById(R.id.badge_sleep), granted = hasSleep)
+            updateBadge(view.findViewById(R.id.badge_heart_rate), granted = hasHeartRate)
+            updateBadge(view.findViewById(R.id.badge_sleep_stages), granted = hasSleep)
         }
     }
 
-    private fun setRow(view: android.widget.TextView, granted: Boolean) {
+    private fun updateBadge(badge: TextView, granted: Boolean) {
         if (granted) {
-            view.text = getString(R.string.health_settings_status_granted)
-            view.setTextColor(resources.getColor(R.color.quality_good, null))
+            badge.text = "Granted"
+            badge.setTextColor(ContextCompat.getColor(requireContext(), R.color.granted_green))
+            badge.setBackgroundResource(R.drawable.bg_badge_green)
         } else {
-            view.text = getString(R.string.health_settings_status_not_shared)
-            view.setTextColor(resources.getColor(R.color.noctra_text_muted, null))
+            badge.text = "Not Granted"
+            badge.setTextColor(ContextCompat.getColor(requireContext(), R.color.pill_text_grey))
+            badge.setBackgroundResource(R.drawable.bg_badge_grey)
         }
     }
 
     private fun openHealthConnectSettings() {
         startActivity(Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS))
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 }

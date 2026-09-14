@@ -110,7 +110,7 @@ The popup must never re-show after the finalization pass rewrites the record.
 - [x] Stale previous-account flash on login: activity-scoped VMs (`Companion`, `Social`, `Routine`) survive logout and render old state until fresh data arrives. Fixed with `onLogout()` resets on all three, called from `performLogout()` alongside the cache clear.
 - [ ] Settings: revisit the target bedtime edit button design
 - [ ] Dead field cleanup: `user_profiles.health_connect_granted` is never read or written (live permission checks cover all decisions) — remove from model (and DB if desired)
-- [ ] My Routines tab layout change
+- [ ] My Routines tab layout change — stack all routine cards vertically (not grid/carousel)
 - [ ] Profile screen picture should reflect the user's own Shleepy
 
 ## 7. DB migrations (validated against code — user to run in Supabase)

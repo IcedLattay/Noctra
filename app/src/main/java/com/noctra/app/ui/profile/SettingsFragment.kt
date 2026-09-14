@@ -99,7 +99,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         val healthSubtitle = view.findViewById<TextView>(R.id.tv_health_status_subtitle)
 
         view.findViewById<View>(R.id.row_health_connect).setOnClickListener {
-            // TODO: Navigate to new Health Connect screen (wireframe pending)
+            findNavController().navigate(R.id.action_settings_to_healthEducation)
         }
 
         // Privacy Policy + Terms of Use (placeholder URLs)
