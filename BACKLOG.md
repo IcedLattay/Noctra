@@ -117,13 +117,12 @@ The popup must never re-show after the finalization pass rewrites the record.
 
 Code expects these schemas (verified in `RoutineSession.kt`, `RewardLedger.kt`, audit logic):
 
-- [ ] **REQUIRED — routine_sessions status**: add `status TEXT DEFAULT 'PENDING'`, backfill from `is_completed` (true→COMPLETED, false→MISSED), then drop `is_completed`. Code has zero `is_completed` references; session inserts/auditor fail without `status`
-- [ ] **REQUIRED — reward_ledger rename**: `devolution_pending` → `has_first_miss` (matches `RewardLedger.kt:13`). Without it, every ledger write (streaks/tokens/XP) fails on unknown column
+- [x] **DONE — routine_sessions status**: `status TEXT DEFAULT 'PENDING'` column already exists
+- [x] **DONE — reward_ledger rename**: `devolution_pending` → `has_first_miss` already applied
 - [ ] **OPTIONAL — routine_sessions.was_healed** (BOOLEAN DEFAULT false): zero code references today; safe to add now, but the Kotlin model needs a matching `@SerialName("was_healed")` field when the heal/restore feature is built
 - [x] **DONE — friendships**: table created per SDD ERD (`id`, `requester_id`/`receiver_id` TEXT FK → `user_profiles`, `status`, `created_at`/`updated_at`) + Realtime publication + RLS policies
 - [ ] **LATER — encouragement_reactions**: only needed when the encouragement feature gets a UI (parked for future update)
-- [ ] **REQUIRED — user_profiles drafts**: `draft_bedtime TEXT`, `draft_activity_ids JSONB` (mid-onboarding resume; covered by existing own-row RLS, no new policies)
-- Timing: run BEFORE on-device testing — current code writes both columns immediately
+- [x] **DONE — user_profiles drafts**: `draft_bedtime TEXT`, `draft_activity_ids JSONB` columns already exist
 
 ## 8. Analytics: PENDING state in completion chart — NOTED, NOT STARTED
 
