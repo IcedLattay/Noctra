@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_card_white"
+    android:padding="24dp">
+
+    <!-- Shleepy illustration -->
+    <!-- FLAG: placeholder — wireframe shows a distinct "sweating/tired"
+         Shleepy expression not matching any existing evolution-stage
+         drawable name. Swap for the real asset once available. -->
+    <ImageView
+        android:id="@+id/imgShleepyPaused"
+        android:layout_width="96dp"
+        android:layout_height="96dp"
+        android:src="@drawable/ic_shleepy_avatar"
+        android:contentDescription="@string/content_description_shleepy"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Routine Paused"
+        android:textColor="#1A1445"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/imgShleepyPaused"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/tvSubtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="You have a routine in progress. Resume?"
+        android:textColor="#6B6B6B"
+        android:textSize="14sp"
+        app:layout_constraintTop_toBottomOf="@id/tvTitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Resume info pill -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/cardResumeInfo"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/bg_instruction_card"
+        android:padding="12dp"
+        app:layout_constraintTop_toBottomOf="@id/tvSubtitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- FLAG: placeholder icon — no dedicated "resume/undo" icon
+             exists yet in the drawable set; using ic_clock as a stand-in. -->
+        <ImageView
+            android:id="@+id/imgResumeIcon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/bg_avatar_circle"
+            android:padding="6dp"
+            android:src="@drawable/ic_clock"
+            android:contentDescription="@null"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <TextView
+            android:id="@+id/tvResumeStepLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:text="Resume at Step 2 of 3"
+            android:textColor="#2C1769"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toTopOf="@id/imgResumeIcon"
+            app:layout_constraintStart_toEndOf="@id/imgResumeIcon"
+            app:layout_constraintEnd_toStartOf="@id/dotsContainer" />
+
+        <TextView
+            android:id="@+id/tvAwayDuration"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="2dp"
+            android:drawablePadding="4dp"
+            android:gravity="center_vertical"
+            android:text="Away for ~3 min"
+            android:textColor="#8A8A8A"
+            android:textSize="12sp"
+            app:layout_constraintTop_toBottomOf="@id/tvResumeStepLabel"
+            app:layout_constraintStart_toEndOf="@id/imgResumeIcon"
+            app:layout_constraintEnd_toStartOf="@id/dotsContainer"
+            app:layout_constraintBottom_toBottomOf="@id/imgResumeIcon" />
+
+        <!-- Progress dots — generated in code, mirrors the pattern used in
+             GenericTimerActivityFragment.renderStepDots(), but with 3
+             visual states (done / current / upcoming) instead of 2. -->
+        <LinearLayout
+            android:id="@+id/dotsContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Resume Routine (primary) -->
+    <Button
+        android:id="@+id/btnResumeRoutine"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:backgroundTint="#4B3F94"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp"
+        android:text="Resume Routine"
+        android:textAllCaps="false"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:cornerRadius="12dp"
+        app:icon="@drawable/ic_clock"
+        app:iconGravity="textStart"
+        app:iconTint="#FFFFFF"
+        app:layout_constraintTop_toBottomOf="@id/cardResumeInfo"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Not Now (secondary) -->
+    <Button
+        android:id="@+id/btnNotNow"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:backgroundTint="#E0E0E0"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp"
+        android:text="Not Now"
+        android:textAllCaps="false"
+        android:textColor="#1A1445"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:cornerRadius="12dp"
+        app:layout_constraintTop_toBottomOf="@id/btnResumeRoutine"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/tvFooterNote"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="center"
+        android:text="Choosing &quot;Not Now&quot; keeps your session saved. A Resume button will appear on the Routines tab"
+        android:textColor="#8A8A8A"
+        android:textSize="11sp"
+        app:layout_constraintTop_toBottomOf="@id/btnNotNow"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -2,6 +2,7 @@ package com.noctra.app.data.repository
 
 import android.util.Log
 import com.noctra.app.data.model.RoutineSession
+import com.noctra.app.data.model.RoutineSessionStatus
 import com.noctra.app.data.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
@@ -10,6 +11,16 @@ import kotlinx.serialization.Serializable
 import java.io.IOException
 import java.net.SocketTimeoutException
 
+/**
+ * RoutineSessionRepository
+ *
+ * Data Access Layer for:
+ *   - routine_sessions  (read + write)
+ *
+ * UPDATED per DB Migration 1 (8/28/26): the is_completed:Boolean column
+ * was dropped and replaced with a status:String column
+ * (PENDING/COMPLETED/MISSED).
+ */
 class RoutineSessionRepository {
 
     private val client = SupabaseClient.client
@@ -71,6 +82,22 @@ class RoutineSessionRepository {
             Log.e(tag, "Timeout completing session", e)
             throw e
         }
+    }
+
+    // ─── Safety Net / Abandonment ────────────────────────────────────────────
+
+    /**
+     * Marks a session as ABANDONED_PENDING_DIAGNOSIS — used when the 60-minute
+     * Safety Net timer expires before the user finishes or explicitly resumes
+     * the routine. This writes to session_status, NOT status — those are
+     * separate concerns (see RoutineSession.kt).
+     */
+    suspend fun markSessionAsAbandoned(sessionId: String) {
+        client
+            .from("routine_sessions")
+            .update(SessionAbandonment()) {
+                filter { eq("id", sessionId) }
+            }
     }
 
     // ─── Completion Checks ───────────────────────────────────────────────────
@@ -419,5 +446,10 @@ class RoutineSessionRepository {
         @SerialName("multiplier_applied") val multiplierApplied: Double,
         @SerialName("tokens_earned") val tokensEarned: Int,
         @SerialName("xp_earned") val xpEarned: Int
+    )
+
+    @Serializable
+    private data class SessionAbandonment(
+        @SerialName("session_status") val sessionStatus: RoutineSessionStatus = RoutineSessionStatus.ABANDONED_PENDING_DIAGNOSIS
     )
 }

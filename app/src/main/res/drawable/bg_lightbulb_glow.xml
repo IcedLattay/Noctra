@@ -1,0 +1,18 @@
+<!--
+    bg_lightbulb_glow.xml
+    Goes in res/drawable/
+
+    Soft radial warm glow that sits behind the lightbulb on the loading
+    panel. Paired with a subtle pulse animation driven from Kotlin.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <gradient
+        android:type="radial"
+        android:gradientRadius="50%"
+        android:centerX="0.5"
+        android:centerY="0.5"
+        android:startColor="#66FFE082"
+        android:centerColor="#33FFF3C4"
+        android:endColor="#00FFFFFF" />
+</shape>

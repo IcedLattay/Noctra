@@ -22,6 +22,18 @@ import com.noctra.app.databinding.FragmentBreathingActivityBinding
 import com.noctra.app.ui.routine.RoutineViewModel
 import kotlinx.coroutines.launch
 
+/**
+ * BreathingActivityFragment
+ *
+ * Serves Slow-Paced Breathing ONLY.
+ *
+ * Mindfulness previously routed here too (with a waveform + audio branch),
+ * but it has since been re-scoped to a nature-scenery ambient screen and
+ * now routes to AudioscapeActivityFragment instead. All the audio/waveform
+ * branching has been removed from this file as a result — this fragment is
+ * back to a single purpose: the guided 4-7-8 breathing circle with
+ * Inhale/Hold/Exhale phase labels.
+ */
 class BreathingActivityFragment : Fragment() {
 
     private var _binding: FragmentBreathingActivityBinding? = null
@@ -41,7 +53,14 @@ class BreathingActivityFragment : Fragment() {
     private val CIRCLE_MIN_SCALE = 0.6f
     private val CIRCLE_MAX_SCALE = 1.0f
 
-    companion object { private const val PRE_COUNTDOWN_SECONDS = 15L }
+    companion object {
+        private const val PRE_COUNTDOWN_SECONDS = 15L
+
+        // TEMPORARY FOR TESTING — set to false once all activities are
+        // manually verified, to restore the real 5-minute DB duration.
+        private const val TEST_MODE_SHORT_DURATION = true
+        private const val TEST_DURATION_SECONDS = 15
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -52,10 +71,22 @@ class BreathingActivityFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupStaticUI()
         showPreCountdownPanel()
         setupListeners()
         observeVm()
         startPreCountdown()
+    }
+
+    /**
+     * Title/instruction pulled from the DB rather than the hardcoded XML
+     * text, so the screen always reflects the real activity record.
+     */
+    private fun setupStaticUI() {
+        val activity = routineViewModel.currentActivity ?: return
+        binding.tvPreTitle.text = activity.label
+        binding.tvPreInstruction.text = activity.instruction
+        binding.tvActiveTitle.text = activity.label
     }
 
     private fun setupListeners() {
@@ -71,7 +102,7 @@ class BreathingActivityFragment : Fragment() {
                     routineViewModel.activitySecondsRemaining.collect { secs ->
                         updateMainTimerDisplay(secs.toLong())
                         updateMainTimerColor(secs.toLong())
-                        
+
                         // Show "Complete Routine" button if timer is 0 AND it's the last step
                         if (secs == 0 && routineViewModel.isLastStep) {
                             binding.btnCompleteRoutine.visibility = View.VISIBLE
@@ -113,7 +144,9 @@ class BreathingActivityFragment : Fragment() {
         binding.preCountdownPanel.visibility = View.GONE
         binding.breathingPanel.visibility = View.VISIBLE
         startBreathingLoop()
-        routineViewModel.startCurrentActivityTimer()
+        val durationSeconds = if (TEST_MODE_SHORT_DURATION) TEST_DURATION_SECONDS
+        else (routineViewModel.currentActivity?.defaultDurationMinutes ?: 0) * 60
+        routineViewModel.startCurrentActivityTimer(durationSeconds)
     }
 
     // ─── Pre-countdown ────────────────────────────────────────────────────────
@@ -152,11 +185,8 @@ class BreathingActivityFragment : Fragment() {
 
     private fun updateMainTimerColor(seconds: Long) {
         if (_binding == null) return
-        val colorRes = when {
-            seconds <= 5 -> R.color.timer_red
-            seconds <= 30 -> R.color.timer_green
-            else -> R.color.timer_default
-        }
+        // Wireframe only shows default color and red near the end — no green phase.
+        val colorRes = if (seconds <= 5) R.color.timer_red else R.color.timer_default
         binding.tvMainTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
     }
 

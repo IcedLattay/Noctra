@@ -7,6 +7,7 @@ import android.os.Build
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.noctra.app.data.utils.RoutinePersistenceHelper
 import com.noctra.app.workers.MissedSessionCheckerWorker
 import com.noctra.app.workers.MorningSyncWorker
 import com.noctra.app.workers.SleepFinalizationWorker
@@ -23,6 +24,7 @@ class NoctraApplication : Application() {
         // Initialize Supabase with session persistence
         com.noctra.app.data.supabase.SupabaseClient.init(this)
 
+        RoutinePersistenceHelper.init(this)
         setupMorningSyncWorker()
         setupMissedSessionWorker()
         setupSleepFinalizationWorker()

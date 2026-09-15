@@ -8,16 +8,22 @@ import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.activity.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.noctra.app.data.repository.UserProfileRepository
+import com.noctra.app.data.utils.RoutinePersistenceHelper
 import com.noctra.app.data.supabase.SupabaseClient
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.handleDeeplinks
 import com.noctra.app.ui.debug.DebugPanelListener
+import com.noctra.app.ui.routine.RoutineViewModel
+import com.noctra.app.ui.routine.home.ResumeRoutineDialogFragment
 import com.noctra.app.utils.DebugSettings
 import com.noctra.app.utils.UserSession
 import com.noctra.app.utils.NetworkObserver
@@ -52,10 +58,17 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         requestAlarmPermissionIfNeeded()
     }
 
+    // Same instance the routine execution fragments obtain via
+    // activityViewModels() — Activity-scoped, so this and those fragments
+    // all share one ViewModel/ViewModelStore.
+    private val routineViewModel: RoutineViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen().setKeepOnScreenCondition { isLoading }
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        DebugSettings.setForceRoutineWindow(true) // TEMP — remove before final submission
+        DebugSettings.setSkipCompletionCheck(true) // TEMP — remove before final submission
 
         networkObserver = NetworkObserver(applicationContext)
 
@@ -80,8 +93,21 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
             showOfflineUI()
             return
         }
+
+        registerResumeDialogResultListener()
+        observeRecoveryState()
+
+        // Check onboarding status and handle permissions if already completed
         checkOnboardingStatus(navController, bottomNav)
     }
+
+    override fun onResume() {
+        super.onResume()
+        checkMorningAfterCleanup()
+        checkResumableRoutine()
+    }
+
+    // ─── Offline UI ──────────────────────────────────────────────────────────
 
     private fun showOfflineUI() {
         isLoading = false
@@ -115,6 +141,93 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         bottomNav.visibility = View.VISIBLE
     }
 
+    // ─── Global Resume Popup (tasks 7 & 8) ───────────────────────────────────
+
+    private fun checkResumableRoutine() {
+        lifecycleScope.launch {
+            try {
+                val userId = UserSession.getUserId(applicationContext) ?: return@launch
+                val profile = UserProfileRepository().getOrCreateProfile(userId)
+                if (!profile.onboardingCompleted) return@launch
+
+                routineViewModel.checkRecoveryState()
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "checkResumableRoutine failed", e)
+            }
+        }
+    }
+
+    private fun observeRecoveryState() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                routineViewModel.recoveryState.collect { state ->
+                    if (state is RoutineViewModel.RecoveryState.Resumable) {
+                        showResumeDialogIfNeeded(state)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showResumeDialogIfNeeded(state: RoutineViewModel.RecoveryState.Resumable) {
+        if (supportFragmentManager.findFragmentByTag(ResumeRoutineDialogFragment.TAG) != null) return
+
+        ResumeRoutineDialogFragment.newInstance(
+            currentStepIndex = state.stepIndex,
+            totalSteps = state.totalSteps,
+            awayMinutes = state.awayMinutes
+        ).show(supportFragmentManager, ResumeRoutineDialogFragment.TAG)
+    }
+
+    private fun registerResumeDialogResultListener() {
+        supportFragmentManager.setFragmentResultListener(
+            ResumeRoutineDialogFragment.REQUEST_KEY, this
+        ) { _, bundle ->
+            val resumed = bundle.getBoolean(ResumeRoutineDialogFragment.RESULT_RESUMED)
+            if (resumed) {
+                routineViewModel.confirmResume()
+                navigateToRoutineStart()
+            } else {
+                routineViewModel.declineResume()
+            }
+        }
+    }
+
+    private fun navigateToRoutineStart() {
+        val navHostFragment = supportFragmentManager
+            .findFragmentById(R.id.nav_host) as NavHostFragment
+        navHostFragment.navController.navigate(R.id.routineStartFragment)
+    }
+
+    // ─── Morning After Cleanup (task 9/10) ──────────────────────────────────
+
+    private fun checkMorningAfterCleanup() {
+        if (!RoutinePersistenceHelper.hasActiveSession()) return
+
+        val lastActivity = RoutinePersistenceHelper.getLastActivityTimestamp()
+        if (lastActivity == 0L) return
+
+        val gapMillis = System.currentTimeMillis() - lastActivity
+        val eightHoursMillis = 8L * 60 * 60 * 1000
+
+        if (gapMillis > eightHoursMillis) {
+            RoutinePersistenceHelper.clear()
+
+            try {
+                val navHostFragment = supportFragmentManager
+                    .findFragmentById(R.id.nav_host) as NavHostFragment
+                val navController = navHostFragment.navController
+
+                val navOptions = NavOptions.Builder()
+                    .setPopUpTo(navController.graph.id, true)
+                    .build()
+                navController.navigate(R.id.analyticsDashboardFragment, null, navOptions)
+            } catch (e: Exception) {
+                android.util.Log.w("MainActivity", "checkMorningAfterCleanup: navigation skipped (not in main_graph)", e)
+            }
+        }
+    }
+
     private fun handleDeeplinks(intent: android.content.Intent?) {
         intent?.let {
             try {
@@ -134,13 +247,13 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         lifecycleScope.launch {
             try {
                 val auth = SupabaseClient.client.auth
-                
+
                 // 1. Wait for Supabase to finish loading from storage
                 auth.awaitInitialization()
 
                 // 2. Double-check the current session status
                 val session = auth.currentSessionOrNull()
-                
+
                 android.util.Log.d("MainActivity", "Session check: ${session?.user?.id != null}")
 
                 val navInflater = navController.navInflater
@@ -153,12 +266,11 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                 } else {
                     val userId = UserSession.getUserId(applicationContext) ?: throw Exception("User ID not found")
                     val profile = UserProfileRepository().getOrCreateProfile(userId)
-
                     if (profile.onboardingCompleted) {
                         // Fully onboarded, set the Main Group as start
                         graph.setStartDestination(R.id.main_graph)
                         navController.graph = graph
-                        
+
                         // Handle background tasks for onboarded users
                         if (com.noctra.app.utils.NotificationPreferences.isWindDownEnabled(applicationContext)) {
                             requestNotificationPermissionIfNeeded()
@@ -181,7 +293,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                             else -> R.id.bedtimeConfigFragment
                         }
                         onboardingGraph.setStartDestination(startStep)
-                        
+
                         graph.setStartDestination(R.id.onboarding_graph)
                         navController.graph = graph
                     }
@@ -203,7 +315,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
 
     private fun setupNavigationUI(navController: androidx.navigation.NavController, bottomNav: BottomNavigationView) {
         bottomNav.setupWithNavController(navController)
-        
+
         // Navigation UI Logic
         navController.addOnDestinationChangedListener { _, destination, _ ->
             // 1. Visibility Logic: Show only for the 4 main tabs

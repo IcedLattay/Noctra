@@ -1,67 +1,131 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    fragment_times_up_transition.xml
+
+    Redesigned to match the wireframe: alarm clock illustration + a
+    "Time's Up!" card, on the same soft card background every activity
+    screen uses.
+
+    View IDs kept unchanged so TimesUpTransitionFragment works as-is:
+      tv_encouragement → completion message for the activity that just
+                         ended, plus "Next up: <activity>"
+      tv_countdown     → seconds remaining before the next activity starts
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#EDE9FB"
-    android:padding="32dp">
+    android:background="@drawable/routinestatebackground">
 
-    <com.airbnb.lottie.LottieAnimationView
-        android:id="@+id/iv_clock"
-        android:layout_width="140dp"
-        android:layout_height="140dp"
-        app:lottie_rawRes="@raw/timesupclock"
-        app:lottie_autoPlay="true"
-        android:layout_marginTop="200dp"
-        app:lottie_loop="true"
-        app:layout_constraintBottom_toTopOf="@id/tv_times_up"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_chainStyle="packed" />
-    <TextView
-        android:id="@+id/tv_times_up"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:fontFamily="@font/poppinsbold"
-        android:text="Time's Up!"
-        android:textColor="#E53935"
-        android:textSize="36sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/iv_clock" />
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="10dp"
+        android:background="@drawable/routinewhitebg">
 
-    <TextView
-        android:id="@+id/tv_encouragement"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="24dp"
-        android:fontFamily="@font/poppinsregular"
-        android:gravity="center"
-        android:lineSpacingMultiplier="1.4"
-        android:textColor="#444444"
-        android:textSize="16sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_times_up"
-        tools:text="Nice work — next up: Low-Stimulus Audio" />
+        <!-- Soft radial backdrop, same as the activity screens -->
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop"
+            android:src="@drawable/bg_activity_screen" />
 
-    <TextView
-        android:id="@+id/tv_countdown"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="48dp"
-        android:fontFamily="@font/poppinsbold"
-        android:textColor="@color/timer_red"
-        android:textSize="48sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        tools:text="5" />
+        <!-- Shleepy mark, top center -->
+        <ImageView
+            android:id="@+id/imgShleepyHead"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="30dp"
+            android:contentDescription="@null"
+            android:scaleType="fitCenter"
+            android:src="@drawable/shleepylogo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <!-- Alarm clock illustration -->
+        <ImageView
+            android:id="@+id/imgAlarmClock"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:layout_marginTop="90dp"
+            android:contentDescription="Time's up"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_alarm_clock"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/imgShleepyHead" />
+
+        <!-- "Time's Up!" card -->
+        <LinearLayout
+            android:id="@+id/timesUpCard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="40dp"
+            android:layout_marginTop="28dp"
+            android:layout_marginEnd="40dp"
+            android:background="@drawable/bg_timer_card"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="14dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/imgAlarmClock">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
+                android:layout_marginBottom="4dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_clock" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppinsbold"
+                android:text="Time's Up!"
+                android:textColor="@color/timer_red"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Completion message for the activity that just ended, plus
+             "Next up: <activity>". Set from TimesUpTransitionFragment. -->
+        <TextView
+            android:id="@+id/tv_encouragement"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginEnd="32dp"
+            android:fontFamily="@font/poppinsregular"
+            android:gravity="center"
+            android:lineSpacingExtra="3dp"
+            android:textColor="#3B3560"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/timesUpCard"
+            tools:text="Good job! Your body will start cooling down.\n\nNext up: Reading" />
+
+        <!-- Seconds until the next activity begins -->
+        <TextView
+            android:id="@+id/tv_countdown"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="@font/poppinsbold"
+            android:textColor="#9992B8"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_encouragement"
+            tools:text="5" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</FrameLayout>
