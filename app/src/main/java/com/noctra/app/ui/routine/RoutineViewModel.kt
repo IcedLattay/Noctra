@@ -537,14 +537,6 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
      */
     private fun onSafetyNetExpired() {
         viewModelScope.launch {
-            activeSessionId?.let { sessionId ->
-                try {
-                    routineSessionRepository.markSessionAsAbandoned(sessionId)
-                    android.util.Log.d("StreakDebug", "SAFETY NET EXPIRED — session $sessionId marked abandoned")
-                } catch (e: Exception) {
-                    android.util.Log.e("StreakDebug", "Failed to mark session abandoned", e)
-                }
-            }
             RoutinePersistenceHelper.clear()
             _sessionState.value = SessionState.Exited
             _navigationEvent.emit(NavigationEvent.GoToHome)

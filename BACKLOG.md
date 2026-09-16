@@ -121,7 +121,7 @@ Code expects these schemas (verified in `RoutineSession.kt`, `RewardLedger.kt`, 
 
 - [x] **DONE — routine_sessions status**: `status TEXT DEFAULT 'PENDING'` column already exists
 - [x] **DONE — reward_ledger rename**: `devolution_pending` → `has_first_miss` already applied
-- [ ] **OPTIONAL — routine_sessions.was_healed** (BOOLEAN DEFAULT false): zero code references today; safe to add now, but the Kotlin model needs a matching `@SerialName("was_healed")` field when the heal/restore feature is built
+- [ ] **DISCUSS — routine_sessions.session_status**: `session_status TEXT` column (IN_PROGRESS / ABANDONED_PENDING_DIAGNOSIS) — tracks whether user finished routine before Safety Net expired. Currently redundant with local cache (RoutinePersistenceHelper). Decide whether to add to DB or rely on cache only.
 - [x] **DONE — friendships**: table created per SDD ERD (`id`, `requester_id`/`receiver_id` TEXT FK → `user_profiles`, `status`, `created_at`/`updated_at`) + Realtime publication + RLS policies
 - [ ] **LATER — encouragement_reactions**: only needed when the encouragement feature gets a UI (parked for future update)
 - [x] **DONE — user_profiles drafts**: `draft_bedtime TEXT`, `draft_activity_ids JSONB` columns already exist
