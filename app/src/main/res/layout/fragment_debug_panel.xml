@@ -141,6 +141,16 @@
                     <TextView
                         style="@style/DebugDescription"
                         android:text="Temporarily pushes XP over the next evolution milestone to demonstrate the Shleepy evolution animation." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_evolution"
+                        style="@style/DebugButton"
+                        android:text="Preview Evolution Screen" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Opens the evolution dialog for the next stage directly. No XP is written — purely a visual preview." />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 

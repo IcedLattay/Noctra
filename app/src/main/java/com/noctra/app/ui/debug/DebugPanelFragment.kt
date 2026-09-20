@@ -17,6 +17,7 @@ interface DebugPanelListener {
     fun onSimulateMorningSync()
     fun onSimulateMissedNight()
     fun onTriggerEvolution()
+    fun onPreviewEvolution()
     fun onSeedDemoData()
     fun onClearDemoData()
 }
@@ -74,6 +75,9 @@ class DebugPanelFragment : Fragment() {
         // Section 4: Gamification
         view.findViewById<MaterialButton>(R.id.btn_trigger_evolution).setOnClickListener {
             listener?.onTriggerEvolution()
+        }
+        view.findViewById<MaterialButton>(R.id.btn_preview_evolution).setOnClickListener {
+            listener?.onPreviewEvolution()
         }
 
         // Section 5: Data

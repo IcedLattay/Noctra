@@ -72,13 +72,18 @@ class CompanionViewModel(
     private val _showMorningPopup = MutableSharedFlow<Pair<Int, Int>>()
     val showMorningPopup: SharedFlow<Pair<Int, Int>> = _showMorningPopup.asSharedFlow()
 
-    private val _showEvolutionPopup = MutableSharedFlow<CompanionEvolutionUseCase.EvolutionState>()
-    val showEvolutionPopup: SharedFlow<CompanionEvolutionUseCase.EvolutionState> = _showEvolutionPopup.asSharedFlow()
+    private val _showEvolutionPopup = MutableSharedFlow<EvolutionEvent>()
+    val showEvolutionPopup: SharedFlow<EvolutionEvent> = _showEvolutionPopup.asSharedFlow()
 
     private val _showNoticePopup = MutableSharedFlow<CompanionNotice>()
     val showNoticePopup: SharedFlow<CompanionNotice> = _showNoticePopup.asSharedFlow()
 
     enum class CompanionNotice { RESTORED, LOST, WARNING }
+
+    data class EvolutionEvent(
+        val newStage: CompanionEvolutionUseCase.EvolutionState,
+        val oldLevel: Int
+    )
 
     private var previousStageLevel: Int? = null
     
@@ -196,7 +201,7 @@ class CompanionViewModel(
                 
                 // 2. Milestone check
                 if (previousStageLevel != null && evolution.stageLevel > previousStageLevel!!) {
-                    _showEvolutionPopup.emit(evolution)
+                    _showEvolutionPopup.emit(EvolutionEvent(evolution, previousStageLevel!!))
                 }
                 previousStageLevel = evolution.stageLevel
 

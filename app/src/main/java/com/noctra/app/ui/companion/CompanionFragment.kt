@@ -46,7 +46,7 @@ class CompanionFragment : Fragment() {
     private sealed class PendingDialog {
         data class MorningRecap(val score: Int, val xp: Int) : PendingDialog()
         data class StreakNotice(val type: CompanionViewModel.CompanionNotice) : PendingDialog()
-        data class Evolution(val stageName: String) : PendingDialog()
+        data class Evolution(val oldLevel: Int, val newLevel: Int) : PendingDialog()
     }
 
     private val dialogQueue = mutableListOf<PendingDialog>()
@@ -85,7 +85,7 @@ class CompanionFragment : Fragment() {
                 }
             }
             is PendingDialog.Evolution -> {
-                EvolutionDialogFragment.newInstance(next.stageName).apply {
+                EvolutionDialogFragment.newInstance(next.oldLevel, next.newLevel).apply {
                     setOnDismissCallback { onDialogClosed() }
                     show(childFragmentManager, "EvolutionPopup")
                 }
@@ -232,8 +232,8 @@ class CompanionFragment : Fragment() {
                     }
                 }
                 launch {
-                    viewModel.showEvolutionPopup.collectLatest { evolution ->
-                        enqueueDialog(PendingDialog.Evolution(evolution.stageName))
+                    viewModel.showEvolutionPopup.collectLatest { event ->
+                        enqueueDialog(PendingDialog.Evolution(event.oldLevel, event.newStage.stageLevel))
                     }
                 }
             }

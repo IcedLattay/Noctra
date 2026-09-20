@@ -22,6 +22,9 @@ import com.noctra.app.data.supabase.SupabaseClient
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.handleDeeplinks
 import com.noctra.app.ui.debug.DebugPanelListener
+import com.noctra.app.ui.companion.CompanionViewModel
+import com.noctra.app.ui.companion.EvolutionDialogFragment
+import androidx.lifecycle.ViewModelProvider
 import com.noctra.app.ui.routine.RoutineViewModel
 import com.noctra.app.ui.routine.home.ResumeRoutineDialogFragment
 import com.noctra.app.utils.DebugSettings
@@ -477,6 +480,17 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                 Toast.makeText(this@MainActivity, "Evolution trigger failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    override fun onPreviewEvolution() {
+        // Zero-write preview: shows the evolution dialog for the next stage directly.
+        // Rendered animation comes from the already-loaded CompanionViewModel state,
+        // so visit the Companion tab first for the Shleepy preview to appear.
+        val companionVm = ViewModelProvider(this)[CompanionViewModel::class.java]
+        val currentLevel = companionVm.uiState.value.evolutionState?.stageLevel ?: 1
+        val previewLevel = (currentLevel + 1).coerceAtMost(5)
+        EvolutionDialogFragment.newInstance(currentLevel, previewLevel)
+            .show(supportFragmentManager, "EvolutionPreview")
     }
 
     override fun onSeedDemoData() {

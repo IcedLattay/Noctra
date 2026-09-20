@@ -4,11 +4,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.AlphaAnimation
-import android.view.animation.Animation
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
-import com.noctra.app.R
 import com.noctra.app.databinding.DialogEvolutionBinding
 
 class EvolutionDialogFragment : DialogFragment() {
@@ -20,29 +17,21 @@ class EvolutionDialogFragment : DialogFragment() {
 
     private var onDismissListener: (() -> Unit)? = null
 
-    fun setOnDismissCallback(listener: () -> Unit) {
-        this.onDismissListener = listener
-    }
-
-    override fun onDismiss(dialog: android.content.DialogInterface) {
-        super.onDismiss(dialog)
-        onDismissListener?.invoke()
-    }
-
-    private val shleepyStates = mapOf(
-        1 to ShleepyState("DEPRIVED"),
-        2 to ShleepyState("AWAKENING"),
-        3 to ShleepyState("CHARGED"),
-        4 to ShleepyState("OVERDRIVE"),
-        5 to ShleepyState("ZEN")
+    private val stageStates = mapOf(
+        1 to "feeling drained",
+        2 to "waking up",
+        3 to "full of energy",
+        4 to "in overdrive",
+        5 to "completely zen"
     )
 
-    data class ShleepyState(val name: String)
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setStyle(STYLE_NORMAL, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
-    }
+    private val stageAssets = mapOf(
+        1 to "deprived",
+        2 to "awakening",
+        3 to "charged",
+        4 to "overdrive",
+        5 to "zen"
+    )
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -55,43 +44,63 @@ class EvolutionDialogFragment : DialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
-        val stageName = arguments?.getString(ARG_STAGE_NAME) ?: "THE AWAKENING"
-        binding.tvNewStageName.text = stageName
 
-        renderShleepy()
+        val oldLevel = arguments?.getInt(ARG_OLD_LEVEL, 1) ?: 1
+        val newLevel = arguments?.getInt(ARG_NEW_LEVEL, 2) ?: 2
 
-        // Simple scale and fade animations
-        val anim = AlphaAnimation(0.2f, 1.0f).apply {
-            duration = 1000
-            repeatMode = Animation.REVERSE
-            repeatCount = Animation.INFINITE
+        binding.tvEvolutionTitle.text = "Shleepy just moved up an energy level!"
+
+        val oldState = stageStates[oldLevel] ?: "feeling drained"
+        val newState = stageStates[newLevel] ?: "waking up"
+        binding.tvEvolutionDescription.text = if (newLevel >= 5) {
+            "Shleepy went from $oldState to $newState! That's the highest energy level — amazing work keeping it up!"
+        } else {
+            val nextState = stageStates[newLevel + 1] ?: "completely zen"
+            "Shleepy went from $oldState to $newState! Keep up the good work and Shleepy will be $nextState in no time!"
         }
-        binding.ivGlow.startAnimation(anim)
 
-        binding.btnContinue.setOnClickListener {
+        renderShleepy(newLevel)
+
+        binding.btnAwesome.setOnClickListener {
             dismiss()
         }
     }
 
-    private fun renderShleepy() {
+    private fun renderShleepy(level: Int) {
         val state = companionViewModel.uiState.value
-        val evolution = state.evolutionState ?: return
-
-        val stageName = shleepyStates[evolution.stageLevel]?.name?.lowercase() ?: "charged"
+        // Animation needs the loaded outfit; texts above show regardless.
         val outfitAsset = state.equippedOutfit?.itemAsset ?: "default"
 
         val resId = resources.getIdentifier(
-            "shleepy_${stageName}_${outfitAsset}", "raw", requireContext().packageName
+            "shleepy_${stageAssets[level] ?: "charged"}_${outfitAsset}",
+            "raw", requireContext().packageName
         )
 
         if (resId != 0) {
-            binding.petAnimationView.apply {
+            binding.lottieShleepy.apply {
                 setAnimation(resId)
                 repeatCount = -1
                 playAnimation()
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.setLayout(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        dialog?.window?.setBackgroundDrawableResource(android.R.color.transparent)
+    }
+
+    fun setOnDismissCallback(listener: () -> Unit) {
+        this.onDismissListener = listener
+    }
+
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        onDismissListener?.invoke()
     }
 
     override fun onDestroyView() {
@@ -100,12 +109,14 @@ class EvolutionDialogFragment : DialogFragment() {
     }
 
     companion object {
-        private const val ARG_STAGE_NAME = "stage_name"
+        private const val ARG_OLD_LEVEL = "old_level"
+        private const val ARG_NEW_LEVEL = "new_level"
 
-        fun newInstance(stageName: String): EvolutionDialogFragment {
+        fun newInstance(oldLevel: Int, newLevel: Int): EvolutionDialogFragment {
             return EvolutionDialogFragment().apply {
                 arguments = Bundle().apply {
-                    putString(ARG_STAGE_NAME, stageName)
+                    putInt(ARG_OLD_LEVEL, oldLevel)
+                    putInt(ARG_NEW_LEVEL, newLevel)
                 }
             }
         }
