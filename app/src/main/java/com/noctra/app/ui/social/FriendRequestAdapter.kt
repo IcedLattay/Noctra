@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.noctra.app.R
+import com.noctra.app.data.model.ShopItem
 
 class FriendRequestAdapter(
     private val isIncoming: Boolean,
@@ -15,7 +16,7 @@ class FriendRequestAdapter(
     private val onDeclineClick: (FriendRequestUiModel) -> Unit
 ) : ListAdapter<FriendRequestUiModel, FriendRequestAdapter.ViewHolder>(DiffCallback()) {
 
-    var equipment: Map<String, Map<String, com.noctra.app.data.model.ShopItem>> = emptyMap()
+    var equipment: Map<String, ShopItem> = emptyMap()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -38,7 +39,12 @@ class FriendRequestAdapter(
         fun bind(item: FriendRequestUiModel) {
             textName.text = item.displayName
             textEmail.text = item.email
-            avatarShleepy.setEquipped(equipment[item.userId] ?: emptyMap())
+            val outfit = equipment[item.userId]
+            if (outfit != null) {
+                avatarShleepy.setOutfit(3, outfit.itemAsset)
+            } else {
+                avatarShleepy.setOutfit(3, "default")
+            }
 
             // Show/hide accept button based on incoming/outgoing
             btnAccept.visibility = if (isIncoming) View.VISIBLE else View.GONE

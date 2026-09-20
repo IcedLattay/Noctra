@@ -56,11 +56,12 @@ class CompanionViewModel(
     data class CompanionUiState(
         val isLoading: Boolean = false,
         val isOffline: Boolean = false,
+        val isAnimationLoaded: Boolean = false,
         val displayName: String = "User",
         val evolutionState: CompanionEvolutionUseCase.EvolutionState? = null,
         val tokenBalance: Int = 0,
         val lastSleepScore: Int? = null,
-        val equippedItems: Map<String, ShopItem> = emptyMap(),
+        val equippedOutfit: ShopItem? = null,
         val shopItems: List<ShopItemUiModel> = emptyList(),
         val error: String? = null
     )
@@ -171,7 +172,7 @@ class CompanionViewModel(
             
             // 1. Get equipment & Shop items
             val inventory = inventoryRepository.getUserInventory(userId)
-            val equippedItemIds = inventory.filter { it.isEquipped }.map { it.itemId }.toSet()
+            val equippedItemId = profile.outfitEquipped
             val allShopItems = shopRepository.getAllShopItems()
             val balance = ledger?.tokenBalance ?: 0
 
@@ -181,15 +182,14 @@ class CompanionViewModel(
                 ShopItemUiModel(
                     item = item,
                     isOwned = inventoryItemIds.contains(item.itemId),
-                    isEquipped = equippedItemIds.contains(item.itemId),
+                    isEquipped = item.itemId == equippedItemId,
                     canAfford = balance >= item.tokenCost
                 )
             }
 
-            val equippedMap = allShopItems.filter { equippedItemIds.contains(it.itemId) }
-                .associateBy { it.category }
-            
-            Log.d("CompanionVM", "Equipped Items: ${equippedMap.keys}")
+            val equippedOutfit = allShopItems.find { it.itemId == equippedItemId }
+
+            Log.d("CompanionVM", "Equipped outfit: ${equippedOutfit?.label}")
 
             if (ledger != null) {
                 val evolution = evolutionUseCase.execute(ledger.totalXp)
@@ -208,7 +208,7 @@ class CompanionViewModel(
                         evolutionState = evolution,
                         tokenBalance = ledger.tokenBalance,
                         lastSleepScore = latestSleep?.compositeScore,
-                        equippedItems = equippedMap,
+                        equippedOutfit = equippedOutfit,
                         shopItems = uiModels,
                         error = null
                     )
@@ -247,18 +247,14 @@ class CompanionViewModel(
                         val updatedItems = currentState.shopItems.map { model ->
                             if (model.item.itemId == item.itemId) {
                                 model.copy(isOwned = true, isEquipped = true)
-                            } else if (model.item.category == item.category) {
-                                model.copy(isEquipped = false)
                             } else {
-                                model
+                                model.copy(isEquipped = false)
                             }
                         }
                         currentState.copy(
                             tokenBalance = newBalance,
                             shopItems = updatedItems,
-                            equippedItems = currentState.equippedItems.toMutableMap().apply {
-                                put(item.category, item)
-                            }
+                            equippedOutfit = item
                         )
                     }
 
@@ -269,7 +265,7 @@ class CompanionViewModel(
                     )
                     rewardRepository.updateRewardLedger(updatedLedger)
                     inventoryRepository.purchaseItem(userId, item.itemId)
-                    performEquip(userId, item)
+                    inventoryRepository.setEquippedOutfit(userId, item.itemId)
                     
                     // Final background refresh
                     refreshData(userId, null, triggerMorningPopup = false)
@@ -286,48 +282,29 @@ class CompanionViewModel(
         
         viewModelScope.launch {
             try {
-                // Optimistic UI update (Toggle)
+                // Optimistic UI update
                 _uiState.update { currentState ->
                     val updatedItems = currentState.shopItems.map { model ->
                         if (model.item.itemId == item.itemId) {
-                            model.copy(isEquipped = !isCurrentlyEquipped)
-                        } else if (model.item.category == item.category) {
-                            model.copy(isEquipped = false)
+                            model.copy(isEquipped = true)
                         } else {
-                            model
+                            model.copy(isEquipped = false)
                         }
-                    }
-                    
-                    val newEquippedMap = currentState.equippedItems.toMutableMap()
-                    if (isCurrentlyEquipped) {
-                        newEquippedMap.remove(item.category)
-                    } else {
-                        newEquippedMap[item.category] = item
                     }
 
                     currentState.copy(
                         shopItems = updatedItems,
-                        equippedItems = newEquippedMap
+                        equippedOutfit = item
                     )
                 }
                 
-                if (isCurrentlyEquipped) {
-                    inventoryRepository.unequipItem(userId, item.itemId)
-                } else {
-                    performEquip(userId, item)
-                }
+                inventoryRepository.setEquippedOutfit(userId, item.itemId)
                 refreshData(userId, null, triggerMorningPopup = false)
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = "Equip failed: ${e.message}") }
                 refreshData(userId, null, triggerMorningPopup = false)
             }
         }
-    }
-
-    private suspend fun performEquip(userId: String, item: ShopItem) {
-        val allItems = shopRepository.getAllShopItems()
-        val itemIdsInCategory = allItems.filter { it.category == item.category }.map { it.itemId }
-        inventoryRepository.equipItem(userId, item.itemId, itemIdsInCategory)
     }
 
     fun seedDemoData(userId: String) {

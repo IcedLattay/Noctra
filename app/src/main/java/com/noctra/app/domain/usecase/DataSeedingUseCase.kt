@@ -52,10 +52,10 @@ class DataSeedingUseCase(
 
         // 3. Re-seed Shop Items with valid UUIDs
         val mockItems = listOf(
-            ShopItem("550e8400-e29b-41d4-a716-446655440001", "Yellow Beanie", "A cozy yellow hat", "HAT", 0, "hat_sleeping_hat_icon", "hat_sleeping_hat", 1),
-            ShopItem("550e8400-e29b-41d4-a716-446655440002", "Clouds", "Soft and dreamy", "HAT", 1000, "hat_cloud_icon", "hat_cloud", 2),
-            ShopItem("550e8400-e29b-41d4-a716-446655440003", "Flower Garland", "Garden fresh", "HAT", 800, "hat_floral_crown_icon", "hat_floral_crown", 3),
-            ShopItem("550e8400-e29b-41d4-a716-446655440004", "Propeller Hat", "Fun and fast", "HAT", 500, "hat_propeller_hat_icon", "hat_propeller_hat", 4)
+            ShopItem("550e8400-e29b-41d4-a716-446655440001", "Default", "Default skin", "OUTFIT", 0, "", "default", 1),
+            ShopItem("550e8400-e29b-41d4-a716-446655440002", "Pajamas", "Cozy pajamas", "OUTFIT", 100, "", "pajamas", 2),
+            ShopItem("550e8400-e29b-41d4-a716-446655440003", "Office", "Office attire", "OUTFIT", 100, "", "office", 3),
+            ShopItem("550e8400-e29b-41d4-a716-446655440004", "Casual", "Casual wear", "OUTFIT", 200, "", "casual", 4)
         )
         // Use upsert for shop items to avoid "already exists" if delete failed
         SupabaseClient.client.from("shop_items").upsert(mockItems, onConflict = "item_id")

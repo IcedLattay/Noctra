@@ -3,12 +3,16 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:clipToPadding="false">
 
 <androidx.constraintlayout.widget.ConstraintLayout
     android:id="@+id/companionRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:clipToPadding="false"
     android:background="@drawable/bg_companion_gradient">
 
     <!-- Back Button (Visible only in Customize Mode) -->
@@ -40,6 +44,7 @@
         android:paddingTop="6dp"
         android:paddingEnd="16dp"
         android:paddingBottom="6dp"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -60,19 +65,40 @@
             tools:text="50" />
     </LinearLayout>
 
+    <!-- Token pill skeleton: same position as tokenContainer, swaps in place -->
+    <View
+        android:id="@+id/skeletonTokenPill"
+        android:layout_width="80dp"
+        android:layout_height="32dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="24dp"
+        android:background="@drawable/bg_skeleton_pill"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Floor background (behind everything) -->
+    <View
+        android:id="@+id/companionFloor"
+        android:layout_width="match_parent"
+        android:layout_height="340dp"
+        android:background="@drawable/bg_companion_floor"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
     <!-- Shleepy Display Area -->
     <FrameLayout
         android:id="@+id/shleepyFrame"
         android:layout_width="220dp"
         android:layout_height="280dp"
-        android:clipChildren="true"
-        android:clipToPadding="true"
+        android:layout_marginTop="100dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:elevation="8dp"
         app:layout_constraintBottom_toTopOf="@+id/companionPanel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tokenContainer"
-        app:layout_constraintVertical_bias="0.4"
-        app:layout_constraintVertical_chainStyle="packed">
+        app:layout_constraintTop_toBottomOf="@+id/tokenContainer">
 
         <!-- Lottie Sheep Pet -->
         <com.airbnb.lottie.LottieAnimationView
@@ -80,8 +106,28 @@
             android:layout_width="390dp"
             android:layout_height="390dp"
             android:layout_gravity="center"
-            android:layout_marginTop="10dp"
+            android:layout_marginBottom="24dp"
             app:lottie_loop="true" />
+
+        <!-- Spinner: centered in same Shleepy area, swaps with animation -->
+        <ProgressBar
+            android:id="@+id/skeletonSpinner"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="48dp"
+            android:layout_marginBottom="24dp"
+            android:indeterminateTint="#522ABE" />
+
+        <!-- Smoke overlay (plays during outfit switch) -->
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/smokeOverlay"
+            android:layout_width="390dp"
+            android:layout_height="390dp"
+            android:layout_gravity="center"
+            android:layout_marginBottom="24dp"
+            app:lottie_autoPlay="false"
+            app:lottie_loop="false" />
     </FrameLayout>
 
     <!-- COMPANION MODE UI (Wrapped in a container for better animation) -->
@@ -94,11 +140,19 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/shleepyFrame">
 
+        <!-- Stage label skeleton: same slot as tvStageLabel, pushed down -->
+        <View
+            android:id="@+id/skeletonStageLabel"
+            android:layout_width="160dp"
+            android:layout_height="36dp"
+            android:layout_marginTop="52dp"
+            android:background="@drawable/bg_skeleton_pill" />
+
         <TextView
             android:id="@+id/tvStageLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="12dp"
             android:background="@drawable/bg_stage_pill"
             android:fontFamily="sans-serif-black"
             android:paddingStart="24dp"
@@ -107,7 +161,18 @@
             android:paddingBottom="8dp"
             android:textColor="@color/noctra_text_dark"
             android:textSize="18sp"
+            android:visibility="gone"
             tools:text="Energized" />
+
+        <!-- XP card skeleton: same slot as cvXpCard -->
+        <View
+            android:id="@+id/skeletonXpCard"
+            android:layout_width="match_parent"
+            android:layout_height="90dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="24dp"
+            android:background="@drawable/bg_skeleton_card" />
 
         <!-- XP / Sleep Points Card -->
         <androidx.cardview.widget.CardView
@@ -117,6 +182,7 @@
             android:layout_marginStart="24dp"
             android:layout_marginTop="16dp"
             android:layout_marginEnd="24dp"
+            android:visibility="gone"
             app:cardCornerRadius="20dp"
             app:cardElevation="0dp">
 
@@ -161,6 +227,17 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.cardview.widget.CardView>
 
+        <!-- Customize button skeleton: same slot as btnCustomize -->
+        <View
+            android:id="@+id/skeletonCustomize"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="24dp"
+            android:layout_marginBottom="24dp"
+            android:background="@drawable/bg_skeleton_card" />
+
         <!-- Customize Button -->
         <androidx.cardview.widget.CardView
             android:id="@+id/btnCustomize"
@@ -173,6 +250,7 @@
             android:clickable="true"
             android:focusable="true"
             android:foreground="?android:attr/selectableItemBackground"
+            android:visibility="gone"
             app:cardBackgroundColor="@color/noctra_purple_soft"
             app:cardCornerRadius="20dp"
             app:cardElevation="0dp">
@@ -213,101 +291,37 @@
         android:id="@+id/shopPanel"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="45dp"
         android:orientation="vertical"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/shleepyFrame">
 
-        <!-- Category Selector -->
-        <LinearLayout
-            android:id="@+id/categoryContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:paddingEnd="4dp"
-            android:paddingStart="4dp">
-
-            <TextView
-                android:id="@+id/tabHats"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="4dp"
-                android:background="@drawable/bg_category_pill_active"
-                android:fontFamily="sans-serif-medium"
-                android:paddingBottom="8dp"
-                android:paddingEnd="14dp"
-                android:paddingStart="14dp"
-                android:paddingTop="8dp"
-                android:text="Hats"
-                android:textColor="@color/white"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/tabOutfits"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="4dp"
-                android:background="@drawable/bg_category_pill_inactive"
-                android:fontFamily="sans-serif-medium"
-                android:paddingBottom="8dp"
-                android:paddingEnd="14dp"
-                android:paddingStart="14dp"
-                android:paddingTop="8dp"
-                android:text="Outfits"
-                android:textColor="@color/noctra_purple_light"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/tabAccessories"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="4dp"
-                android:background="@drawable/bg_category_pill_inactive"
-                android:fontFamily="sans-serif-medium"
-                android:paddingBottom="8dp"
-                android:paddingEnd="10dp"
-                android:paddingStart="10dp"
-                android:paddingTop="8dp"
-                android:text="Accessories"
-                android:textColor="@color/noctra_purple_light"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/tabFootwear"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_category_pill_inactive"
-                android:fontFamily="sans-serif-medium"
-                android:paddingBottom="8dp"
-                android:paddingEnd="14dp"
-                android:paddingStart="14dp"
-                android:paddingTop="8dp"
-                android:text="Footwear"
-                android:textColor="@color/noctra_purple_light"
-                android:textSize="12sp" />
-        </LinearLayout>
-
-        <!-- Container for Items Grid / Coming Soon -->
+        <!-- Items Grid with fade overlay -->
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:layout_marginTop="-19dp">
 
-            <!-- Items Grid -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvShopItems"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_marginTop="8dp"
                 android:clipToPadding="false"
-                android:padding="8dp"
+                android:paddingStart="8dp"
+                android:paddingTop="14dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="16dp"
                 app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
                 app:spanCount="3"
                 tools:listitem="@layout/item_shop" />
 
-            <!-- Coming Soon Placeholder -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="27dp"
+                android:background="@drawable/bg_shop_fade_top" />
+        </FrameLayout>
+
             <TextView
                 android:id="@+id/tvComingSoon"
                 android:layout_width="wrap_content"
@@ -318,7 +332,6 @@
                 android:textColor="@color/noctra_text_muted"
                 android:textSize="18sp"
                 android:visibility="gone" />
-        </FrameLayout>
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

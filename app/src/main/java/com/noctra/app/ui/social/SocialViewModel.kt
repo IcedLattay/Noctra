@@ -112,10 +112,10 @@ class SocialViewModel : ViewModel() {
         }
     }
 
-    // Avatar equipment: userId -> (category -> equipped ShopItem)
+    // Avatar equipment: userId -> equipped ShopItem (single outfit)
     private val _avatarEquipment =
-        MutableStateFlow<Map<String, Map<String, ShopItem>>>(emptyMap())
-    val avatarEquipment: StateFlow<Map<String, Map<String, ShopItem>>> =
+        MutableStateFlow<Map<String, ShopItem>>(emptyMap())
+    val avatarEquipment: StateFlow<Map<String, ShopItem>> =
         _avatarEquipment.asStateFlow()
 
     private suspend fun refreshAll(userId: String) {
@@ -143,11 +143,11 @@ class SocialViewModel : ViewModel() {
                 .toList()
             if (userIds.isEmpty()) return
 
-            val equipped = inventoryRepository.getEquippedItemIds(userIds)
+            val equipped = inventoryRepository.getEquippedOutfits(userIds)
             val catalog = shopRepository.getAllShopItems().associateBy { it.itemId }
-            _avatarEquipment.value = equipped.mapValues { (_, itemIds) ->
-                itemIds.mapNotNull { catalog[it] }.associateBy { it.category }
-            }
+            _avatarEquipment.value = equipped.mapValues { (_, outfitId) ->
+                catalog[outfitId]
+            }.filterValues { it != null } as Map<String, ShopItem>
         } catch (e: Exception) {
             android.util.Log.e("SocialVM", "Error loading avatar equipment", e)
         }

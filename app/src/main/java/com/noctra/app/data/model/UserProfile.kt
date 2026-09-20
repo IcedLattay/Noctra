@@ -15,5 +15,6 @@ data class UserProfile(
     @SerialName("hr_baseline_bpm") val hrBaselineBpm: Double? = null,
     @SerialName("is_email_verified") val isEmailVerified: Boolean = false,
     @SerialName("draft_bedtime") val draftBedtime: String? = null,
-    @SerialName("draft_activity_ids") val draftActivityIds: List<String>? = null
+    @SerialName("draft_activity_ids") val draftActivityIds: List<String>? = null,
+    @SerialName("outfit_equipped") val outfitEquipped: String? = null
 )

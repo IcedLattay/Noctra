@@ -35,69 +35,47 @@ class InventoryRepository {
         }
     }
 
-    // Uncached batch read for friend avatars — never touches cachedInventory,
-    // which strictly holds the current user's rows
-    suspend fun getEquippedItemIds(userIds: List<String>): Map<String, List<String>> {
-        if (userIds.isEmpty()) return emptyMap()
-        return try {
-            client.from("user_inventory")
-                .select {
-                    filter {
-                        isIn("user_id", userIds)
-                        eq("is_equipped", true)
-                    }
-                }
-                .decodeList<UserInventoryItem>()
-                .groupBy({ it.userId }, { it.itemId })
-        } catch (e: Exception) {
-            emptyMap()
-        }
-    }
-
     suspend fun purchaseItem(userId: String, itemId: String) {
         val newItem = UserInventoryItem(
             id = java.util.UUID.randomUUID().toString(),
             userId = userId,
             itemId = itemId,
-            purchasedAt = OffsetDateTime.now().toString(),
-            isEquipped = false
+            purchasedAt = OffsetDateTime.now().toString()
         )
         client.from("user_inventory").insert(newItem)
-        cachedInventory = null // Invalidate cache
+        cachedInventory = null
     }
 
-    suspend fun equipItem(userId: String, itemId: String, itemIdsInCategory: List<String>) {
-        // 1. Unequip all items in this category for this user
-        client.from("user_inventory").update({
-            set("is_equipped", false)
-        }) {
-            filter {
-                eq("user_id", userId)
-                isIn("item_id", itemIdsInCategory)
-            }
+    /**
+     * Read the currently equipped outfit from user_profiles.outfit_equipped.
+     * Returns Map<userId, itemId> for batch friend-avatar lookups.
+     */
+    suspend fun getEquippedOutfits(userIds: List<String>): Map<String, String> {
+        if (userIds.isEmpty()) return emptyMap()
+        return try {
+            val result = client.from("user_profiles")
+                .select {
+                    filter { isIn("user_id", userIds) }
+                }
+                .decodeList<Map<String, Any?>>()
+            result.mapNotNull { row ->
+                val uid = row["user_id"] as? String ?: return@mapNotNull null
+                val outfitId = row["outfit_equipped"] as? String ?: return@mapNotNull null
+                uid to outfitId
+            }.toMap()
+        } catch (e: Exception) {
+            emptyMap()
         }
-
-        // 2. Equip the target item
-        client.from("user_inventory").update({
-            set("is_equipped", true)
-        }) {
-            filter {
-                eq("user_id", userId)
-                eq("item_id", itemId)
-            }
-        }
-        cachedInventory = null // Invalidate cache
     }
 
-    suspend fun unequipItem(userId: String, itemId: String) {
-        client.from("user_inventory").update({
-            set("is_equipped", false)
+    /**
+     * Set the equipped outfit on user_profiles.outfit_equipped.
+     */
+    suspend fun setEquippedOutfit(userId: String, itemId: String) {
+        client.from("user_profiles").update({
+            set("outfit_equipped", itemId)
         }) {
-            filter {
-                eq("user_id", userId)
-                eq("item_id", itemId)
-            }
+            filter { eq("user_id", userId) }
         }
-        cachedInventory = null // Invalidate cache
     }
 }

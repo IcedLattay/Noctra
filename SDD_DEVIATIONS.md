@@ -217,6 +217,7 @@ Each step saves its own draft on advance (`draft_bedtime` + `draft_activity_ids`
 - ~~Leaderboard mock scaffolding + debug logs — removed.~~
 - ~~Friends/Requests mock scaffolding — removed.~~
 - `FriendshipRepository` realtime `filter` deprecation warnings (2) — still functional, migrate to the new `filter` method when convenient.
+- `CompanionUiState.isAnimationLoaded` — unused field (spinner visibility is driven imperatively in `applyIdleAnimation()`); remove or wire up before release.
 
 ---
 
@@ -230,6 +231,87 @@ Each step saves its own draft on advance (`draft_bedtime` + `draft_activity_ids`
 
 ---
 
+## Shleepy Customization — Packaged Outfits (design decision)
+
+**SDD spec:** Layered accessory system (hat, outfit, accessory, footwear) with Lottie opacity toggling per layer.
+
+**Decision:** Replaced with packaged outfits — one complete Lottie JSON per outfit per stage. Single `OUTFIT` shop category, no layer opacity. Shop UI shows text-only buttons (outfit names) in a 3-column uniform grid.
+
+**Status:** IMPLEMENTED. `ShleepyAvatarView` loads `shleepy_{stage}_{outfit}.json` by name. `CompanionFragment` swaps entire animation on equip. Smoke overlay view wired up (awaiting animation asset). Friend avatars use same approach (frozen frame 0).
+
+---
+
+## Equipped Outfit Schema Change (design decision)
+
+**SDD spec:** `user_inventory.is_equipped` boolean column tracks which item is equipped per user.
+
+**Decision:** Moved equipped state to `profiles.outfit_equipped` (UUID FK → `shop_items.item_id`). `user_inventory` is now a pure ownership table (no `is_equipped` column). New users get default outfit auto-equipped via a DB trigger (`equip_default_outfit`) that fires `BEFORE INSERT` on `profiles`.
+
+**Why:** "What is this user wearing?" becomes a single-column lookup on `profiles` instead of a filtered scan of `user_inventory`. Eliminates the risk of multiple items being marked equipped simultaneously (was enforced only by app logic). Simplifies friend-avatar queries for the social screens.
+
+**Migration applied:**
+1. `ALTER TABLE profiles ADD COLUMN outfit_equipped UUID REFERENCES shop_items(item_id)`
+2. `INSERT INTO user_inventory` with default outfit for all existing users
+3. `UPDATE profiles SET outfit_equipped = <default_id>` for all existing users
+4. `ALTER TABLE user_inventory DROP COLUMN is_equipped`
+5. Created `equip_default_outfit()` function + `on_profile_created` trigger
+
+**Status:** IMPLEMENTED. `InventoryRepository` reads/writes `outfit_equipped` on profiles. `UserProfile` model includes `outfitEquipped` field. `CompanionViewModel` and `SocialViewModel` updated.
+
+---
+
 ## Updates
 
 *Add new deviations here as they are discovered.*
+
+---
+
+## Shleepy Customization — Shop Item Cards (frontend)
+
+**SDD spec:** Not detailed — shop UI was text-only outfit-name buttons in a 3-column grid (interim state).
+
+**Status:** IMPLEMENTED. Cards now show SVG outfit previews (11 `outfit_*.xml` VectorDrawables in `res/drawable/`, converted from the provided SVGs; `outfit_default.xml` regenerated via Android Studio Vector Asset). `ShopItemAdapter` maps `item.label.lowercase()` → `outfit_{label}` drawable via `getIdentifier()`; cards with no matching drawable hide the preview. Card background is a `layer-list` gradient (white → `#DBD8CE` over a solid `#DBD8CE` base); CardView itself is transparent. Equipped state = same gradient + purple (`noctra_purple`) outline — no checkmark, no solid fill. Unowned items show the price pill as an overlay pinned to the card's bottom-right corner (ConstraintLayout, not in flow), so showing/hiding it never changes card height. No text labels on cards.
+
+---
+
+## Shleepy Customization — Smoke Overlay on Outfit Switch (frontend)
+
+**SDD spec:** Not specified.
+
+**Status:** IMPLEMENTED. `smoke.json` (Lottie) lives in `res/raw/`; `smokeOverlay` view sits inside `shleepyFrame` declared *after* `petAnimationView` so it renders on top. It plays ONLY on actual outfit switches — `applyIdleAnimation(playSmoke)` + `previousOutfitAsset` tracking in `CompanionFragment` (initial load, stage-only changes, and tapped-animation returns pass `false`). Cropping fix worth recording: the 390dp Lottie inside the 220×280dp frame requires `clipChildren="false"` + `clipToPadding="false"` on `shleepyFrame` AND both ancestor layouts (root FrameLayout + `companionRoot`), otherwise parents re-clip the overflow.
+
+---
+
+## Companion Screen — Skeleton Loaders (frontend)
+
+**SDD spec:** Not specified (screen previously popped in all at once).
+
+**Status:** IMPLEMENTED. In-place skeletons that swap 1:1 with the real components (same slots/margins, all above the floor view — an earlier full-screen overlay approach was abandoned because it rendered *behind* the floor): `skeletonTokenPill` (same constraints as `tokenContainer`), `skeletonSpinner` (indeterminate `ProgressBar`, purple `#522ABE`, centered in `shleepyFrame`, nudged 48dp down), `skeletonStageLabel` / `skeletonXpCard` / `skeletonCustomize` (inside `companionPanel` with matching sizes; stage stack pushed down 40dp). Placeholders are solid white (`#FFFFFF`) with a 0.6→1.0 alpha pulse. Loading is independent per component: token/stage/XP/customize swap when `evolutionState` arrives; the spinner hides only when the Lottie file is found and starts playing. Caveats for SDD revision: (1) token swap is gated on `evolutionState != null` as the data-ready signal, not on `isLoading`; (2) `applyIdleAnimation()` only runs inside the `evolutionState` block, so the spinner effectively waits for data first, then the animation file — if an animation JSON is ever missing the spinner spins forever; (3) `CompanionUiState.isAnimationLoaded` was added but is currently unused (spinner driven imperatively) — remove or wire up before release.
+
+---
+
+## Shleepy Customization — Shop Grid Behind Shleepy + Top Fade (frontend)
+
+**SDD spec:** Not specified.
+
+**Status:** IMPLEMENTED. `shleepyFrame` carries `elevation="8dp"` so the shop grid (`shopPanel`) scrolls *behind* Shleepy and the smoke instead of hard-clipping at a visible panel edge. Touches pass through the Lotties to the cards because neither Lottie view is clickable (tap-animation listener removed — see below). First-row position is preserved by a margin/padding compensation pair, currently `shopPanel marginTop="45dp"` + `rvShopItems paddingTop="14dp"` (net 59dp below Shleepy's feet; change both together). A 27dp top fade (`bg_shop_fade_top`, `#D0C0EA` → transparent) overlays the grid via FrameLayout for smooth scroll cropping. Note: `shleepyFrame` itself is transparent, so cards show through around the sheep artwork edges while passing behind — accepted as the intended "sliding behind Shleepy" look.
+
+---
+
+## Shleepy Customization — Tapped Animations Removed (design decision)
+
+**SDD spec:** Tap-triggered Shleepy reactions were assumed (tapped-animation JSONs per outfit per stage).
+
+**Decision:** Removed entirely — no tapped JSONs will be provided. `triggerTappedAnimation()`, the `petAnimationView` click listener, the `isPlayingTappedAnimation` flag/guards, and the now-unused animator imports are deleted from `CompanionFragment`. Tapping Shleepy does nothing.
+
+---
+
+## Companion Layout Constants (frontend reference)
+
+Values tuned during customization work, for the SDD layout spec: `shleepyFrame` marginTop 100dp normal / 16dp customize (Shleepy rises 84dp); `companionFloor` height 340dp normal / 510dp customize, gradient `#937AC2` (bottom) → `#D8C8EF` (top), declared *before* `shleepyFrame` in XML so it renders behind content. Mode transitions animate via a plain `ChangeBounds()` in a `TransitionSet` on the root — lesson learned: do NOT `addTarget()` individual ConstraintLayout children (breaks the animation) and do not drive it with a manual ValueAnimator.
+
+---
+
+## Correction: Profiles Table Name (backend)
+
+The "Equipped Outfit Schema Change" entry above says `profiles` — the actual Supabase table is **`user_profiles`**. Column is `user_profiles.outfit_equipped` (UUID FK → `shop_items.item_id`); trigger `on_profile_created` fires `BEFORE INSERT` on `user_profiles`. Catalog state: 11 outfit rows in `shop_items` (auto-generated UUIDs, single `OUTFIT` category); `user_inventory` holds default-outfit rows for existing users.

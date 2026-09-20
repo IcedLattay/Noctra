@@ -8,6 +8,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.noctra.app.R
+import com.noctra.app.data.model.ShopItem
 
 class FriendAdapter(
     private val onRemoveClick: (LeaderboardEntryUiModel) -> Unit,
@@ -19,7 +20,7 @@ class FriendAdapter(
         private const val VIEW_TYPE_ENTRY = 1
     }
 
-    var equipment: Map<String, Map<String, com.noctra.app.data.model.ShopItem>> = emptyMap()
+    var equipment: Map<String, ShopItem> = emptyMap()
 
     // null = hide badge
     private var pendingBadgeCount: Int? = null
@@ -74,7 +75,12 @@ class FriendAdapter(
 
         fun bind(item: LeaderboardEntryUiModel) {
             textFriendName.text = item.displayName
-            avatarShleepy.setEquipped(equipment[item.userId] ?: emptyMap())
+            val outfit = equipment[item.userId]
+            if (outfit != null) {
+                avatarShleepy.setOutfit(3, outfit.itemAsset)
+            } else {
+                avatarShleepy.setOutfit(3, "default")
+            }
             btnRemove.setOnClickListener {
                 onRemoveClick(item)
             }

@@ -26,59 +26,30 @@ class ShopItemAdapter(
 
     inner class ViewHolder(private val binding: ItemShopBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(model: ShopItemUiModel) {
-            
+
             // 1. Reset defaults for recycling
-            binding.ivEquippedCheck.visibility = View.GONE
             binding.priceContainer.visibility = View.GONE
-            
-            // Reset the internal layout border
-            binding.shopItemContent.background = null
-            
-            // Reset card elevation and shadow color
-            binding.btnItemCard.apply {
-                elevation = 2f * resources.displayMetrics.density
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                    outlineAmbientShadowColor = android.graphics.Color.BLACK
-                    outlineSpotShadowColor = android.graphics.Color.BLACK
-                }
+            binding.shopItemContent.setBackgroundResource(R.drawable.bg_shop_item_card)
+
+            // 2. Set outfit preview drawable
+            val drawableName = "outfit_${model.item.label.lowercase()}"
+            val ctx = binding.root.context
+            val drawableRes = ctx.resources.getIdentifier(
+                drawableName, "drawable", ctx.packageName
+            )
+            if (drawableRes != 0) {
+                binding.ivOutfitPreview.setImageResource(drawableRes)
+                binding.ivOutfitPreview.visibility = View.VISIBLE
+            } else {
+                binding.ivOutfitPreview.visibility = View.GONE
             }
 
-            // 2. Set State based on ownership
+            // 3. Set state based on ownership
             if (model.isEquipped) {
-                // Owned & Equipped: Show Checkmark + Purple Border + Purple Glow
-                binding.ivEquippedCheck.visibility = View.VISIBLE
-                
-                // Set the purple border on the INNER content
                 binding.shopItemContent.setBackgroundResource(R.drawable.bg_shop_item_card_equipped)
-                
-                // Set the purple glow on the OUTER card
-                binding.btnItemCard.apply {
-                    elevation = 6f * resources.displayMetrics.density
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                        val purple = ContextCompat.getColor(context, R.color.noctra_purple_soft)
-                        outlineAmbientShadowColor = purple
-                        outlineSpotShadowColor = purple
-                    }
-                }
-            } else if (model.isOwned) {
-                // Owned but not equipped: Standard clean card
-            } else {
-                // NOT OWNED: Show Price
+            } else if (!model.isOwned) {
                 binding.priceContainer.visibility = View.VISIBLE
                 binding.tvTokenCost.text = model.item.tokenCost.toString()
-            }
-
-            // 3. Icon Loading
-            val context = binding.root.context
-            val assetName = model.item.previewAsset.removeSuffix(".png").removeSuffix(".jpg").removeSuffix(".webp")
-            val resId = context.resources.getIdentifier(
-                assetName, "drawable", context.packageName
-            )
-            
-            if (resId != 0) {
-                binding.ivItemPreview.setImageResource(resId)
-            } else {
-                binding.ivItemPreview.setImageResource(android.R.drawable.ic_menu_help)
             }
 
             binding.root.setOnClickListener { onItemClick(model) }
