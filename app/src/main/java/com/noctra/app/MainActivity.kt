@@ -22,6 +22,7 @@ import com.noctra.app.data.supabase.SupabaseClient
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.handleDeeplinks
 import com.noctra.app.ui.debug.DebugPanelListener
+import com.noctra.app.ui.debug.StagePreviewDialogFragment
 import com.noctra.app.ui.companion.CompanionViewModel
 import com.noctra.app.ui.companion.EvolutionDialogFragment
 import androidx.lifecycle.ViewModelProvider
@@ -491,6 +492,11 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         val previewLevel = (currentLevel + 1).coerceAtMost(5)
         EvolutionDialogFragment.newInstance(currentLevel, previewLevel)
             .show(supportFragmentManager, "EvolutionPreview")
+    }
+
+    override fun onPreviewStageAnimations() {
+        StagePreviewDialogFragment()
+            .show(supportFragmentManager, "StagePreview")
     }
 
     override fun onSeedDemoData() {

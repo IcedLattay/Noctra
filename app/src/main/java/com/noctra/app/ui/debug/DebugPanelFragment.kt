@@ -18,6 +18,7 @@ interface DebugPanelListener {
     fun onSimulateMissedNight()
     fun onTriggerEvolution()
     fun onPreviewEvolution()
+    fun onPreviewStageAnimations()
     fun onSeedDemoData()
     fun onClearDemoData()
 }
@@ -78,6 +79,9 @@ class DebugPanelFragment : Fragment() {
         }
         view.findViewById<MaterialButton>(R.id.btn_preview_evolution).setOnClickListener {
             listener?.onPreviewEvolution()
+        }
+        view.findViewById<MaterialButton>(R.id.btn_preview_stages).setOnClickListener {
+            listener?.onPreviewStageAnimations()
         }
 
         // Section 5: Data

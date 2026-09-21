@@ -151,6 +151,16 @@
                     <TextView
                         style="@style/DebugDescription"
                         android:text="Opens the evolution dialog for the next stage directly. No XP is written — purely a visual preview." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_stages"
+                        style="@style/DebugButton"
+                        android:text="Preview Stage Animations" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Plays the default-outfit animation for each of the 5 stages. No data is touched." />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
