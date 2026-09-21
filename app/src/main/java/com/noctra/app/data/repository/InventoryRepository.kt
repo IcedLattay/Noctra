@@ -47,28 +47,6 @@ class InventoryRepository {
     }
 
     /**
-     * Read the currently equipped outfit from user_profiles.outfit_equipped.
-     * Returns Map<userId, itemId> for batch friend-avatar lookups.
-     */
-    suspend fun getEquippedOutfits(userIds: List<String>): Map<String, String> {
-        if (userIds.isEmpty()) return emptyMap()
-        return try {
-            val result = client.from("user_profiles")
-                .select {
-                    filter { isIn("user_id", userIds) }
-                }
-                .decodeList<Map<String, Any?>>()
-            result.mapNotNull { row ->
-                val uid = row["user_id"] as? String ?: return@mapNotNull null
-                val outfitId = row["outfit_equipped"] as? String ?: return@mapNotNull null
-                uid to outfitId
-            }.toMap()
-        } catch (e: Exception) {
-            emptyMap()
-        }
-    }
-
-    /**
      * Set the equipped outfit on user_profiles.outfit_equipped.
      */
     suspend fun setEquippedOutfit(userId: String, itemId: String) {

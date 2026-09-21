@@ -3,11 +3,8 @@ package com.noctra.app.ui.social
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.noctra.app.data.model.ShopItem
 import com.noctra.app.data.repository.FriendshipRepository
-import com.noctra.app.data.repository.InventoryRepository
 import com.noctra.app.data.repository.RewardLedgerRepository
-import com.noctra.app.data.repository.ShopRepository
 import com.noctra.app.data.repository.SleepRecordRepository
 import com.noctra.app.domain.usecase.LeaderboardRankingUseCase
 import com.noctra.app.domain.usecase.LeaderboardEntry
@@ -29,8 +26,6 @@ class SocialViewModel : ViewModel() {
     private val friendshipRepository = FriendshipRepository()
     private val rewardLedgerRepository = RewardLedgerRepository()
     private val sleepRecordRepository = SleepRecordRepository()
-    private val inventoryRepository = InventoryRepository()
-    private val shopRepository = ShopRepository()
     private val leaderboardRankingUseCase = LeaderboardRankingUseCase()
 
     private var currentUserId: String? = null
@@ -90,7 +85,6 @@ class SocialViewModel : ViewModel() {
         _incomingRequests.value = emptyList()
         _outgoingRequests.value = emptyList()
         _pendingRequestCount.value = 0
-        _avatarEquipment.value = emptyMap()
         _isLoading.value = false
     }
 
@@ -112,44 +106,14 @@ class SocialViewModel : ViewModel() {
         }
     }
 
-    // Avatar equipment: userId -> equipped ShopItem (single outfit)
-    private val _avatarEquipment =
-        MutableStateFlow<Map<String, ShopItem>>(emptyMap())
-    val avatarEquipment: StateFlow<Map<String, ShopItem>> =
-        _avatarEquipment.asStateFlow()
-
     private suspend fun refreshAll(userId: String) {
-        // Load all data concurrently, then resolve avatar equipment
-        // once the user lists are known
+        // Load all data concurrently
         coroutineScope {
             awaitAll(
                 async { loadLeaderboard(userId) },
                 async { loadMyProgress(userId) },
                 async { loadPendingRequests(userId) }
             )
-        }
-        loadAvatarEquipment()
-    }
-
-    private suspend fun loadAvatarEquipment() {
-        try {
-            val userIds = (
-                leaderboardState.value.entries.map { it.userId } +
-                    incomingRequests.value.map { it.userId } +
-                    outgoingRequests.value.map { it.userId }
-                )
-                .filter { it.isNotEmpty() }
-                .toSet()
-                .toList()
-            if (userIds.isEmpty()) return
-
-            val equipped = inventoryRepository.getEquippedOutfits(userIds)
-            val catalog = shopRepository.getAllShopItems().associateBy { it.itemId }
-            _avatarEquipment.value = equipped.mapValues { (_, outfitId) ->
-                catalog[outfitId]
-            }.filterValues { it != null } as Map<String, ShopItem>
-        } catch (e: Exception) {
-            android.util.Log.e("SocialVM", "Error loading avatar equipment", e)
         }
     }
 

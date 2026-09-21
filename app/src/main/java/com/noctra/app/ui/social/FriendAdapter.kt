@@ -8,7 +8,6 @@ import android.widget.TextView
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.noctra.app.R
-import com.noctra.app.data.model.ShopItem
 
 class FriendAdapter(
     private val onRemoveClick: (LeaderboardEntryUiModel) -> Unit,
@@ -18,9 +17,8 @@ class FriendAdapter(
     companion object {
         private const val VIEW_TYPE_HEADER = 0
         private const val VIEW_TYPE_ENTRY = 1
+        private const val VIEW_TYPE_EMPTY = 2
     }
-
-    var equipment: Map<String, ShopItem> = emptyMap()
 
     // null = hide badge
     private var pendingBadgeCount: Int? = null
@@ -30,18 +28,23 @@ class FriendAdapter(
         notifyItemChanged(0)
     }
 
-    // Position 0 is the banner + label header so it scrolls with the rows
-    override fun getItemCount(): Int = super.getItemCount() + 1
+    // Position 0 is the banner + label header so it scrolls with the rows.
+    // When there are no friends, position 1 shows the empty placeholder.
+    override fun getItemCount(): Int = super.getItemCount() + if (super.getItemCount() == 0) 2 else 1
 
     override fun getItemViewType(position: Int): Int =
-        if (position == 0) VIEW_TYPE_HEADER else VIEW_TYPE_ENTRY
+        when {
+            position == 0 -> VIEW_TYPE_HEADER
+            super.getItemCount() == 0 -> VIEW_TYPE_EMPTY
+            else -> VIEW_TYPE_ENTRY
+        }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
-        return if (viewType == VIEW_TYPE_HEADER) {
-            HeaderViewHolder(inflater.inflate(R.layout.item_friends_header, parent, false))
-        } else {
-            EntryViewHolder(inflater.inflate(R.layout.item_friend_row, parent, false))
+        return when (viewType) {
+            VIEW_TYPE_HEADER -> HeaderViewHolder(inflater.inflate(R.layout.item_friends_header, parent, false))
+            VIEW_TYPE_EMPTY -> EmptyViewHolder(inflater.inflate(R.layout.item_friends_empty, parent, false))
+            else -> EntryViewHolder(inflater.inflate(R.layout.item_friend_row, parent, false))
         }
     }
 
@@ -49,8 +52,11 @@ class FriendAdapter(
         when (holder) {
             is HeaderViewHolder -> holder.bind()
             is EntryViewHolder -> holder.bind(getItem(position - 1))
+            // EmptyViewHolder is static text, nothing to bind
         }
     }
+
+    class EmptyViewHolder(view: View) : RecyclerView.ViewHolder(view)
 
     inner class HeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         private val banner: View = view.findViewById(R.id.banner_card)
@@ -69,18 +75,11 @@ class FriendAdapter(
     }
 
     inner class EntryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val avatarShleepy: ShleepyAvatarView = itemView.findViewById(R.id.avatar_shleepy)
         private val textFriendName: TextView = itemView.findViewById(R.id.text_friend_name)
         private val btnRemove: ImageView = itemView.findViewById(R.id.btn_remove)
 
         fun bind(item: LeaderboardEntryUiModel) {
             textFriendName.text = item.displayName
-            val outfit = equipment[item.userId]
-            if (outfit != null) {
-                avatarShleepy.setOutfit(3, outfit.itemAsset)
-            } else {
-                avatarShleepy.setOutfit(3, "default")
-            }
             btnRemove.setOnClickListener {
                 onRemoveClick(item)
             }

@@ -8,15 +8,12 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.noctra.app.R
-import com.noctra.app.data.model.ShopItem
 
 class FriendRequestAdapter(
     private val isIncoming: Boolean,
     private val onAcceptClick: ((FriendRequestUiModel) -> Unit)? = null,
     private val onDeclineClick: (FriendRequestUiModel) -> Unit
 ) : ListAdapter<FriendRequestUiModel, FriendRequestAdapter.ViewHolder>(DiffCallback()) {
-
-    var equipment: Map<String, ShopItem> = emptyMap()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -30,7 +27,6 @@ class FriendRequestAdapter(
     }
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val avatarShleepy: ShleepyAvatarView = itemView.findViewById(R.id.avatar_shleepy)
         private val textName: TextView = itemView.findViewById(R.id.text_name)
         private val textEmail: TextView = itemView.findViewById(R.id.text_email)
         private val btnAccept: View = itemView.findViewById(R.id.btn_accept)
@@ -39,12 +35,6 @@ class FriendRequestAdapter(
         fun bind(item: FriendRequestUiModel) {
             textName.text = item.displayName
             textEmail.text = item.email
-            val outfit = equipment[item.userId]
-            if (outfit != null) {
-                avatarShleepy.setOutfit(3, outfit.itemAsset)
-            } else {
-                avatarShleepy.setOutfit(3, "default")
-            }
 
             // Show/hide accept button based on incoming/outgoing
             btnAccept.visibility = if (isIncoming) View.VISIBLE else View.GONE

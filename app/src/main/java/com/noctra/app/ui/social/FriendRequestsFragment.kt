@@ -78,16 +78,6 @@ class FriendRequestsFragment : Fragment(R.layout.fragment_friend_requests) {
             adapter = sentAdapter
         }
 
-        // Avatar equipment -> both adapters
-        lifecycleScope.launch {
-            viewModel.avatarEquipment.collect { map ->
-                receivedAdapter.equipment = map
-                receivedAdapter.notifyDataSetChanged()
-                sentAdapter.equipment = map
-                sentAdapter.notifyDataSetChanged()
-            }
-        }
-
         // Setup tabs
         tabLayout.addTab(tabLayout.newTab().setText(getString(R.string.social_received)))
         tabLayout.addTab(tabLayout.newTab().setText(getString(R.string.social_sent)))
