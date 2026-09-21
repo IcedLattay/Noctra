@@ -16,6 +16,7 @@ import com.noctra.app.R
 
 import com.noctra.app.data.repository.RewardLedgerRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
+import com.noctra.app.data.repository.ShopRepository
 import com.noctra.app.domain.usecase.CompanionEvolutionUseCase
 
 class UserProfileViewModel(application: Application) : AndroidViewModel(application) {
@@ -23,6 +24,7 @@ class UserProfileViewModel(application: Application) : AndroidViewModel(applicat
     private val userProfileRepository = UserProfileRepository()
     private val rewardLedgerRepository = RewardLedgerRepository()
     private val routineSessionRepository = RoutineSessionRepository()
+    private val shopRepository = ShopRepository()
     private val evolutionUseCase = CompanionEvolutionUseCase()
     private val networkObserver = NetworkObserver(application)
 
@@ -31,8 +33,9 @@ class UserProfileViewModel(application: Application) : AndroidViewModel(applicat
 
     fun loadProfile(context: Context) {
         viewModelScope.launch {
+            _profileData.value = _profileData.value.copy(isLoading = true, isOffline = false)
             if (!networkObserver.checkNow()) {
-                _profileData.value = _profileData.value.copy(isOffline = true)
+                _profileData.value = _profileData.value.copy(isOffline = true, isLoading = false)
                 return@launch
             }
             try {
@@ -47,6 +50,16 @@ class UserProfileViewModel(application: Application) : AndroidViewModel(applicat
 
                 val evolution = evolutionUseCase.execute(totalXp)
                 val stageAvatarRes = getAvatarResForStage(evolution.stageLevel)
+
+                // Resolve the equipped outfit asset for the profile avatar
+                // (always rendered with the charged-stage animation, frozen).
+                val outfitAsset = try {
+                    shopRepository.getAllShopItems()
+                        .find { it.itemId == profile.outfitEquipped }
+                        ?.itemAsset ?: "default"
+                } catch (e: Exception) {
+                    "default"
+                }
                 
                 val nextStageXp = when (evolution.stageLevel) {
                     1 -> 1500
@@ -72,13 +85,16 @@ class UserProfileViewModel(application: Application) : AndroidViewModel(applicat
                     stageName = evolution.stageName,
                     xpToNextStageMessage = xpMessage,
                     stageAvatarRes = stageAvatarRes,
-                    mainAvatarRes = R.drawable.ic_shleepy_avatar // Detailed artwork
+                    outfitAsset = outfitAsset,
+                    isLoading = false,
+                    hasLoaded = true
                 )
             } catch (e: Exception) {
                 if (!networkObserver.checkNow()) {
-                    _profileData.value = _profileData.value.copy(isOffline = true)
+                    _profileData.value = _profileData.value.copy(isOffline = true, isLoading = false)
                 } else {
                     e.printStackTrace()
+                    _profileData.value = _profileData.value.copy(isLoading = false)
                 }
             }
         }
@@ -125,6 +141,8 @@ data class ProfileUiState(
     val stageName: String = "The Depleted",
     val xpToNextStageMessage: String = "",
     @DrawableRes val stageAvatarRes: Int = R.drawable.ic_shleepy_stage_1,
-    @DrawableRes val mainAvatarRes: Int = R.drawable.ic_shleepy_avatar,
-    val isOffline: Boolean = false
+    val outfitAsset: String = "default",
+    val isOffline: Boolean = false,
+    val isLoading: Boolean = true,
+    val hasLoaded: Boolean = false
 )

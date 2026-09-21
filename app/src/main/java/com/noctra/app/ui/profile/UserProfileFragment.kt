@@ -39,15 +39,41 @@ class UserProfileFragment : Fragment(R.layout.fragment_user_profile) {
         val badgeContainer = view.findViewById<FrameLayout>(R.id.badge_container)
         val textBadgeCount = view.findViewById<TextView>(R.id.text_badge_count)
 
-        val avatarShleepy = view.findViewById<ImageView>(R.id.avatar_shleepy)
+        val avatarShleepy = view.findViewById<com.airbnb.lottie.LottieAnimationView>(R.id.avatar_shleepy)
+        val avatarLoader = view.findViewById<View>(R.id.avatar_loader)
         val statusAvatar = view.findViewById<ImageView>(R.id.status_avatar)
 
         val mainContent = view.findViewById<View>(R.id.mainContent)
         val noInternetView = view.findViewById<View>(R.id.noInternetView)
+        val swipeRefresh = view.findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.swipe_refresh)
+        val skeletonView = view.findViewById<View>(R.id.skeleton_view)
+
+        swipeRefresh.setOnRefreshListener {
+            viewModel.loadProfile(requireContext())
+        }
+
+        // Skeleton pulse until data arrives (initial load and refreshes)
+        val pulse = android.view.animation.AnimationUtils.loadAnimation(
+            requireContext(), R.anim.pulse_skeleton
+        )
+        skeletonView.startAnimation(pulse)
+
+        // Tracks which outfit the avatar is currently showing so we only
+        // re-parse the Lottie JSON when it actually changes.
+        var shownOutfitAsset: String? = null
 
         // Observe profile data
         lifecycleScope.launch {
             viewModel.profileData.collect { state ->
+                swipeRefresh.isRefreshing = state.isLoading
+                // Skeleton only before the first successful load — refreshes
+                // keep content behind the swipe spinner, never the skeleton.
+                if (state.isLoading && !state.hasLoaded) {
+                    skeletonView.visibility = View.VISIBLE
+                } else {
+                    skeletonView.clearAnimation()
+                    skeletonView.visibility = View.GONE
+                }
                 // Handle offline state
                 if (state.isOffline) {
                     noInternetView.visibility = View.VISIBLE
@@ -56,7 +82,11 @@ class UserProfileFragment : Fragment(R.layout.fragment_user_profile) {
                     return@collect
                 } else {
                     noInternetView.visibility = View.GONE
-                    mainContent.visibility = View.VISIBLE
+                    // Hide real content behind the skeleton on first load so the
+                    // default/empty values never show through the placeholders.
+                    // Refreshes keep content visible under the swipe spinner.
+                    mainContent.visibility =
+                        if (state.isLoading && !state.hasLoaded) View.GONE else View.VISIBLE
                 }
 
                 displayName.text = state.displayName
@@ -68,8 +98,29 @@ class UserProfileFragment : Fragment(R.layout.fragment_user_profile) {
                 stageNumber.text = "Stage ${state.stageNumber}"
                 xpMessage.text = state.xpToNextStageMessage
 
-                // Update avatars
-                avatarShleepy.setImageResource(state.mainAvatarRes) // Detailed artwork
+                // Main avatar: frozen charged-stage frame of the equipped outfit.
+                // Only re-set when the outfit changed (parsing JSON every
+                // emission is what caused the visible swap delay). While the
+                // new composition resolves, the old Shleepy stays up with a
+                // spinner over it.
+                if (state.outfitAsset != shownOutfitAsset) {
+                    shownOutfitAsset = state.outfitAsset
+                    avatarLoader.visibility = View.VISIBLE
+                    val avatarResId = resources.getIdentifier(
+                        "shleepy_charged_${state.outfitAsset}", "raw", requireContext().packageName
+                    ).takeIf { it != 0 } ?: resources.getIdentifier(
+                        "shleepy_charged_default", "raw", requireContext().packageName
+                    )
+                    if (avatarResId != 0) {
+                        avatarShleepy.addLottieOnCompositionLoadedListener {
+                            avatarShleepy.progress = 0f
+                            avatarLoader.visibility = View.GONE
+                        }
+                        avatarShleepy.setAnimation(avatarResId)
+                    } else {
+                        avatarLoader.visibility = View.GONE
+                    }
+                }
                 statusAvatar.setImageResource(state.stageAvatarRes) // Expression face
             }
         }
