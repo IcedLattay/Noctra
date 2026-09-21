@@ -187,7 +187,10 @@ Pending assets (from user):
 
 Still to build:
 - [x] Friends screen redesign (`SocialFragment` per wireframe, badge on Friend Requests button)
-- [x] Friend avatars: frozen Charged-stage Shleepy with equipped wearables (`ShleepyAvatarView`) on friend + request rows
+- [x] Friend avatars — first pass (frozen Charged-stage Lottie) has been reworked: rows now use a static vector (`avatar_shleepy.xml`, sheep on `#BBB7C7` circle with matching outline); all other-users' inventory reads removed (`getEquippedOutfits`, `avatarEquipment` flow, adapter `equipment` maps)
+- [ ] Skeleton loaders for leaderboard, friends, and friend-request screens (same in-place swap pattern as the companion screen)
+- [ ] Profile avatar: show the user's actual Shleepy (stage + equipped-outfit animation) instead of the static vector asset
+- [ ] Pull-to-refresh on the Profile screen (same `SwipeRefreshLayout` pattern as leaderboard/friends)
 - [ ] Reconsider Add by Email / Friend Requests button placement — side-by-side labels are cramped; may stack vertically instead
 - [x] Badge count on Profile tab icon (pending request count → bottom nav badge)
 - [x] Pull-to-refresh on Friends and Friend Requests screens (same pattern as leaderboard)

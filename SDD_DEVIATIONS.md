@@ -315,3 +315,35 @@ Values tuned during customization work, for the SDD layout spec: `shleepyFrame` 
 ## Correction: Profiles Table Name (backend)
 
 The "Equipped Outfit Schema Change" entry above says `profiles` — the actual Supabase table is **`user_profiles`**. Column is `user_profiles.outfit_equipped` (UUID FK → `shop_items.item_id`); trigger `on_profile_created` fires `BEFORE INSERT` on `user_profiles`. Catalog state: 11 outfit rows in `shop_items` (auto-generated UUIDs, single `OUTFIT` category); `user_inventory` holds default-outfit rows for existing users.
+
+---
+
+## Evolution Level-Up — Fullscreen Reworked into Styled Dialog (frontend)
+
+**SDD spec:** Not detailed — implemented as a fullscreen takeover (`Theme_Black_NoTitleBar_Fullscreen`, dark purple bg, pulsing glow, "SHLEEPY IS EVOLVING!" + "Awesome!" button).
+
+**Decision:** Reworked into a standard dialog popup matching the streak-notice styling: transparent window, white 24dp card with 24dp side margins, outfit-aware Shleepy Lottie (190dp) overlapping the card top, poppinsbold 20sp `#16056E` title ("Shleepy just moved up an energy level!"), poppinsregular 14sp `#7B6FA0` centered description, full-width 56dp purple `#5C25F0` pill "Awesome!" button (28dp radius). Description copy phrases levels as states, not labels ("went from feeling drained to waking up… will be full of energy in no time"), with a maxed-out variant at Zen Master. Per-level state phrases live in `EvolutionDialogFragment.stageStates`.
+
+**Plumbing:** `CompanionViewModel` now emits `EvolutionEvent(newStage, oldLevel)` (was just `EvolutionState`) so the dialog knows both levels; `PendingDialog.Evolution(oldLevel, newLevel)`; `EvolutionDialogFragment.newInstance(oldLevel, newLevel)`. Dialog still advances the existing Recap → Notice → Evolution queue.
+
+**Preview tooling (debug only):** "Preview Evolution Screen" button in the debug panel (Section 4) opens the dialog for the next stage with zero writes — no XP added, no ledger touched. Requires a prior Companion-tab visit so outfit data is loaded, otherwise the Shleepy area stays blank. (The older "Trigger Evolution" button still writes +5000 XP.)
+
+---
+
+## Friend Avatars — Static Vector Instead of Lottie + Inventory Reads (design decision)
+
+**Prior state:** `ShleepyAvatarView` rendered a frozen frame-0 Lottie per friend's stage + outfit, fed by batch `user_profiles.outfit_equipped` reads (`InventoryRepository.getEquippedOutfits` → `SocialViewModel.avatarEquipment` → adapter `equipment` maps). Stage was hardcoded to Charged (friend models carry no stage).
+
+**Decision:** Avatars are now a single static vector (`avatar_shleepy.xml`, sheep on `#BBB7C7` circle with a thin baked-in `#BBB7C7` ring; SVG ellipses converted to arc-paths in rotated groups since vectors lack `<ellipse>`). All other-users' outfit reads removed: `getEquippedOutfits()` deleted, `avatarEquipment` flow + `loadAvatarEquipment()` deleted, adapter `equipment` maps deleted, `InventoryRepository`/`ShopRepository` fields removed from `SocialViewModel`. `ShleepyAvatarView` is a bare `FrameLayout` with the vector as its (stretch-to-fill) background — the swap-in point when per-user art returns. Deleted now-unused `bg_avatar_circle_purple.xml`.
+
+**For SDD revision:** friend rows show identical static avatars; per-friend Shleepy (stage + outfit) is deferred until friend stage/XP is queryable.
+
+---
+
+## Friends Screen — Skeleton Loaders + Empty State (frontend)
+
+**SDD spec:** Not specified.
+
+**Status:** IMPLEMENTED per wireframe. Transparent overlay (`skeleton_view`) in `fragment_social.xml` mirroring the real layout 1:1 with identical paddings/margins: two equal 110×28dp top pills (wireframe's narrower pill widened to match), 64dp banner placeholder (matches real 12+40+12 banner), 96×18dp label placeholder (margins 20/12 like "YOUR FRIENDS"), and exactly 3 row cards at 80dp each (16+48+16, like real rows) with 48dp avatar circle + name bar + 24dp action circle positioned as the real internals. Fills: white pills/cards (existing skeleton drawables) + `#E4DFEE` gray for avatar/name/action (`bg_skeleton_inner`, `bg_skeleton_circle`); whole overlay pulses with the shared 0.6→1.0 anim. Shown on initial load only (hidden on first `leaderboardState` emission; swipe refreshes use the `SwipeRefreshLayout` spinner). No overlay background — the real screen bg shows through behind the 1:1 placeholders.
+
+**Empty state:** `FriendAdapter` gains a third view type — a centered muted "No friends yet" row (`item_friends_empty.xml`) under the header when the friend list is empty. (Note: `fragment_social.xml` also contains an older full-screen `empty_state` block that is never toggled — still dead code.)
