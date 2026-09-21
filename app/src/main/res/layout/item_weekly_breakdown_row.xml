@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/card_monthly_outline"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="12dp">
+
+    <!-- Week label -->
+    <TextView
+        android:id="@+id/text_week_label"
+        android:layout_width="72dp"
+        android:layout_height="wrap_content"
+        android:textColor="@color/noctra_purple_dark"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        tools:text="Week 1" />
+
+    <!-- BAR rate -->
+    <TextView
+        android:id="@+id/text_bar_rate"
+        android:layout_width="48dp"
+        android:layout_height="wrap_content"
+        android:textColor="@color/noctra_purple_dark"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        tools:text="70%" />
+
+    <!-- Routines label + count -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Routines"
+        android:textColor="@color/noctra_label_grey"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/text_routines"
+        android:layout_width="36dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:textColor="@color/noctra_purple_dark"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        tools:text="5/7" />
+
+    <!-- Avg Score label + value -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="Avg Score"
+        android:textColor="@color/noctra_label_grey"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/text_avg_score"
+        android:layout_width="32dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:textColor="@color/noctra_purple_dark"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        tools:text="75" />
+
+    <!-- Quality badge -->
+    <TextView
+        android:id="@+id/text_quality_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/bg_quality_badge"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="2dp"
+        android:textColor="@android:color/white"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        tools:text="Good" />
+</LinearLayout>
