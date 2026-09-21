@@ -24,6 +24,7 @@ class SocialFragment : Fragment(R.layout.fragment_social) {
         val btnBack = view.findViewById<View>(R.id.btn_back)
         val btnAddByEmail = view.findViewById<TextView>(R.id.btn_add_by_email)
         val recyclerFriends = view.findViewById<RecyclerView>(R.id.recycler_friends)
+        val skeletonView = view.findViewById<View>(R.id.skeleton_view)
 
         btnBack.setOnClickListener {
             findNavController().navigateUp()
@@ -49,19 +50,17 @@ class SocialFragment : Fragment(R.layout.fragment_social) {
             viewModel.loadAll(requireContext())
         }
 
-        viewModel.loadAll(requireContext())
+        // Skeleton pulse until the first data arrives (initial load only —
+        // swipe refreshes keep content behind the SwipeRefreshLayout spinner)
+        val pulse = android.view.animation.AnimationUtils.loadAnimation(
+            requireContext(), R.anim.pulse_skeleton
+        )
+        skeletonView.startAnimation(pulse)
+        var firstLoad = true
 
         lifecycleScope.launch {
             viewModel.isLoading.collect { loading ->
                 swipeRefresh.isRefreshing = loading
-            }
-        }
-
-        // Avatar equipment -> adapter
-        lifecycleScope.launch {
-            viewModel.avatarEquipment.collect { map ->
-                friendAdapter.equipment = map
-                friendAdapter.notifyDataSetChanged()
             }
         }
 
@@ -72,6 +71,11 @@ class SocialFragment : Fragment(R.layout.fragment_social) {
             viewModel.leaderboardState.collect { state ->
                 val friends = state.entries.filter { !it.isCurrentUser && !it.isPlaceholder }
                 friendAdapter.submitList(friends)
+                if (firstLoad) {
+                    firstLoad = false
+                    skeletonView.clearAnimation()
+                    skeletonView.visibility = View.GONE
+                }
             }
         }
 
