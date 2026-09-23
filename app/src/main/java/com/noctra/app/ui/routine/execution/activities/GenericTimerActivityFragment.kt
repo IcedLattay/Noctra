@@ -16,6 +16,8 @@ import androidx.navigation.fragment.findNavController
 import com.noctra.app.R
 import com.noctra.app.databinding.FragmentGenericTimerActivityBinding
 import com.noctra.app.ui.routine.RoutineViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -25,28 +27,17 @@ import kotlinx.coroutines.launch
  * an "action" phase (tense / pose, green timer) and a "rest" phase (default
  * color timer) across a fixed list of sub-steps.
  *
- * REBUILT from a flat single-timer fragment (previous version had no
- * sub-step sequence at all — just one icon/title/instruction/timer for the
- * whole activity). This version adds the real 5-step sequence with
- * per-step demo image, name, instruction, progress dots, and alternating
- * action/rest timers, matching the wireframes.
+ * Frame cycling: each sub-activity's imageAssets list can be ANY length —
+ * confirmed real asset counts below are 1, 2, 3, or 4, not a fixed number.
+ * During the action phase, frames cycle forward on a 1s interval, wrapping
+ * to the first frame after the last. A single-frame list just displays
+ * statically. The loop runs ONLY during the action phase — rest phase
+ * shows no image.
  *
- * IMPORTANT: this fragment computes its own total duration (sum of all step
- * action+rest durations) and passes that into
- * routineViewModel.startCurrentActivityTimer(durationSeconds) — NOT the
- * default 15s. Without this, the VM's own countdown fires GoToTransition at
- * 15s regardless of how many steps remain, cutting the sequence off early.
- *
- * Preserves from the previous version: the btnCompleteRoutine button shown
- * only on the last activity in the whole routine once its timer hits 0
- * (routineViewModel.isLastStep), wired to onCompleteRoutineTapped().
- *
- * Dropped from the previous version: the inline tvCompletionMessage /
- * completionMessageFor() lookup. Per-activity completion messaging is
- * handled by TimesUpTransitionFragment elsewhere in the app (not yet wired
- * with real messages, but that's the intended single place for it) — kept
- * out of this fragment for consistency with Audioscape/Breathing/Gratitude,
- * none of which have their own inline completion message either.
+ * IMPORTANT: computes its own total duration (sum of all step action+rest
+ * durations) and passes it into routineViewModel.startCurrentActivityTimer().
+ * Without this, the VM's own countdown fires GoToTransition at the 15s
+ * default regardless of how many steps remain.
  */
 class GenericTimerActivityFragment : Fragment() {
 
@@ -57,50 +48,54 @@ class GenericTimerActivityFragment : Fragment() {
 
     private var preCountdownTimer: CountDownTimer? = null
     private var stepTimer: CountDownTimer? = null
+    private var frameLoopJob: Job? = null
     private var steps: List<StepperStepConfig> = emptyList()
     private var restLabel: String = "Rest."
     private var currentStepIndex = 0
 
     companion object {
         private const val PRE_COUNTDOWN_SECONDS = 15L
+        private const val FRAME_INTERVAL_MILLIS = 1000L
 
-        // TEMPORARY FOR TESTING — set this back to false once all 9 activities
-        // have been manually verified, to restore real per-step durations
-        // (5s/10s for PMR, 3s/15s for Stretching). This is the ONLY flag that
-        // needs to change; nothing else in this file depends on it.
+        // TEMPORARY FOR TESTING — set back to false once all activities
+        // verified, to restore real durations.
         private const val TEST_MODE_SHORT_DURATIONS = true
         private const val TEST_ACTION_SECONDS = 1
         private const val TEST_REST_SECONDS = 2
 
-        // Not part of the DB schema — step-by-step breakdown per activity label.
-        // Placeholder ic_* drawable names — swap for real demo asset names.
-        // These are the REAL durations — left untouched by TEST_MODE_SHORT_DURATIONS,
-        // which overrides them at runtime via effectiveActionSeconds()/effectiveRestSeconds() below.
+        // Real asset filenames (confirmed, no longer placeholders), minus
+        // the .png extension — Android's getIdentifier() looks up drawable
+        // resources by name without the file extension.
+        //
+        // Confirmed frame counts per sub-activity:
+        //   PMR:        arms=1, eyes=1, eyebrows=1, hands=1, feet(toes)=1
+        //   Stretching: neck_rolls=4, shoulder_rolls=3,
+        //               overhead_arm_reach=1, side_neck_stretch=2,
+        //               seated_side_stretch=2
+        // PMR is now entirely single-frame (static) — a change from an
+        // earlier draft that assumed 2 frames each; real assets came back
+        // as 1 static pose per PMR sub-activity.
         private val STEPS_BY_LABEL: Map<String, Pair<String, List<StepperStepConfig>>> = mapOf(
             "Progressive Muscle Relaxation" to ("Release." to listOf(
-                StepperStepConfig("hands", "Hands", "Make a fist with your hands as tight as possible for 5 seconds", "ic_pmr_hands", 5, 10),
-                StepperStepConfig("arms", "Arms", "Flex your biceps of your arms as tight as you can for 5 seconds", "ic_pmr_arms", 5, 10),
-                StepperStepConfig("feet", "Feet", "Curl up your feet's toes as tight as possible for 5 seconds", "ic_pmr_feet", 5, 10),
-                StepperStepConfig("eyebrows", "Eyebrows", "Raise your brows for 5 seconds", "ic_pmr_eyebrows", 5, 10),
-                StepperStepConfig("eyes", "Eyes", "Squeeze your eyes and make a tight smile for 5 seconds", "ic_pmr_eyes", 5, 10)
+                StepperStepConfig("hands", "Hands", "Make a fist with your hands as tight as possible for 5 seconds", listOf("hands"), 5, 10),
+                StepperStepConfig("arms", "Arms", "Flex your biceps of your arms as tight as you can for 5 seconds", listOf("arm1"), 5, 10),
+                StepperStepConfig("feet", "Feet", "Curl up your feet's toes as tight as possible for 5 seconds", listOf("toes"), 5, 10),
+                StepperStepConfig("eyebrows", "Eyebrows", "Raise your brows for 5 seconds", listOf("eyebrow"), 5, 10),
+                StepperStepConfig("eyes", "Eyes", "Squeeze your eyes and make a tight smile for 5 seconds", listOf("eye"), 5, 10)
             )),
             "Bedtime Stretching" to ("Rest." to listOf(
-                StepperStepConfig("neck_rolls", "Neck Rolls", "Move your head in a slow, continuous half-circle by dropping your chin to your chest and rolling it smoothly from one shoulder to the other.", "ic_stretch_neck_rolls", 3, 15),
-                StepperStepConfig("shoulder_rolls", "Shoulder Rolls", "Move your shoulders in a slow, continuous circle by lifting them up toward your ears, rolling them backward, and dropping them down in a smooth motion.", "ic_stretch_shoulder_rolls", 3, 15),
-                // Confirmed against wireframe: this text was misplaced onto the
-                // Side Neck Stretch card there — it actually describes the
-                // overhead reach motion, so it belongs here.
-                StepperStepConfig("overhead_arm_reach", "Overhead Arm Reach", "Interlock your fingers with your palms facing up, then push your hands straight toward the ceiling while reaching as high as you can.", "ic_stretch_overhead_reach", 3, 15),
-                // Wireframe had no genuine Side Neck Stretch copy (its card
-                // duplicated Overhead Arm Reach's text) — new copy written to
-                // match the tone/length of the other steps here.
-                StepperStepConfig("side_neck_stretch", "Side Neck Stretch", "Gently tilt your head to one side, bringing your ear toward your shoulder, and hold before slowly returning to center and repeating on the other side.", "ic_stretch_side_neck", 3, 15),
-                StepperStepConfig("seated_side_stretch", "Seated Side Stretch", "Sit down, reach one arm straight up, and lean your upper body to the opposite side until you feel a stretch along your ribs", "ic_stretch_seated_side", 3, 15)
+                // 4 frames: left hold -> left transition -> right hold ->
+                // right transition -> loops back to left hold.
+                StepperStepConfig("neck_rolls", "Neck Rolls", "Move your head in a slow, continuous half-circle by dropping your chin to your chest and rolling it smoothly from one shoulder to the other.", listOf("neckrolllefthold", "neckrollllefttransition", "neckrollrighthold", "neckrollrighttransition"), 3, 15),
+                // 3 frames: up -> back -> down, matching the physical motion.
+                StepperStepConfig("shoulder_rolls", "Shoulder Rolls", "Move your shoulders in a slow, continuous circle by lifting them up toward your ears, rolling them backward, and dropping them down in a smooth motion.", listOf("shoulderollup", "shoulderollback", "shoulderolldown"), 3, 15),
+                StepperStepConfig("overhead_arm_reach", "Overhead Arm Reach", "Interlock your fingers with your palms facing up, then push your hands straight toward the ceiling while reaching as high as you can.", listOf("overheadarmreach"), 3, 15),
+                StepperStepConfig("side_neck_stretch", "Side Neck Stretch", "Gently tilt your head to one side, bringing your ear toward your shoulder, and hold before slowly returning to center and repeating on the other side.", listOf("sideneckstretchleft", "sideneckstretchright"), 3, 15),
+                StepperStepConfig("seated_side_stretch", "Seated Side Stretch", "Sit down, reach one arm straight up, and lean your upper body to the opposite side until you feel a stretch along your ribs", listOf("seatedsidestretchleft", "seatedsidestretchright"), 3, 15)
             ))
         )
     }
 
-    /** Returns the real duration, or the compressed test duration if TEST_MODE_SHORT_DURATIONS is on. */
     private fun effectiveActionSeconds(step: StepperStepConfig): Int =
         if (TEST_MODE_SHORT_DURATIONS) TEST_ACTION_SECONDS else step.actionDurationSeconds
 
@@ -143,7 +138,6 @@ class GenericTimerActivityFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     routineViewModel.activitySecondsRemaining.collect { secs ->
-                        // Show "Complete Routine" button if timer is 0 AND it's the last step
                         if (secs == 0 && routineViewModel.isLastStep) {
                             binding.btnCompleteRoutine.visibility = View.VISIBLE
                         } else {
@@ -172,8 +166,6 @@ class GenericTimerActivityFragment : Fragment() {
         }
     }
 
-    // ─── Panels ───────────────────────────────────────────────────────────
-
     private fun showPreCountdownPanel() {
         binding.preCountdownPanel.visibility = View.VISIBLE
         binding.stepPanel.visibility = View.GONE
@@ -185,9 +177,6 @@ class GenericTimerActivityFragment : Fragment() {
         binding.stepPanel.visibility = View.VISIBLE
 
         if (steps.isEmpty()) {
-            // No step config found for this label — shouldn't happen for the
-            // 2 activities this fragment currently serves, but fail safe
-            // rather than crash.
             routineViewModel.startCurrentActivityTimer(0)
             return
         }
@@ -198,8 +187,6 @@ class GenericTimerActivityFragment : Fragment() {
         currentStepIndex = 0
         runStep(currentStepIndex, isAction = true)
     }
-
-    // ─── Pre-countdown ──────────────────────────────────────────────────────
 
     private fun startPreCountdown() {
         preCountdownTimer = object : CountDownTimer((PRE_COUNTDOWN_SECONDS * 1000L) + 500L, 1000L) {
@@ -222,8 +209,6 @@ class GenericTimerActivityFragment : Fragment() {
         binding.tvPreTimer.text = String.format("%02d : %02d", mins, secs)
     }
 
-    // ─── Step sequence ────────────────────────────────────────────────────
-
     private fun runStep(index: Int, isAction: Boolean) {
         if (_binding == null || index >= steps.size) return
         val step = steps[index]
@@ -232,41 +217,30 @@ class GenericTimerActivityFragment : Fragment() {
         if (isAction) {
             binding.tvStepTitle.text = step.name
             binding.tvStepInstruction.text = step.instruction
-            setStepImage(step.imageAsset)
+            startFrameLoop(step.imageAssets)
             runStepTimer(effectiveActionSeconds(step), isAction = true) {
                 runStep(index, isAction = false)
             }
         } else {
             binding.tvStepTitle.text = restLabel
             binding.tvStepInstruction.text = ""
-            setStepImage(null)
+            stopFrameLoop()
             runStepTimer(effectiveRestSeconds(step), isAction = false) {
                 val nextIndex = index + 1
                 if (nextIndex < steps.size) {
                     currentStepIndex = nextIndex
                     runStep(nextIndex, isAction = true)
                 }
-                // else: all steps done. Local sequence holds here on the
-                // final rest screen until the VM's own countdown (started
-                // with the same total duration in showStepPanel()) fires
-                // GoToTransition or reveals the Complete Routine button.
             }
         }
     }
 
     private fun runStepTimer(durationSeconds: Int, isAction: Boolean, onFinish: () -> Unit) {
         stepTimer?.cancel()
-        // NOTE: no +500L padding here (unlike the pre-countdown timer) —
-        // this duration must match exactly what's summed into
-        // routineViewModel.startCurrentActivityTimer()'s total, or the VM's
-        // independent countdown will fire GoToTransition before the local
-        // step sequence actually finishes, cutting off the last step(s).
         stepTimer = object : CountDownTimer(durationSeconds * 1000L, 1000L) {
             override fun onTick(millisUntilFinished: Long) {
                 val secs = (millisUntilFinished / 1000L).coerceAtMost(durationSeconds.toLong())
                 updateStepTimer(secs)
-                // Action phase = green (matches wireframe's tense/pose timers).
-                // Rest phase = default color (matches wireframe's Release/Rest timers).
                 val colorRes = if (isAction) R.color.timer_green else R.color.timer_default
                 binding.tvStepTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
             }
@@ -289,13 +263,46 @@ class GenericTimerActivityFragment : Fragment() {
         stepTimer = null
     }
 
+    /**
+     * Cycles through `frames` at FRAME_INTERVAL_MILLIS (1s). Works for any
+     * list length: empty clears the image, 1 item shows statically, 2+
+     * items cycle forward and wrap to index 0. Runs only during action
+     * phase — stopFrameLoop() runs at the start of every rest phase.
+     */
+    private fun startFrameLoop(frames: List<String>) {
+        stopFrameLoop()
+
+        if (frames.isEmpty()) {
+            setStepImage(null)
+            return
+        }
+
+        if (frames.size == 1) {
+            setStepImage(frames[0])
+            return
+        }
+
+        frameLoopJob = viewLifecycleOwner.lifecycleScope.launch {
+            var frameIndex = 0
+            while (true) {
+                setStepImage(frames[frameIndex])
+                delay(FRAME_INTERVAL_MILLIS)
+                frameIndex = (frameIndex + 1) % frames.size
+            }
+        }
+    }
+
+    private fun stopFrameLoop() {
+        frameLoopJob?.cancel()
+        frameLoopJob = null
+    }
+
     private fun setStepImage(imageAssetName: String?) {
         if (_binding == null) return
         if (imageAssetName == null) {
             binding.imgStepDemo.setImageDrawable(null)
             return
         }
-        // Placeholder lookup until real per-step demo images/animations are added.
         val resId = resources.getIdentifier(imageAssetName, "drawable", requireContext().packageName)
         if (resId != 0) {
             binding.imgStepDemo.setImageResource(resId)
@@ -303,8 +310,6 @@ class GenericTimerActivityFragment : Fragment() {
             binding.imgStepDemo.setImageDrawable(null)
         }
     }
-
-    // ─── Progress dots (generated in code, no extra drawable resources needed) ──
 
     private fun renderStepDots(activeIndex: Int) {
         if (_binding == null) return
@@ -333,6 +338,7 @@ class GenericTimerActivityFragment : Fragment() {
         preCountdownTimer?.cancel()
         preCountdownTimer = null
         stopStepTimer()
+        stopFrameLoop()
         _binding = null
     }
 }

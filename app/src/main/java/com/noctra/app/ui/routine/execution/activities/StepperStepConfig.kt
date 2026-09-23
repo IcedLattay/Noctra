@@ -12,9 +12,13 @@ package com.noctra.app.ui.routine.execution.activities
  */
 data class StepperStepConfig(
     val stepId: String,
-    val name: String,                 // e.g. "Hands", "Neck Rolls"
-    val instruction: String,          // e.g. "Make a fist with your hands as tight as possible for 5 seconds"
-    val imageAsset: String,           // drawable resource name, e.g. "ic_pmr_hands" (placeholder until real demo assets/animations land)
-    val actionDurationSeconds: Int,   // e.g. 5 (PMR tense) or 3 (stretch pose)
-    val restDurationSeconds: Int      // e.g. 10 (PMR release) or 15 (stretch rest)
+    val name: String,                    // e.g. "Hands", "Neck Rolls"
+    val instruction: String,             // e.g. "Make a fist with your hands as tight as possible for 5 seconds"
+    val imageAssets: List<String>,       // drawable resource names, one per reference frame. Length varies per
+    // sub-activity (1, 2, 3, or 4 confirmed so far) — NOT a fixed count.
+    // A single-item list displays statically; 2+ items cycle on a 1s
+    // interval during the action phase only (see
+    // GenericTimerActivityFragment.startFrameLoop()).
+    val actionDurationSeconds: Int,      // e.g. 5 (PMR tense) or 3 (stretch pose)
+    val restDurationSeconds: Int         // e.g. 10 (PMR release) or 15 (stretch rest)
 )
