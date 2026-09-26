@@ -9,6 +9,7 @@ import com.noctra.app.data.repository.RoutineRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.data.repository.UserProfileRepository
 import com.noctra.app.utils.DebugSettings
+import com.noctra.app.data.utils.RoutinePersistenceHelper
 import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +24,8 @@ import java.time.format.DateTimeFormatter
  *
  * Drives RoutineHomeFragment state. Determines:
  *   - Whether the user has a configured routine
- *   - The current routine window state (before / in window / completed)
+ *   - The current routine window state (before / in window / completed /
+ *     resumable)
  *   - The activity list preview for the home screen
  *   - The current streak count
  *
@@ -33,6 +35,11 @@ import java.time.format.DateTimeFormatter
  *   - Outside window  → BeforeWindow (Edit Routine button)
  *   - Inside window   → InWindow (Begin Routine button)
  *   - Already done    → Completed (Routine Complete state)
+ *   - Session left mid-routine → Resumable (Resume Routine button) — NEW,
+ *     Flag 26. Checked via RoutinePersistenceHelper.hasActiveSession(),
+ *     same local cache the Resume Dialog (MainActivity) reads. This gives
+ *     users a way back into an unfinished routine even if they dismissed
+ *     the dialog with "Not Now" and didn't reopen the app to re-trigger it.
  *
  * Window can cross midnight (e.g. bedtime 23:30 + 30min activities → window 23:00–00:30).
  * The isTimeInWindow() helper handles this rollover.
@@ -70,6 +77,18 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
             val targetBedtime: String,
             val routineStartTime: String,
             val currentStreak: Int
+        ) : RoutineHomeState()
+
+        /**
+         * NEW (Flag 26): there's an unfinished routine session cached
+         * locally. resumeStepIndex is 0-based, matching what
+         * RoutineViewModel.confirmResume() will actually resume at.
+         */
+        data class Resumable(
+            val activities: List<Activity>,
+            val totalDurationMinutes: Int,
+            val currentStreak: Int,
+            val resumeStepIndex: Int
         ) : RoutineHomeState()
 
         data class Completed(val currentStreak: Int) : RoutineHomeState()
@@ -131,6 +150,23 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
                 val entries = routineRepository.parseActivitySequence(activeRoutine.activitySequence)
                 val activities = routineRepository.hydrateActivitySequence(entries)
                 val totalDuration = activeRoutine.totalDurationMinutes
+
+                // FLAG 26 — Resumable check. Runs before the completion/window
+                // checks below: if there's a session cached locally, it can't
+                // also be "already completed today" (the cache is cleared in
+                // RoutineViewModel.completeSession()), so there's no conflict
+                // to resolve — this just short-circuits straight to the
+                // Resumable state.
+                if (RoutinePersistenceHelper.hasActiveSession()) {
+                    val streak = routineSessionRepository.getCurrentStreak(userId)
+                    _state.value = RoutineHomeState.Resumable(
+                        activities = activities,
+                        totalDurationMinutes = totalDuration,
+                        currentStreak = streak,
+                        resumeStepIndex = RoutinePersistenceHelper.getCurrentStepIndex()
+                    )
+                    return@launch
+                }
 
                 // Check tonight's completion BEFORE window logic — completion wins.
                 val todayDate = routineSessionRepository.getTodayDateString()

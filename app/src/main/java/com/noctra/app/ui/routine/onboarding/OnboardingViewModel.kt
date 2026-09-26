@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 class OnboardingViewModel : ViewModel() {
 
     private val profileRepository = UserProfileRepository()
+    private val routineRepository = RoutineRepository()
 
     // Step 1
     private val _targetBedtime = MutableStateFlow("22:00") // default 10:00 PM
@@ -29,6 +30,60 @@ class OnboardingViewModel : ViewModel() {
     val orderedActivities: StateFlow<List<Activity>> = _orderedActivities.asStateFlow()
 
     var isEditMode: Boolean = false
+
+    // ─── Edit-mode save (FIX: Confirm in edit mode never saved) ──────────────
+
+    sealed class SaveState {
+        object Idle : SaveState()
+        object Saving : SaveState()
+        object Saved : SaveState()
+        data class Error(val message: String) : SaveState()
+    }
+
+    private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
+    val saveState: StateFlow<SaveState> = _saveState.asStateFlow()
+
+    /**
+     * Saves the edited routine to Supabase (deactivates the old config,
+     * inserts the new one as active). Only used in edit mode — first-time
+     * onboarding still saves through its own flow.
+     */
+    fun saveEditedRoutine(userId: String) {
+        if (_saveState.value is SaveState.Saving) return // ignore double taps
+        viewModelScope.launch {
+            _saveState.value = SaveState.Saving
+            try {
+                routineRepository.updateRoutineConfiguration(
+                    userId = userId,
+                    activitySequence = getActivitySequence(),
+                    totalDurationMinutes = getTotalDurationMinutes()
+                )
+                _saveState.value = SaveState.Saved
+            } catch (e: Exception) {
+                android.util.Log.e("OnboardingViewModel", "Failed to save edited routine", e)
+                _saveState.value = SaveState.Error("Couldn't save your routine. Check your connection and try again.")
+            }
+        }
+    }
+
+    fun resetSaveState() {
+        _saveState.value = SaveState.Idle
+    }
+
+    /**
+     * This VM is scoped to the whole nav_graph, so it outlives the edit
+     * screens. Clear the edit data when leaving edit mode so the next
+     * "Edit Routine" re-loads fresh from the DB instead of showing
+     * leftover (possibly unsaved) changes.
+     */
+    fun resetEditSession() {
+        _selectedActivities.value = emptyList()
+        _orderedActivities.value = emptyList()
+        _saveState.value = SaveState.Idle
+        isEditMode = false
+    }
+
+    // ─── Onboarding steps ───────────────────────────────────────────────────
 
     fun updateStep(userId: String, step: Int) {
         viewModelScope.launch {

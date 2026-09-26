@@ -14,7 +14,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.noctra.app.R
 import com.noctra.app.ui.routine.RoutineViewModel
@@ -26,8 +26,9 @@ import kotlinx.coroutines.launch
  * The Routine tab's root screen. Renders one of:
  *   - Loading    → (skeleton, optional)
  *   - NoRoutine  → empty state, prompts onboarding completion
- *   - BeforeWindow → activity grid + "Edit Routine" button + window hint
- *   - InWindow   → activity grid + "Begin Routine" button
+ *   - BeforeWindow → activity list + "Edit Routine" button + window hint
+ *   - InWindow   → activity list + "Begin Routine" button
+ *   - Resumable  → activity list + "Resume Routine" button — NEW, Flag 26
  *   - Completed  → "Routine Complete!" celebration card
  *
  * File location: com/noctra/app/ui/routine/home/RoutineHomeFragment.kt
@@ -48,6 +49,7 @@ class RoutineHomeFragment : Fragment() {
     private lateinit var rvActivityCards: RecyclerView
     private lateinit var btnBeginRoutine: Button
     private lateinit var btnEditRoutine: Button
+    private lateinit var btnResumeRoutine: Button
     private lateinit var layoutCompleted: LinearLayout
     private lateinit var layoutNoRoutine: LinearLayout
 
@@ -88,6 +90,7 @@ class RoutineHomeFragment : Fragment() {
         rvActivityCards   = view.findViewById(R.id.rv_activity_cards)
         btnBeginRoutine   = view.findViewById(R.id.btn_begin_routine)
         btnEditRoutine    = view.findViewById(R.id.btn_edit_routine)
+        btnResumeRoutine  = view.findViewById(R.id.btn_resume_routine)
         layoutCompleted   = view.findViewById(R.id.layout_completed_state)
         layoutNoRoutine   = view.findViewById(R.id.layout_no_routine_state)
     }
@@ -95,19 +98,17 @@ class RoutineHomeFragment : Fragment() {
     private fun setupListeners() {
     }
 
+    /**
+     * Session 5: single full-width column (was a 2-column grid).
+     * Long-press a card -> ActivityInfoDialogFragment.
+     */
     private fun setupRecyclerView() {
-        activityCardAdapter = ActivityCardAdapter()
-
-        val gridLayoutManager = GridLayoutManager(requireContext(), 2)
-        gridLayoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(position: Int): Int {
-                val itemCount = activityCardAdapter.itemCount
-                return if (itemCount % 2 != 0 && position == itemCount - 1) 2 else 1
-            }
+        activityCardAdapter = ActivityCardAdapter { activity, stepNumber ->
+            ActivityInfoDialogFragment.show(childFragmentManager, activity, stepNumber)
         }
 
         rvActivityCards.apply {
-            layoutManager = gridLayoutManager
+            layoutManager = LinearLayoutManager(requireContext())
             adapter = activityCardAdapter
             isNestedScrollingEnabled = false
         }
@@ -131,6 +132,7 @@ class RoutineHomeFragment : Fragment() {
         layoutNoRoutine.visibility = View.GONE
         btnBeginRoutine.visibility = View.GONE
         btnEditRoutine.visibility = View.GONE
+        btnResumeRoutine.visibility = View.GONE
         rvActivityCards.visibility = View.GONE
         tvWindowHint.visibility = View.GONE
 
@@ -178,6 +180,37 @@ class RoutineHomeFragment : Fragment() {
                 }
             }
 
+            is RoutineHomeViewModel.RoutineHomeState.Resumable -> {
+                // NEW — Flag 26 (task 8's other half). Passive resume path:
+                // the Resume Dialog (MainActivity) is the "active" path that
+                // pops up automatically; this button is the fallback for a
+                // user who dismissed that dialog with "Not Now" and only
+                // later navigates to the Routine tab.
+                tvSubtitle.text = "${state.activities.size} activities • ${state.totalDurationMinutes} minutes total"
+                tvStreakCount.text = "${state.currentStreak} day streak"
+
+                activityCardAdapter.submitList(state.activities)
+                rvActivityCards.visibility = View.VISIBLE
+
+                btnResumeRoutine.visibility = View.VISIBLE
+                btnResumeRoutine.text = "Resume Routine (Step ${state.resumeStepIndex + 1} of ${state.activities.size})"
+                btnResumeRoutine.setOnClickListener {
+                    // FLAG: relies on routineViewModel.confirmResume(), which
+                    // resumes using whatever step index MainActivity's
+                    // checkRecoveryState() already decided earlier this app
+                    // session (exact step vs restart-at-Activity-1, per the
+                    // 5/60-minute gap rule). This assumes checkRecoveryState()
+                    // has run at least once since app launch — true in
+                    // virtually every real scenario, since MainActivity calls
+                    // it on every onResume(), and this screen can only be
+                    // reached after MainActivity has already resumed once.
+                    routineViewModel.confirmResume()
+                    findNavController().navigate(
+                        R.id.action_routineHomeFragment_to_routineStartFragment
+                    )
+                }
+            }
+
             is RoutineHomeViewModel.RoutineHomeState.Completed -> {
                 tvSubtitle.text = "All done for tonight"
                 tvStreakCount.text = "${state.currentStreak} day streak"
@@ -197,8 +230,7 @@ class RoutineHomeFragment : Fragment() {
      * RoutineSequencingFragment from onboarding, passing editMode = true so
      * those fragments know to preload existing data and re-save on completion
      * instead of inserting a new config.
-     *
-     * (Edit-mode wiring inside those fragments is the next phase.)
+     * Save happens in RoutineSequencingFragment (Session 5 fix).
      */
     private fun navigateToEditRoutine() {
         val args = Bundle().apply { putBoolean("editMode", true) }

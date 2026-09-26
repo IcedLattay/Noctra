@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -13,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.noctra.app.R
 import com.noctra.app.databinding.FragmentRoutineSequencingBinding
+import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.launch
 
 class RoutineSequencingFragment : Fragment() {
@@ -23,6 +25,7 @@ class RoutineSequencingFragment : Fragment() {
     private val viewModel: OnboardingViewModel by navGraphViewModels(R.id.nav_graph)
     private lateinit var adapter: RoutineSequencingAdapter
     private lateinit var touchHelper: ItemTouchHelper
+    private var confirmText: CharSequence = "Confirm" // original button text from the layout
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -34,9 +37,11 @@ class RoutineSequencingFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        confirmText = binding.btnConfirm.text
 
         setupRecyclerView()
         observeActivities()
+        observeSaveState()
         setupButtons()
     }
 
@@ -109,19 +114,75 @@ class RoutineSequencingFragment : Fragment() {
         }
     }
 
+    /**
+     * Edit mode only: reacts to the save result.
+     *   Saving -> button disabled, "Saving..."
+     *   Saved  -> toast, clear edit data, go back to the Routine tab
+     *   Error  -> toast, re-enable button so the user can retry
+     */
+    private fun observeSaveState() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.saveState.collect { state ->
+                when (state) {
+                    is OnboardingViewModel.SaveState.Idle -> {
+                        binding.btnConfirm.text = confirmText
+                    }
+                    is OnboardingViewModel.SaveState.Saving -> {
+                        binding.btnConfirm.isEnabled = false
+                        binding.btnConfirm.alpha = 0.5f
+                        binding.btnConfirm.text = "Saving..."
+                    }
+                    is OnboardingViewModel.SaveState.Saved -> {
+                        Toast.makeText(requireContext(), "Routine updated", Toast.LENGTH_SHORT).show()
+                        viewModel.resetEditSession()
+                        goBackToRoutineHome()
+                    }
+                    is OnboardingViewModel.SaveState.Error -> {
+                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                        viewModel.resetSaveState()   // Idle restores the button text
+                        binding.btnConfirm.isEnabled = true
+                        binding.btnConfirm.alpha = 1f
+                    }
+                }
+            }
+        }
+    }
+
     private fun setupButtons() {
         binding.btnConfirm.setOnClickListener {
-            if (!viewModel.isEditMode) {
-                val userId = com.noctra.app.utils.UserSession.getUserId(requireContext())
+            val userId = UserSession.getUserId(requireContext())
+
+            if (viewModel.isEditMode) {
+                // FIX: edit mode used to skip saving and continue into the
+                // Health Connect onboarding screens. Now it saves and returns.
+                if (userId == null) {
+                    Toast.makeText(requireContext(), "Please log in again.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                viewModel.saveEditedRoutine(userId)
+            } else {
                 if (userId != null) {
                     viewModel.updateStep(userId, 3)
                 }
+                findNavController().navigate(R.id.action_routineSequencing_to_healthEducation)
             }
-            findNavController().navigate(R.id.action_routineSequencing_to_healthEducation)
         }
 
         binding.btnBack.setOnClickListener {
             findNavController().popBackStack()
+        }
+    }
+
+    /**
+     * Routine Home is still on the back stack (Home -> Library -> Sequencing),
+     * so pop back to it. RoutineHomeFragment.onResume() calls refresh(),
+     * which re-reads the new active routine from Supabase.
+     * Fallback: the global action, in case Home isn't on the stack.
+     */
+    private fun goBackToRoutineHome() {
+        val popped = findNavController().popBackStack(R.id.routineHomeFragment, false)
+        if (!popped) {
+            findNavController().navigate(R.id.action_global_routineHomeFragment)
         }
     }
 
