@@ -112,30 +112,26 @@ class OnboardingSummaryFragment : Fragment() {
                 val hasHr = com.noctra.app.utils.HealthConnectPermissionHelper
                     .hasHeartRatePermission(granted)
                 if (_binding == null) return@launch
-                setHealthRow(b.tvHealthSleep, "Sleep Segments", hasSleep)
-                setHealthRow(b.tvHealthHeart, "Heart Rate", hasHr)
-                setHealthRow(b.tvHealthStages, "Sleep Stages", hasSleep)
+                setHealthRow(b.badgeSummarySleep, hasSleep)
+                setHealthRow(b.badgeSummaryHeart, hasHr)
+                setHealthRow(b.badgeSummaryStages, hasSleep)
             } catch (e: Exception) {
                 // Leave placeholder text on failure
             }
         }
     }
 
-    private fun setHealthRow(view: android.widget.TextView, label: String, granted: Boolean) {
-        val color = if (granted) 0xFF16A34A.toInt() else 0xFF999999.toInt()
-        view.text = if (granted) {
-            "$label: ${getString(R.string.health_settings_status_granted)}"
+    // Same Granted / Not Granted pill styling as the Health Connect settings screen
+    private fun setHealthRow(badge: android.widget.TextView, granted: Boolean) {
+        if (granted) {
+            badge.text = "Granted"
+            badge.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.granted_green))
+            badge.setBackgroundResource(R.drawable.bg_badge_green)
         } else {
-            "$label: ${getString(R.string.health_settings_status_not_shared)}"
+            badge.text = "Not Granted"
+            badge.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.pill_text_grey))
+            badge.setBackgroundResource(R.drawable.bg_badge_grey)
         }
-        view.setTextColor(color)
-        val drawable = if (granted) {
-            androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_check_circle_green)
-        } else {
-            androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_cancel_circle)
-        }
-        drawable?.setTint(color)
-        view.setCompoundDrawablesRelativeWithIntrinsicBounds(drawable, null, null, null)
     }
 
     override fun onResume() {

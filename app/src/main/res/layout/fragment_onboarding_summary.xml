@@ -340,9 +340,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            app:cardCornerRadius="16dp"
+            app:cardCornerRadius="20dp"
             app:cardElevation="0dp"
-            app:cardBackgroundColor="#F8F6FF">
+            app:cardBackgroundColor="@android:color/white">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -360,38 +360,187 @@
                     android:fontFamily="@font/poppinsbold"
                     android:layout_marginBottom="10dp" />
 
-                <TextView
-                    android:id="@+id/tv_health_sleep"
-                    android:layout_width="wrap_content"
+                <!-- Sleep row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textSize="13sp"
-                    android:textColor="@color/noctra_text_muted"
-                    android:fontFamily="@font/poppinsregular"
-                    android:layout_marginTop="4dp"
-                    android:drawablePadding="6dp"
-                    tools:text="Sleep Segments: Granted" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingBottom="14dp">
 
-                <TextView
-                    android:id="@+id/tv_health_heart"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="13sp"
-                    android:textColor="@color/noctra_text_muted"
-                    android:fontFamily="@font/poppinsregular"
-                    android:layout_marginTop="4dp"
-                    android:drawablePadding="6dp"
-                    tools:text="Heart Rate: Not shared" />
+                    <FrameLayout
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_circle_grey"
+                        android:layout_marginEnd="14dp">
 
-                <TextView
-                    android:id="@+id/tv_health_stages"
-                    android:layout_width="wrap_content"
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_health_pulse"
+                            android:tint="#522ABE"
+                            android:contentDescription="@null" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Sleep Data"
+                            android:textColor="@color/black"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Sleep segments &amp; duration"
+                            android:textColor="@color/noctra_text_muted"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/badge_summary_sleep"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="3dp"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        tools:text="Granted" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/noctra_purple_faint" />
+
+                <!-- Heart rate row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textSize="13sp"
-                    android:textColor="@color/noctra_text_muted"
-                    android:fontFamily="@font/poppinsregular"
-                    android:layout_marginTop="4dp"
-                    android:drawablePadding="6dp"
-                    tools:text="Sleep Stages: Granted" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="14dp">
+
+                    <FrameLayout
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_circle_grey"
+                        android:layout_marginEnd="14dp">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_heart_rate"
+                            android:tint="#FB2C36"
+                            android:contentDescription="@null" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Heart Rate Data"
+                            android:textColor="@color/black"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Resting &amp; sleeping heart rate"
+                            android:textColor="@color/noctra_text_muted"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/badge_summary_heart"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="3dp"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        tools:text="Granted" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/noctra_purple_faint" />
+
+                <!-- Sleep stages row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingTop="14dp">
+
+                    <FrameLayout
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_circle_grey"
+                        android:layout_marginEnd="14dp">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_sleep_stages"
+                            android:tint="#615FFF"
+                            android:contentDescription="@null" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Sleep Stages"
+                            android:textColor="@color/black"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Movement &amp; restfulness score"
+                            android:textColor="@color/noctra_text_muted"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/badge_summary_stages"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="3dp"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        tools:text="Granted" />
+                </LinearLayout>
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
