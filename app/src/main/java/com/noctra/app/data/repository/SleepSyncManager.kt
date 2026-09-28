@@ -148,20 +148,33 @@ class SleepSyncManager {
                 return SyncResult.PermissionDenied
             }
 
-            val (windowStart, windowEnd) = getWakeUpAnchorWindow(sessionDate)
-            Log.d(TAG, "Anchor window: $windowStart → $windowEnd")
+            val (anchorStart, anchorEnd) = getWakeUpAnchorWindow(sessionDate)
+            Log.d(TAG, "Anchor window: $anchorStart → $anchorEnd")
 
-            // 1. FETCH: all sleep sessions attributed to this session date
+            // 1. FETCH: Health Connect filters interval records by START time,
+            //    so the query window must cover plausible sleep starts
+            //    (previous noon onward) — NOT the anchor window, which starts
+            //    at 4 AM and would exclude every normal night that began
+            //    before it. The wake-up-anchor attribution (session END
+            //    inside the anchor) is applied in code below instead.
+            val zone = ZoneId.systemDefault()
+            val fetchStart = LocalDateTime.of(sessionDate, LocalTime.NOON)
+                .atZone(zone)
+                .toInstant()
             val sleepResponse = client.readRecords(
                 ReadRecordsRequest(
                     recordType = SleepSessionRecord::class,
-                    timeRangeFilter = TimeRangeFilter.between(windowStart, windowEnd)
+                    timeRangeFilter = TimeRangeFilter.between(fetchStart, anchorEnd)
                 )
             )
             Log.d(TAG, "Raw sleep records fetched: ${sleepResponse.records.size}")
+            val anchoredRecords = sleepResponse.records.filter { record ->
+                record.endTime >= anchorStart && record.endTime <= anchorEnd
+            }
+            Log.d(TAG, "Records ending inside anchor: ${anchoredRecords.size}")
 
             // 2. PARSE: one RawSleepSegment per session (onset/wake from sleep stages)
-            val segments = sleepResponse.records.mapNotNull(::parseSession)
+            val segments = anchoredRecords.mapNotNull(::parseSession)
                 .filter { it.durationMinutes > 0 }
             Log.d(TAG, "Parsed segments: ${segments.size}")
 
@@ -354,6 +367,7 @@ class SleepSyncManager {
             )
         )
         val samples = response.records.flatMap { it.samples }
+        Log.d(TAG, "HR read [$start → $end]: ${response.records.size} records, ${samples.size} samples")
         if (samples.isEmpty()) return null
         return samples.map { it.beatsPerMinute.toDouble() }.average()
     }
