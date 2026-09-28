@@ -186,7 +186,10 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
 
             val now = LocalDateTime.now()
             sessionStartTimestamp = now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-            val todayDate = LocalDate.now().toString()
+            // Attribute post-midnight sessions to the night they serve
+            // (see RoutineWindowProvider.resolveRoutineSessionDate)
+            val todayDate = com.noctra.app.utils.RoutineWindowProvider
+                .resolveRoutineSessionDate(now).toString()
 
             try {
                 val session = routineSessionRepository.startSession(
