@@ -100,7 +100,17 @@ class ActivityLibraryFragment : Fragment() {
             onActivityClick = { activity -> viewModel.toggleActivity(activity) },
             onInfoClick = { activity -> showActivityDetails(activity) }
         )
-        binding.rvActivities.layoutManager = GridLayoutManager(requireContext(), 2)
+        gridLayoutManager = GridLayoutManager(requireContext(), 2).apply {
+            // Last item spans the full row when the count is odd
+            // (10 activities -> last row would have 1 card instead of 2)
+            spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+                override fun getSpanSize(position: Int): Int {
+                    val count = adapter.itemCount
+                    return if (count % 2 == 1 && position == count - 1) 2 else 1
+                }
+            }
+        }
+        binding.rvActivities.layoutManager = gridLayoutManager
         binding.rvActivities.adapter = adapter
     }
 
@@ -146,6 +156,7 @@ class ActivityLibraryFragment : Fragment() {
                 }
                 binding.tvError.visibility = View.GONE
             } catch (e: Exception) {
+                android.util.Log.e("ActivityLibrary", "getActivityLibrary failed", e)
                 binding.tvError.visibility = View.VISIBLE
             }
         }
