@@ -169,7 +169,6 @@
                 style="@style/DebugSectionHeader"
                 android:layout_marginTop="24dp"
                 android:text="Section 5 — Data" />
-
             <androidx.cardview.widget.CardView style="@style/DebugCard">
                 <LinearLayout style="@style/DebugCardContent">
                     <com.google.android.material.button.MaterialButton
@@ -189,6 +188,94 @@
                     <TextView
                         style="@style/DebugDescription"
                         android:text="Deletes all seeded mock data from Supabase for the current anonymous user ID so the demo can be restarted cleanly." />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Section 6: Dialog Previews -->
+            <TextView
+                style="@style/DebugSectionHeader"
+                android:layout_marginTop="24dp"
+                android:text="Section 6 — Dialog Previews" />
+
+            <androidx.cardview.widget.CardView style="@style/DebugCard">
+                <LinearLayout style="@style/DebugCardContent">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_morning"
+                        style="@style/DebugButton"
+                        android:text="Preview Morning Recap" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Opens the morning report popup with sample data (score 82, +7 XP). Nothing is written." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_streak_restored"
+                        style="@style/DebugButton"
+                        android:text="Preview Streak Restored" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Opens the streak-restored notice. Nothing is written." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_streak_lost"
+                        style="@style/DebugButton"
+                        android:text="Preview Streak Lost" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Opens the streak-broken notice. Nothing is written." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_streak_warning"
+                        style="@style/DebugButton"
+                        android:text="Preview Streak Warning" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Opens the streak-safe notice. Nothing is written." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_resume"
+                        style="@style/DebugButton"
+                        android:text="Preview Resume Dialog" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Opens the resume-routine dialog (step 2 of 3, away 25 min). Its buttons dismiss without effect." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_dump_sleep"
+                        style="@style/DebugButton"
+                        android:text="Dump Latest Sleep Session" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Logs the latest sleep session window plus one line per stage. Read-only — use NoctraLogs or logcat." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_dump_heartrate"
+                        style="@style/DebugButton"
+                        android:text="Dump Sleep Heart Rate" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Logs HR samples inside the latest sleep window, plus count and average. Read-only." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_resync_night"
+                        style="@style/DebugButton"
+                        android:text="Resync Last Night" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Forces a full sync of yesterday's session (idempotent upsert). Use for late-arriving data." />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 

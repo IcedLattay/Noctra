@@ -19,6 +19,14 @@ interface DebugPanelListener {
     fun onTriggerEvolution()
     fun onPreviewEvolution()
     fun onPreviewStageAnimations()
+    fun onPreviewMorningRecap()
+    fun onPreviewStreakRestored()
+    fun onPreviewStreakLost()
+    fun onPreviewStreakWarning()
+    fun onPreviewResumeDialog()
+    fun onDumpSleepSession()
+    fun onDumpHeartRate()
+    fun onResyncLastNight()
     fun onSeedDemoData()
     fun onClearDemoData()
 }
@@ -82,6 +90,32 @@ class DebugPanelFragment : Fragment() {
         }
         view.findViewById<MaterialButton>(R.id.btn_preview_stages).setOnClickListener {
             listener?.onPreviewStageAnimations()
+        }
+
+        // Section 6: Dialog Previews
+        view.findViewById<MaterialButton>(R.id.btn_preview_morning).setOnClickListener {
+            listener?.onPreviewMorningRecap()
+        }
+        view.findViewById<MaterialButton>(R.id.btn_preview_streak_restored).setOnClickListener {
+            listener?.onPreviewStreakRestored()
+        }
+        view.findViewById<MaterialButton>(R.id.btn_preview_streak_lost).setOnClickListener {
+            listener?.onPreviewStreakLost()
+        }
+        view.findViewById<MaterialButton>(R.id.btn_preview_streak_warning).setOnClickListener {
+            listener?.onPreviewStreakWarning()
+        }
+        view.findViewById<MaterialButton>(R.id.btn_preview_resume).setOnClickListener {
+            listener?.onPreviewResumeDialog()
+        }
+        view.findViewById<MaterialButton>(R.id.btn_dump_sleep).setOnClickListener {
+            listener?.onDumpSleepSession()
+        }
+        view.findViewById<MaterialButton>(R.id.btn_dump_heartrate).setOnClickListener {
+            listener?.onDumpHeartRate()
+        }
+        view.findViewById<MaterialButton>(R.id.btn_resync_night).setOnClickListener {
+            listener?.onResyncLastNight()
         }
 
         // Section 5: Data

@@ -23,6 +23,9 @@ import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.handleDeeplinks
 import com.noctra.app.ui.debug.DebugPanelListener
 import com.noctra.app.ui.debug.StagePreviewDialogFragment
+import com.noctra.app.ui.companion.MorningSleepPopupDialog
+import com.noctra.app.ui.companion.StreakNoticeDialogFragment
+import com.noctra.app.ui.companion.CompanionViewModel.CompanionNotice
 import com.noctra.app.ui.companion.CompanionViewModel
 import com.noctra.app.ui.companion.EvolutionDialogFragment
 import androidx.lifecycle.ViewModelProvider
@@ -497,6 +500,159 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     override fun onPreviewStageAnimations() {
         StagePreviewDialogFragment()
             .show(supportFragmentManager, "StagePreview")
+    }
+
+    override fun onPreviewMorningRecap() {
+        MorningSleepPopupDialog.newInstance(82, 7)
+            .show(supportFragmentManager, "MorningPreview")
+    }
+
+    override fun onPreviewStreakRestored() {
+        StreakNoticeDialogFragment.newInstance(CompanionNotice.RESTORED)
+            .show(supportFragmentManager, "StreakPreview")
+    }
+
+    override fun onPreviewStreakLost() {
+        StreakNoticeDialogFragment.newInstance(CompanionNotice.LOST)
+            .show(supportFragmentManager, "StreakPreview")
+    }
+
+    override fun onPreviewStreakWarning() {
+        StreakNoticeDialogFragment.newInstance(CompanionNotice.WARNING)
+            .show(supportFragmentManager, "StreakPreview")
+    }
+
+    override fun onPreviewResumeDialog() {
+        ResumeRoutineDialogFragment.newInstance(1, 3, 25L)
+            .show(supportFragmentManager, "ResumePreview")
+    }
+
+    override fun onDumpSleepSession() {
+        lifecycleScope.launch {
+            try {
+                val context = applicationContext
+                if (!com.noctra.app.utils.HealthConnectPermissionHelper.isAvailable(context)) {
+                    Toast.makeText(context, "Health Connect unavailable", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val client = androidx.health.connect.client.HealthConnectClient.getOrCreate(context)
+                val granted = com.noctra.app.utils.HealthConnectPermissionHelper.getGrantedPermissions(client)
+                if (!com.noctra.app.utils.HealthConnectPermissionHelper.hasSleepPermission(granted)) {
+                    Toast.makeText(context, "Sleep permission not granted", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val now = java.time.Instant.now()
+                val response = client.readRecords(
+                    androidx.health.connect.client.request.ReadRecordsRequest(
+                        androidx.health.connect.client.records.SleepSessionRecord::class,
+                        androidx.health.connect.client.time.TimeRangeFilter.between(
+                            now.minus(48, java.time.temporal.ChronoUnit.HOURS), now
+                        )
+                    )
+                )
+                val latest = response.records.maxByOrNull {
+                    it.endTime.epochSecond
+                }
+                if (latest == null) {
+                    android.util.Log.d("SleepDump", "no sessions in last 48h")
+                    Toast.makeText(context, "No sessions in last 48h", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                android.util.Log.d("SleepDump", "window ${latest.startTime} -> ${latest.endTime} (${latest.stages.size} stages, by ${latest.metadata.dataOrigin.packageName})")
+                latest.stages.forEach { stage ->
+                    val name = when (stage.stage) {
+                        androidx.health.connect.client.records.SleepSessionRecord.STAGE_TYPE_AWAKE -> "AWAKE"
+                        androidx.health.connect.client.records.SleepSessionRecord.STAGE_TYPE_SLEEPING -> "SLEEPING"
+                        androidx.health.connect.client.records.SleepSessionRecord.STAGE_TYPE_OUT_OF_BED -> "OUT_OF_BED"
+                        androidx.health.connect.client.records.SleepSessionRecord.STAGE_TYPE_LIGHT -> "LIGHT"
+                        androidx.health.connect.client.records.SleepSessionRecord.STAGE_TYPE_DEEP -> "DEEP"
+                        androidx.health.connect.client.records.SleepSessionRecord.STAGE_TYPE_REM -> "REM"
+                        androidx.health.connect.client.records.SleepSessionRecord.STAGE_TYPE_AWAKE_IN_BED -> "AWAKE_IN_BED"
+                        else -> "UNKNOWN(${stage.stage})"
+                    }
+                    android.util.Log.d("SleepDump", "  $name ${stage.startTime} -> ${stage.endTime}")
+                }
+                Toast.makeText(context, "Dumped ${latest.stages.size} stages — see logcat", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                android.util.Log.e("SleepDump", "dump failed", e)
+                Toast.makeText(applicationContext, "Dump failed: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    override fun onDumpHeartRate() {
+        lifecycleScope.launch {
+            try {
+                val context = applicationContext
+                if (!com.noctra.app.utils.HealthConnectPermissionHelper.isAvailable(context)) {
+                    Toast.makeText(context, "Health Connect unavailable", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val client = androidx.health.connect.client.HealthConnectClient.getOrCreate(context)
+                val granted = com.noctra.app.utils.HealthConnectPermissionHelper.getGrantedPermissions(client)
+                if (!com.noctra.app.utils.HealthConnectPermissionHelper.hasHeartRatePermission(granted)) {
+                    Toast.makeText(context, "Heart rate permission not granted", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val now = java.time.Instant.now()
+                val twoDaysAgo = now.minus(48, java.time.temporal.ChronoUnit.HOURS)
+                // Latest sleep window first, so samples are shown in context
+                val sessions = client.readRecords(
+                    androidx.health.connect.client.request.ReadRecordsRequest(
+                        androidx.health.connect.client.records.SleepSessionRecord::class,
+                        androidx.health.connect.client.time.TimeRangeFilter.between(twoDaysAgo, now)
+                    )
+                ).records
+                val latest = sessions.maxByOrNull { it.endTime.epochSecond }
+                val windowStart: java.time.Instant
+                val windowEnd: java.time.Instant
+                val windowLabel: String
+                if (latest != null) {
+                    windowStart = latest.startTime
+                    windowEnd = latest.endTime
+                    windowLabel = "latest sleep window $windowStart -> $windowEnd"
+                } else {
+                    windowStart = now.minus(12, java.time.temporal.ChronoUnit.HOURS)
+                    windowEnd = now
+                    windowLabel = "last 12h (no sleep session found)"
+                }
+                val samples = client.readRecords(
+                    androidx.health.connect.client.request.ReadRecordsRequest(
+                        androidx.health.connect.client.records.HeartRateRecord::class,
+                        androidx.health.connect.client.time.TimeRangeFilter.between(windowStart, windowEnd)
+                    )
+                ).records.flatMap { it.samples }
+                    .sortedBy { it.time.epochSecond }
+                if (samples.isEmpty()) {
+                    android.util.Log.d("HeartDump", "no HR samples in $windowLabel")
+                    Toast.makeText(context, "No HR samples in window", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val avg = samples.map { it.beatsPerMinute }.average()
+                android.util.Log.d("HeartDump", "${samples.size} samples in $windowLabel, avg=${"%.1f".format(avg)} bpm")
+                samples.forEach { sample ->
+                    android.util.Log.d("HeartDump", "  ${sample.time} -> ${sample.beatsPerMinute} bpm")
+                }
+                Toast.makeText(context, "Dumped ${samples.size} samples — see logcat", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                android.util.Log.e("HeartDump", "dump failed", e)
+                Toast.makeText(applicationContext, "Dump failed: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    override fun onResyncLastNight() {
+        lifecycleScope.launch {
+            try {
+                val userId = UserSession.getUserId(applicationContext) ?: return@launch
+                val yesterday = java.time.LocalDate.now().minusDays(1)
+                val result = com.noctra.app.data.repository.SleepSyncManager()
+                    .syncSessionDate(userId, yesterday)
+                Toast.makeText(applicationContext, "Resync: $result", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Toast.makeText(applicationContext, "Resync failed: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     override fun onSeedDemoData() {
