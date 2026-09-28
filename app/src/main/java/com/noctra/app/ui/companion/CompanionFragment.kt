@@ -67,28 +67,36 @@ class CompanionFragment : Fragment() {
 
     private fun processNextDialog() {
         if (isDialogShowing || dialogQueue.isEmpty()) return
-        
+        // The collectors can fire while this fragment is detached
+        // (e.g. mid-navigation) — showing then crashes.
+        if (!isAdded) {
+            dialogQueue.clear()
+            return
+        }
+
         isDialogShowing = true
         val next = dialogQueue.removeAt(0)
-        
+
+        // NOTE: no .apply{} here — inside apply, bare childFragmentManager
+        // resolves to the DIALOG's (unattached) manager instead of ours.
         when (next) {
             is PendingDialog.MorningRecap -> {
-                MorningSleepPopupDialog.newInstance(next.score, next.xp).apply {
-                    setOnDismissCallback { onDialogClosed() }
-                    show(childFragmentManager, "MorningSleepPopup")
+                val dialog = MorningSleepPopupDialog.newInstance(next.score, next.xp)
+                dialog.setOnDismissCallback { onDialogClosed() }
+                dialog.setOnViewDetailsCallback {
+                    findNavController().navigate(R.id.action_companion_to_analytics)
                 }
+                dialog.show(childFragmentManager, "MorningSleepPopup")
             }
             is PendingDialog.StreakNotice -> {
-                StreakNoticeDialogFragment.newInstance(next.type).apply {
-                    setOnDismissCallback { onDialogClosed() }
-                    show(childFragmentManager, "StreakNoticePopup")
-                }
+                val dialog = StreakNoticeDialogFragment.newInstance(next.type)
+                dialog.setOnDismissCallback { onDialogClosed() }
+                dialog.show(childFragmentManager, "StreakNoticePopup")
             }
             is PendingDialog.Evolution -> {
-                EvolutionDialogFragment.newInstance(next.oldLevel, next.newLevel).apply {
-                    setOnDismissCallback { onDialogClosed() }
-                    show(childFragmentManager, "EvolutionPopup")
-                }
+                val dialog = EvolutionDialogFragment.newInstance(next.oldLevel, next.newLevel)
+                dialog.setOnDismissCallback { onDialogClosed() }
+                dialog.show(childFragmentManager, "EvolutionPopup")
             }
         }
     }
@@ -134,11 +142,9 @@ class CompanionFragment : Fragment() {
         binding.skeletonXpCard.startAnimation(pulseAnim)
         binding.skeletonCustomize.startAnimation(pulseAnim)
 
-        val userId = UserSession.getUserId(requireContext()) ?: return
-        val lastShownSleepDate = requireContext().getSharedPreferences("noctra_prefs", Context.MODE_PRIVATE)
-            .getString("last_shown_sleep_date", null)
-            
-        viewModel.loadData(userId, lastShownSleepDate)
+        // NOTE: no loadData here — onResume() always follows onViewCreated()
+        // and loads. Calling both double-fires loadData on cold open, which
+        // used to emit the morning popup twice (dismiss → pops again).
     }
 
     private fun setupBackNavigation() {

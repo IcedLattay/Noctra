@@ -86,9 +86,15 @@ class CompanionViewModel(
     )
 
     private var previousStageLevel: Int? = null
-    
+
     // session flag to prevent dialog loop
     private var noticeHandledThisSession = false
+
+    // Once-per-process guard: onViewCreated + onResume both trigger
+    // loadData on cold open, and the prefs flag is only written by the
+    // fragment collector AFTER emission — so both calls pass the gate
+    // and the morning popup fires twice. This kills the duplicate.
+    private var morningPopupEmittedForDate: String? = null
 
     fun retry(userId: String) {
         _uiState.update { it.copy(isOffline = false, isLoading = true) }
@@ -101,6 +107,7 @@ class CompanionViewModel(
         _uiState.value = CompanionUiState()
         previousStageLevel = null
         noticeHandledThisSession = false
+        morningPopupEmittedForDate = null
     }
 
     fun loadData(userId: String, lastShownSleepDate: String?) {
@@ -227,8 +234,10 @@ class CompanionViewModel(
                     val recapSessionDate = java.time.LocalDate.now().minusDays(1).toString()
                     if (latestSleep != null &&
                         latestSleep.sessionDate == recapSessionDate &&
-                        lastShownSleepDate != recapSessionDate
+                        lastShownSleepDate != recapSessionDate &&
+                        morningPopupEmittedForDate != recapSessionDate
                     ) {
+                        morningPopupEmittedForDate = recapSessionDate
                         _showMorningPopup.emit(Pair(latestSleep.compositeScore ?: 0, 7))
                     }
                 }

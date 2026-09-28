@@ -15,9 +15,14 @@ class MorningSleepPopupDialog : DialogFragment() {
     private val binding get() = _binding!!
 
     private var onDismissListener: (() -> Unit)? = null
+    private var onViewDetailsListener: (() -> Unit)? = null
 
     fun setOnDismissCallback(listener: () -> Unit) {
         this.onDismissListener = listener
+    }
+
+    fun setOnViewDetailsCallback(listener: () -> Unit) {
+        this.onViewDetailsListener = listener
     }
 
     override fun onDismiss(dialog: android.content.DialogInterface) {
@@ -51,8 +56,7 @@ class MorningSleepPopupDialog : DialogFragment() {
         }
 
         binding.btnViewDetails.setOnClickListener {
-            // Coordinate with Person C: navigate to analytics
-            // findNavController().navigate(R.id.action_companion_to_analytics)
+            onViewDetailsListener?.invoke()
             dismiss()
         }
 
