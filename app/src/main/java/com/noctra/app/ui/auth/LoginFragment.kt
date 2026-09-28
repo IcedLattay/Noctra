@@ -67,6 +67,11 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
             } else {
                 binding.etPassword.inputType = android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
             }
+            // Changing inputType resets the typeface — re-apply so the
+            // exposed password uses the same font as the email field
+            binding.etPassword.typeface = androidx.core.content.res.ResourcesCompat.getFont(
+                requireContext(), R.font.poppinsregular
+            )
             binding.etPassword.setSelection(binding.etPassword.text.length)
         }
     }
@@ -107,7 +112,8 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
         when (state) {
             is AuthViewModel.AuthState.Loading -> {
                 binding.btnSignIn.isEnabled = false
-                binding.btnSignIn.text = "Signing in..."
+                binding.btnSignIn.text = ""
+                binding.pbSignIn.visibility = View.VISIBLE
             }
             is AuthViewModel.AuthState.Success -> {
                 if (state.onboardingCompleted) {
@@ -128,6 +134,7 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
             is AuthViewModel.AuthState.Error -> {
                 binding.btnSignIn.isEnabled = true
                 binding.btnSignIn.text = "Sign In"
+                binding.pbSignIn.visibility = View.GONE
                 Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
                 viewModel.resetState()
             }
@@ -136,6 +143,7 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                 val isValid = viewModel.email.value.isNotEmpty() && viewModel.password.value.isNotEmpty()
                 updateButtonState(isValid)
                 binding.btnSignIn.text = "Sign In"
+                binding.pbSignIn.visibility = View.GONE
             }
         }
     }

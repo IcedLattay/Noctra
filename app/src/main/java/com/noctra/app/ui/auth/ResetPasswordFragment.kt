@@ -48,10 +48,6 @@ class ResetPasswordFragment : Fragment(R.layout.fragment_reset_password) {
         binding.btnToggleNewPassword.setOnClickListener {
             togglePasswordVisibility(binding.etNewPassword)
         }
-
-        binding.btnToggleConfirmPassword.setOnClickListener {
-            togglePasswordVisibility(binding.etConfirmPassword)
-        }
     }
 
     private fun togglePasswordVisibility(editText: android.widget.EditText) {
@@ -61,6 +57,11 @@ class ResetPasswordFragment : Fragment(R.layout.fragment_reset_password) {
         } else {
             editText.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
         }
+        // Changing inputType resets the typeface — re-apply so the exposed
+        // password uses the same font as the other fields
+        editText.typeface = androidx.core.content.res.ResourcesCompat.getFont(
+            requireContext(), R.font.poppinsregular
+        )
         editText.setSelection(selection)
     }
 
@@ -103,7 +104,8 @@ class ResetPasswordFragment : Fragment(R.layout.fragment_reset_password) {
         when (state) {
             is AuthViewModel.AuthState.Loading -> {
                 binding.btnResetPassword.isEnabled = false
-                binding.btnResetPassword.text = "Updating..."
+                binding.btnResetPassword.text = ""
+                binding.pbResetPassword.visibility = View.VISIBLE
             }
             is AuthViewModel.AuthState.PasswordUpdated -> {
                 findNavController().navigate(R.id.action_resetPassword_to_success)
@@ -111,11 +113,13 @@ class ResetPasswordFragment : Fragment(R.layout.fragment_reset_password) {
             is AuthViewModel.AuthState.Error -> {
                 binding.btnResetPassword.isEnabled = true
                 binding.btnResetPassword.text = "Reset Password"
+                binding.pbResetPassword.visibility = View.GONE
                 Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
                 viewModel.resetState()
             }
             else -> {
                 binding.btnResetPassword.text = "Reset Password"
+                binding.pbResetPassword.visibility = View.GONE
             }
         }
     }
