@@ -254,7 +254,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         dialogView.findViewById<TextView>(R.id.dialog_title).apply {
             text = "Logout?"
-            setTextColor(ContextCompat.getColor(context, R.color.noctra_purple_dark))
+            setTextColor(ContextCompat.getColor(context, R.color.black))
         }
         dialogView.findViewById<TextView>(R.id.dialog_message).text = "Are you sure you want to logout of your account?"
         

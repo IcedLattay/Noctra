@@ -47,7 +47,7 @@
                 android:layout_marginTop="16dp"
                 android:fontFamily="@font/poppinsregular"
                 android:gravity="center"
-                android:textColor="#7B6FA0"
+                android:textColor="@color/noctra_text_muted"
                 android:textSize="14sp"
                 tools:text="Late Data has been found and your streak has been restored!" />
 
@@ -57,7 +57,7 @@
                 android:layout_height="56dp"
                 android:layout_marginTop="32dp"
                 android:fontFamily="@font/poppinsbold"
-                android:text="Ok"
+                android:text="Okay"
                 android:textAllCaps="false"
                 android:textColor="@android:color/white"
                 android:textSize="16sp"
