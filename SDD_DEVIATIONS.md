@@ -347,3 +347,11 @@ The "Equipped Outfit Schema Change" entry above says `profiles` — the actual S
 **Status:** IMPLEMENTED per wireframe. Transparent overlay (`skeleton_view`) in `fragment_social.xml` mirroring the real layout 1:1 with identical paddings/margins: two equal 110×28dp top pills (wireframe's narrower pill widened to match), 64dp banner placeholder (matches real 12+40+12 banner), 96×18dp label placeholder (margins 20/12 like "YOUR FRIENDS"), and exactly 3 row cards at 80dp each (16+48+16, like real rows) with 48dp avatar circle + name bar + 24dp action circle positioned as the real internals. Fills: white pills/cards (existing skeleton drawables) + `#E4DFEE` gray for avatar/name/action (`bg_skeleton_inner`, `bg_skeleton_circle`); whole overlay pulses with the shared 0.6→1.0 anim. Shown on initial load only (hidden on first `leaderboardState` emission; swipe refreshes use the `SwipeRefreshLayout` spinner). No overlay background — the real screen bg shows through behind the 1:1 placeholders.
 
 **Empty state:** `FriendAdapter` gains a third view type — a centered muted "No friends yet" row (`item_friends_empty.xml`) under the header when the friend list is empty. (Note: `fragment_social.xml` also contains an older full-screen `empty_state` block that is never toggled — still dead code.)
+
+---
+
+
+## Analytics � see ANALYTICS_SPEC.md
+
+The analytics requirements live exclusively in ANALYTICS_SPEC.md (authoritative spec: views, windows, navigation, copy, backend, rejected alternatives). The rolling-window redesign notes that previously lived here were superseded by that file.
+

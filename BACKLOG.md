@@ -105,15 +105,15 @@ The popup must never re-show after the finalization pass rewrites the record.
 - [x] Skip bottom sheet: Continue button → flat purple, Go back text → black — done
 - [x] Step 4 + 5: Skip this step button → black text, same style both screens — done
 - [x] Summary → Main navigation crash: nested graphs can't cross-navigate; fixed by rebuilding nav graph — done
-- [ ] Summary: polish/finalize the permissions-status card UI (user to provide wireframe; current state: light purple bg, green/grey status icons + colored text)
+- [x] Summary: permissions-status card UI — rebuilt with Health Settings rows (icon circles, Granted pills, dividers, no outline)
 - [ ] Activity details dialog, fleshed-out design (a basic name + description + duration dialog exists on Sequencing via the info button; long-press is reserved for drag, so the dialog opens from ⓘ only)
 - [x] Checkmark badge on selected cards removed (selected = purple stroke only); dimmed unselectable cards no longer ripple
 - [x] Cross-account inventory bleed: unequipping on account A also appears unequipped on account B. Was a reads-only bug: `getUserInventory(userId)` returned the static cache without checking ownership, and logout cleared nothing. Fixed by keying the cache on user ID + `clearCache()` on logout. (`ShopRepository.cachedItems` audited — harmless, global catalog.)
 - [x] Stale previous-account flash on login: activity-scoped VMs (`Companion`, `Social`, `Routine`) survive logout and render old state until fresh data arrives. Fixed with `onLogout()` resets on all three, called from `performLogout()` alongside the cache clear.
-- [ ] Settings: revisit the target bedtime edit button design
+- [x] Settings bedtime pill design — reviewed; current full-width pill + picker sheet is fine, closing the item
 - [ ] Dead field cleanup: `user_profiles.health_connect_granted` is never read or written (live permission checks cover all decisions) — remove from model (and DB if desired)
 - [ ] My Routines tab layout change — stack all routine cards vertically (not grid/carousel)
-- [ ] Profile screen picture should reflect the user's own Shleepy
+- [x] Profile screen picture reflects the user's own Shleepy (frozen charged frame of equipped outfit)
 
 ## 7. DB migrations (validated against code — user to run in Supabase)
 
@@ -133,6 +133,7 @@ Code expects these schemas (verified in `RoutineSession.kt`, `RewardLedger.kt`, 
 - [ ] Add `PENDING` to `RoutineCompletionRowView.DayStatus` + amber color (`noctra_health_yellow` #FFC90E) in `colorForStatus`
 - [ ] Map `session.status == "PENDING" -> PENDING` before the else in `buildCompletionStatuses`
 - [ ] (Optional) append "· N pending" to the completion summary label
+- [x] Analytics loading state — decided: keep batched `loadWeek` with a single centered purple spinner (see ANALYTICS_SPEC.md)
 - Already correct, no change needed: summary count (`count { COMPLETED }`) and insight generation (`filter { COMPLETED }`) — PENDING is invisible to both, which is the right semantics until the auditor resolves it
 
 ## 9. Data & Connectivity Policy — IN PROGRESS
@@ -188,13 +189,14 @@ Pending assets (from user):
 Still to build:
 - [x] Friends screen redesign (`SocialFragment` per wireframe, badge on Friend Requests button)
 - [x] Friend avatars — first pass (frozen Charged-stage Lottie) has been reworked: rows now use a static vector (`avatar_shleepy.xml`, sheep on `#BBB7C7` circle with matching outline); all other-users' inventory reads removed (`getEquippedOutfits`, `avatarEquipment` flow, adapter `equipment` maps)
-- [ ] Skeleton loaders for leaderboard, friends, and friend-request screens (same in-place swap pattern as the companion screen)
-- [ ] Profile avatar: show the user's actual Shleepy (stage + equipped-outfit animation) instead of the static vector asset
-- [ ] Pull-to-refresh on the Profile screen (same `SwipeRefreshLayout` pattern as leaderboard/friends)
-- [ ] Reconsider Add by Email / Friend Requests button placement — side-by-side labels are cramped; may stack vertically instead
+- [x] Skeleton loaders for leaderboard, friends, and friend-request screens (friends + profile done)
+- [ ] Skeleton loaders for leaderboard and friend-request screens (friends + profile pattern to follow)
+- [x] Profile avatar: frozen charged-stage frame of the equipped outfit (`UserProfileFragment` + `outfitAsset` in VM; status card keeps stage art per decision)
+- [x] Pull-to-refresh on the Profile screen (`SwipeRefreshLayout` + `isLoading`/`hasLoaded` in VM)
+- [x] Add by Email / Friend Requests placement — verified fine on device, closing
 - [x] Badge count on Profile tab icon (pending request count → bottom nav badge)
 - [x] Pull-to-refresh on Friends and Friend Requests screens (same pattern as leaderboard)
-- [ ] Temp cleanup: mock scaffolding + `LeaderboardDebug` logs in `SocialViewModel` (see `SDD_DEVIATIONS.md`)
+- [x] Temp cleanup — verified: no mock scaffolding or `LeaderboardDebug` logs remain in social code (only intentional debug simulator + shop seed data)
 
 Parked for future update:
 - Encouragement feature (logic exists, no UI entry point after split)
@@ -202,3 +204,22 @@ Parked for future update:
 - My Progress summary (needs a home after split)
 - Friend request push notifications (`FriendRequestNotificationWorker`)
 - Realtime auto-refresh (manual refresh covers it for now)
+
+## 11. Routine Tab — Begin Button Shows Past the Window (verify, likely TEMP-flag artifact)
+
+Reported: the begin-routine button still shows after the routine window closes.
+
+Suspect first: `MainActivity` line 73 sets `DebugSettings.setForceRoutineWindow(true)` (TEMP — remove before submission), and `RoutineHomeViewModel.loadHomeState()` treats that flag as an open window — so on debug builds the button shows 24/7 by design. The real window logic (`RoutineWindowProvider.isTimeInWindow` + expired-state handling) can only be assessed with the flag OFF.
+
+- [ ] Reproduce with `forceRoutineWindow` off (or after TEMP removal); if the button still shows past the window, debug `isTimeInWindow`/expired-state handling for real
+- [ ] Resume-routine dialog fix + polish pass (styling, copy, spacing — flagged during dialog preview review)
+
+## 12. Thesis Document Revisions (problem reframed: adherence → regularity → quality)
+
+- [ ] Rewrite problem statement: drop SOL-as-problem; state irregular timing + unstructured nights as problem, routine→regularity as mechanism, adult-transfer as gap
+- [ ] Align objectives/research questions to the three meters (adherence, variability, quality) — every claimed variable must have a database column
+- [ ] Write the SOL-vs-adherence distinction into the manuscript (preempts "why don't you measure latency")
+- [ ] Evidence section: link-1 citations (Chaput 2020, Phillips 2017, Windred 2024, Sleep Health 2024) + link-2 with pediatric caveat (Mindell 2009/2015) + mechanism support (Trauer 2015, Jansson-Fröjmark 2024, JAMA 2024 component analysis)
+- [ ] Methodology: bedtime-change controls (audit trail of target moves; adjustment-window shading; freeze-vs-log decision before data collection)
+- [ ] Propagate the reframed problem into Noctra_SDD.docx / Noctra_SRS.docx / SDD_revisions.docx so all documents agree
+- [ ] Optional app work to fully close the loop: surface SOL stat (session-start→onset gap) on analytics
