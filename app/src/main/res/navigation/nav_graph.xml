@@ -120,21 +120,7 @@
         <fragment
             android:id="@+id/analyticsDashboardFragment"
             android:name="com.noctra.app.ui.analytics.AnalyticsDashboardFragment"
-            android:label="Progress">
-            <action
-                android:id="@+id/action_analytics_to_monthlyReport"
-                app:destination="@id/monthlyReportFragment" />
-        </fragment>
-
-        <fragment
-            android:id="@+id/monthlyReportFragment"
-            android:name="com.noctra.app.ui.analytics.MonthlyReportFragment"
-            android:label="Monthly Report">
-            <argument
-                android:name="year_month"
-                app:argType="string"
-                android:defaultValue="" />
-        </fragment>
+            android:label="Progress" />
 
         <fragment
             android:id="@+id/companionFragment"

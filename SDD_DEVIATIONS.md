@@ -230,35 +230,20 @@ Each step saves its own draft on advance (`draft_bedtime` + `draft_activity_ids`
 
 ---
 
-## Monthly Analytics Implementation
+## Analytics Redesign — Monthly Approach Superseded
 
-**SDD spec:** Module 4 — Routine Auditing & Analytics, sections 4.1 (Monthly View) and 4.3 (Monthly Progress Overview).
+**Prior work:** A Weekly/Monthly toggle analytics screen was built on `feature/monthly-analytics` (adds `MonthlyReportFragment`, `MonthlyReportViewModel`, `MonthlyInsightGenerationUseCase`, four-week adherence bars, a month selector, and JSON report export).
 
-**Decision:** Implemented as a dual-mode AnalyticsDashboardFragment (Weekly/Monthly toggle) with a separate MonthlyReportFragment for the full month report, per SDD sections 4.1 and 4.3.
+**Superseded by:** `ANALYTICS_SPEC.md` — the agreed analytics redesign. Per its §4 ("Left out on purpose"), the following are **explicitly excluded** and are being removed on `feature/revamped-analytics`:
 
-**Status:** IMPLEMENTED.
+- Monthly views/tabs — short stub weeks mislead; resets punish
+- Four-week bars — pairs + trend already convey it
+- Standalone progress card — the verdict lives in the trend's average line
+- Percent-framed insights — points read off the same scale as the line
 
-**Files created:**
-- `AnalyticsViewMode.kt` — Enum for WEEKLY/MONTHLY toggle
-- `MonthlyInsightGenerationUseCase.kt` — Week 1 vs Week 4 comparison insight
-- `MonthlyReportModel.kt` — Serializable JSON export model
-- `MonthlyReportViewModel.kt` — ViewModel for MonthlyReportFragment + export
-- `MonthlyReportFragment.kt` — Full monthly report screen with export
-- `fragment_monthly_report.xml` — Monthly report layout
-- `item_weekly_breakdown_row.xml` — Per-week breakdown row layout
-- Multiple drawables: `card_monthly_outline.xml`, `card_monthly_lavender.xml`, `card_export_outline.xml`, `bg_gray_track.xml`, `bg_progress_button.xml`, `ic_download.xml`, `bg_view_toggle_*.xml`, `bg_quality_badge.xml`
+**Also inverted by the spec:** calendar frames (Mon–Sun weeks, month tabs, "Wk 1–4") are banned in favour of plain date ranges; navigation becomes two independent clocks (7-day block moves ±1 day, 30-day trend moves ±7 days) instead of a weekly/monthly mode switch.
 
-**Files modified:**
-- `AnalyticsViewModel.kt` — Added monthly mode, month navigation, weekly breakdown computation
-- `AnalyticsDashboardFragment.kt` — Added toggle, monthly content views, monthly charts, "View Full Monthly Report" button
-- `fragment_analytics_dashboard.xml` — Added toggle, monthly view sections, bar chart, monthly completion, insight card
-- `nav_graph.xml` — Added `monthlyReportFragment` destination + action
-- `SDD_DEVIATIONS.md` — This entry
-
-**Deviations from SDD:**
-- `MonthlyReportFragment` uses manual fragment transaction fallback instead of Navigation Component deep link (bottom nav hiding requirement)
-- Export uses Supabase Storage `from("reports").insert(jsonString)` — actual bucket name may need adjustment based on Supabase project config
-- `monthly_reports` metadata table insert is wrapped in try/catch since the table may not exist yet
+**Status:** Monthly implementation reverted. The revamped build is tracked in `feature/revamped-analytics`, documented against `ANALYTICS_SPEC.md` section by section.
 
 ---
 
