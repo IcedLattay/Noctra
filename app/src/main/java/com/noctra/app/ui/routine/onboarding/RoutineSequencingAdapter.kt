@@ -10,8 +10,20 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.noctra.app.data.model.Activity
 import com.noctra.app.databinding.ItemSequencingRowBinding
+import com.noctra.app.utils.ActivityIllustrations
 
-class RoutineSequencingAdapter() : ListAdapter<Activity, RoutineSequencingAdapter.ViewHolder>(DIFF) {
+/**
+ * RoutineSequencingAdapter — "Arrange Your Routine" list (onboarding + Edit Routine).
+ *
+ * Session 5 (R1):
+ *   - illustration thumbnail per row
+ *   - drag starts ONLY from the drag handle (long-press drag is disabled in
+ *     RoutineSequencingFragment's ItemTouchHelper callback)
+ *   - long-press the row -> onLongPress(activity, stepNumber) -> info dialog
+ */
+class RoutineSequencingAdapter(
+    private val onLongPress: ((activity: Activity, stepNumber: Int) -> Unit)? = null
+) : ListAdapter<Activity, RoutineSequencingAdapter.ViewHolder>(DIFF) {
 
     var touchHelper: ItemTouchHelper? = null
 
@@ -24,12 +36,23 @@ class RoutineSequencingAdapter() : ListAdapter<Activity, RoutineSequencingAdapte
             binding.tvActivityLabel.text = activity.label
             binding.tvActivityDuration.text = "${activity.defaultDurationMinutes} minutes"
 
+            ActivityIllustrations.load(binding.ivActivityIllustration, activity.label)
+
             // Drag handle — start drag on touch down
             binding.ivDragHandle.setOnTouchListener { _, event ->
                 if (event.actionMasked == MotionEvent.ACTION_DOWN) {
                     touchHelper?.startDrag(this)
                 }
                 false
+            }
+
+            // Long-press the row (not the handle) -> info dialog.
+            // Uses the CURRENT position at press time, since rows move.
+            binding.root.setOnLongClickListener {
+                val pos = adapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnLongClickListener false
+                onLongPress?.invoke(getItem(pos), pos + 1)
+                onLongPress != null
             }
         }
     }

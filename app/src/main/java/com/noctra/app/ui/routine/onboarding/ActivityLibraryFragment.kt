@@ -14,6 +14,7 @@ import com.noctra.app.R
 import com.noctra.app.data.repository.RoutineRepository
 import com.noctra.app.data.repository.UserProfileRepository
 import com.noctra.app.databinding.FragmentActivityLibraryBinding
+import com.noctra.app.ui.routine.home.ActivityInfoDialogFragment
 import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.launch
 
@@ -109,9 +110,14 @@ class ActivityLibraryFragment : Fragment() {
     }
 
     private fun setupAdapter() {
-        adapter = ActivityGridAdapter { activity ->
-            viewModel.toggleActivity(activity)
-        }
+        adapter = ActivityGridAdapter(
+            onActivityClick = { activity -> viewModel.toggleActivity(activity) },
+            // Session 5 (R1): long-press -> info dialog (no number badge here,
+            // since the library isn't in routine order yet).
+            onActivityLongPress = { activity ->
+                ActivityInfoDialogFragment.show(childFragmentManager, activity)
+            }
+        )
         gridLayoutManager = GridLayoutManager(requireContext(), 2)
         gridLayoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
             override fun getSpanSize(position: Int): Int {

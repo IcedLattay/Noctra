@@ -194,8 +194,27 @@
                 app:destination="@id/routineStartFragment" />
             <action
                 android:id="@+id/action_routineHomeFragment_to_editRoutine"
-                app:destination="@id/activityLibraryFragment" />
+                app:destination="@id/editActivityLibraryFragment" />
         </fragment>
+
+        <!-- Edit Routine flow (Flag 30): main_graph copies of the onboarding screens -->
+        <fragment
+            android:id="@+id/editActivityLibraryFragment"
+            android:name="com.noctra.app.ui.routine.onboarding.ActivityLibraryFragment"
+            android:label="Edit Activities">
+            <argument
+                android:name="editMode"
+                app:argType="boolean"
+                android:defaultValue="true" />
+            <action
+                android:id="@+id/action_activityLibrary_to_routineSequencing"
+                app:destination="@id/editRoutineSequencingFragment" />
+        </fragment>
+
+        <fragment
+            android:id="@+id/editRoutineSequencingFragment"
+            android:name="com.noctra.app.ui.routine.onboarding.RoutineSequencingFragment"
+            android:label="Edit Order" />
 
         <fragment
             android:id="@+id/analyticsDashboardFragment"

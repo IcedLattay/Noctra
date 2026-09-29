@@ -191,6 +191,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@null"
+                android:scrollbars="vertical"
+                android:overScrollMode="ifContentScrolls"
                 android:fontFamily="@font/poppinsregular"
                 android:gravity="top|start"
                 android:hint="Releasing your thoughts is great for your well-being. Share your thoughts in this field"

@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.noctra.app.R
 import com.noctra.app.databinding.FragmentRoutineSequencingBinding
+import com.noctra.app.ui.routine.home.ActivityInfoDialogFragment
 import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.launch
 
@@ -46,7 +47,10 @@ class RoutineSequencingFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        adapter = RoutineSequencingAdapter()
+        // Session 5 (R1): long-press a row -> info dialog.
+        adapter = RoutineSequencingAdapter { activity, stepNumber ->
+            ActivityInfoDialogFragment.show(childFragmentManager, activity, stepNumber)
+        }
 
         // ItemTouchHelper for drag-to-reorder
         val callback = object : ItemTouchHelper.SimpleCallback(
@@ -68,6 +72,10 @@ class RoutineSequencingFragment : Fragment() {
                 // No swipe action
             }
 
+            // Session 5 (R1): drag ONLY from the drag handle. Long-press on
+            // the row is now reserved for the info dialog.
+            override fun isLongPressDragEnabled(): Boolean = false
+
             // Visual feedback while dragging
             override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
                 super.onSelectedChanged(viewHolder, actionState)
@@ -83,6 +91,9 @@ class RoutineSequencingFragment : Fragment() {
                 viewHolder.itemView.alpha = 1f
                 viewHolder.itemView.scaleX = 1f
                 viewHolder.itemView.scaleY = 1f
+                // Re-draw the step numbers (1, 2, 3) after a drop — moving
+                // rows doesn't rebind them, so they'd show the old order.
+                recyclerView.post { adapter.notifyItemRangeChanged(0, adapter.itemCount) }
             }
         }
 

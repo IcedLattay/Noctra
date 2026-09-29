@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
@@ -15,6 +16,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.noctra.app.R
 import com.noctra.app.ui.routine.RoutineViewModel
+import com.noctra.app.utils.ActivityIllustrations
+import com.google.android.material.progressindicator.CircularProgressIndicator
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -45,6 +48,11 @@ class TimesUpTransitionFragment : Fragment() {
 
     private lateinit var tvEncouragement: TextView
     private lateinit var tvCountdown: TextView
+    private lateinit var progressCountdown: CircularProgressIndicator
+    private lateinit var cardNextUp: View
+    private lateinit var ivNextIllustration: ImageView
+    private lateinit var tvNextName: TextView
+    private lateinit var tvNextDuration: TextView
 
     private var chimePlayer: MediaPlayer? = null
     private var countdownJob: Job? = null
@@ -100,6 +108,11 @@ class TimesUpTransitionFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         tvEncouragement = view.findViewById(R.id.tv_encouragement)
         tvCountdown = view.findViewById(R.id.tv_countdown)
+        progressCountdown = view.findViewById(R.id.progress_countdown)
+        cardNextUp = view.findViewById(R.id.card_next_up)
+        ivNextIllustration = view.findViewById(R.id.iv_next_illustration)
+        tvNextName = view.findViewById(R.id.tv_next_name)
+        tvNextDuration = view.findViewById(R.id.tv_next_duration)
 
         // Block back button — user shouldn't be able to escape mid-transition
         requireActivity().onBackPressedDispatcher.addCallback(
@@ -116,8 +129,10 @@ class TimesUpTransitionFragment : Fragment() {
     }
 
     /**
-     * Shows the completion message for the activity that just ended, plus a
-     * line naming what's coming next.
+     * Shows the completion message for the activity that just ended, and
+     * (Session 5, R4) a separate "UP NEXT" card with the next activity's
+     * illustration, name and duration — instead of "Next up: X" tacked onto
+     * the message text.
      */
     private fun showTransitionText() {
         val activities = routineViewModel.activities
@@ -127,15 +142,17 @@ class TimesUpTransitionFragment : Fragment() {
         val justFinishedIndex = (routineViewModel.currentStepIndex.value - 1).coerceAtLeast(0)
         val justFinishedLabel = activities.getOrNull(justFinishedIndex)?.label
 
-        val completionMessage = COMPLETION_MESSAGE_BY_LABEL[justFinishedLabel]
+        tvEncouragement.text = COMPLETION_MESSAGE_BY_LABEL[justFinishedLabel]
             ?: DEFAULT_COMPLETION_MESSAGE
 
-        val nextLabel = routineViewModel.currentActivity?.label
-
-        tvEncouragement.text = if (nextLabel != null) {
-            "$completionMessage\n\nNext up: $nextLabel"
+        val next = routineViewModel.currentActivity
+        if (next != null) {
+            cardNextUp.visibility = View.VISIBLE
+            tvNextName.text = next.label
+            tvNextDuration.text = "${next.defaultDurationMinutes} minutes"
+            ActivityIllustrations.load(ivNextIllustration, next.label)
         } else {
-            completionMessage
+            cardNextUp.visibility = View.GONE
         }
     }
 
@@ -156,9 +173,12 @@ class TimesUpTransitionFragment : Fragment() {
         countdownJob = viewLifecycleOwner.lifecycleScope.launch {
             for (i in COUNTDOWN_SECONDS downTo 1) {
                 tvCountdown.text = i.toString()
+                // Ring drains as the countdown runs (100% -> 0%).
+                progressCountdown.setProgressCompat(i * 100 / COUNTDOWN_SECONDS, true)
                 delay(1000)
             }
-            tvCountdown.text = ""
+            tvCountdown.text = "0"
+            progressCountdown.setProgressCompat(0, true)
             routineViewModel.onTransitionComplete()
         }
     }
