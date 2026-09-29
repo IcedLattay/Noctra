@@ -21,10 +21,27 @@ class RoutineCompletionRowView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-    enum class DayStatus { COMPLETED, INCOMPLETE, NO_DATA }
+    /**
+     * Per-night completion state for the 7-day block (ANALYTICS_SPEC.md §2.1).
+     *
+     * The spec requires four visually distinct states, not three:
+     *  - COMPLETED  — filled green
+     *  - MISSED     — pink; a night with no record counts as missed
+     *  - PENDING    — yellow; a session still awaiting its grace-period
+     *                 verdict. Never rendered pink, and excluded from every
+     *                 rate so a pending night cannot skew a denominator.
+     *  - INELIGIBLE — neutral hollow; onboarding finished after this night's
+     *                 routine window closed, so the user could not have
+     *                 participated. Distinct from both missed and pending.
+     *
+     * INCOMPLETE and NO_DATA previously collapsed MISSED and "no record" into
+     * one grey. They are gone: "no record" is now MISSED per the spec, and the
+     * grey fill is freed up for INELIGIBLE.
+     */
+    enum class DayStatus { COMPLETED, MISSED, PENDING, INELIGIBLE }
 
-    // Default: 7 days of "no data" — overwritten by setData()
-    private var statuses: List<DayStatus> = List(7) { DayStatus.NO_DATA }
+    // Default: 7 missed nights — overwritten by setData()
+    private var statuses: List<DayStatus> = List(7) { DayStatus.MISSED }
     private val dayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -79,8 +96,10 @@ class RoutineCompletionRowView @JvmOverloads constructor(
 
     private fun colorForStatus(status: DayStatus): Int = when (status) {
         DayStatus.COMPLETED -> ContextCompat.getColor(context, R.color.completion_green)
-        DayStatus.INCOMPLETE -> ContextCompat.getColor(context, R.color.completion_pink)
-        DayStatus.NO_DATA -> ContextCompat.getColor(context, R.color.completion_grey)
+        DayStatus.MISSED -> ContextCompat.getColor(context, R.color.completion_pink)
+        // Pending reuses the shared yellow per spec §6's overwrite rule.
+        DayStatus.PENDING -> ContextCompat.getColor(context, R.color.noctra_health_yellow)
+        DayStatus.INELIGIBLE -> ContextCompat.getColor(context, R.color.completion_grey)
     }
 
     private fun dpToPx(dp: Float): Float =
