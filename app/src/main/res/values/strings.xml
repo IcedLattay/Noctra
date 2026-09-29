@@ -74,6 +74,28 @@
     <string name="analytics_quality_moderate">Moderate sleep quality</string>
     <string name="analytics_quality_poor">Poor sleep quality</string>
 
+    <!-- 7-day detail block (§2.1, §6 items 4-5, §7 locked caption) -->
+    <string name="analytics_section_sleep_score">Sleep Score</string>
+    <string name="analytics_section_bedtime">Bedtime Adherence</string>
+    <string name="analytics_section_completion">Routine Completion</string>
+    <string name="analytics_legend_good">Good (&gt;74)</string>
+    <string name="analytics_legend_moderate">Moderate (50-74)</string>
+    <string name="analytics_legend_poor">Poor (&lt;50)</string>
+    <string name="analytics_legend_target">Target</string>
+    <string name="analytics_legend_ontime">On-time</string>
+    <string name="analytics_legend_slight">Slight delay</string>
+    <string name="analytics_legend_late">Late</string>
+    <string name="analytics_legend_completed">Completed</string>
+    <string name="analytics_legend_pending">Pending</string>
+    <string name="analytics_legend_missed">Missed</string>
+    <string name="analytics_legend_ineligible">Not eligible</string>
+    <string name="analytics_no_bedtime_data">No bedtime data for this week</string>
+    <!-- §7 locked: "Bedtimes varied ±{N} min this week" -->
+    <string name="analytics_variability">Bedtimes varied ±%1$d min this week.</string>
+    <string name="analytics_week_counter">Week %1$d</string>
+    <string name="analytics_nav_earlier">Earlier</string>
+    <string name="analytics_nav_later">Later</string>
+
     <!-- Offline State -->
     <string name="offline_title">No Internet Connection</string>
     <string name="offline_description">Noctra requires an internet connection to sync your sleep data</string>

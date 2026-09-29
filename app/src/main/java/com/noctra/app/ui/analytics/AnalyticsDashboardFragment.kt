@@ -26,6 +26,8 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         super.onViewCreated(view, savedInstanceState)
 
         val weekRangeLabel = view.findViewById<TextView>(R.id.text_week_range)
+        val weekCounter = view.findViewById<TextView>(R.id.text_week_counter)
+        val variability = view.findViewById<TextView>(R.id.text_variability)
         val btnPrev = view.findViewById<ImageView>(R.id.btn_week_prev)
         val btnNext = view.findViewById<ImageView>(R.id.btn_week_next)
 
@@ -48,9 +50,8 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
 
         // Set empty state text for the chart
         sleepQualityChart.setNoDataText("No sleep quality data for this week")
-        sleepQualityChart.setNoDataTextColor(requireContext().getColor(R.color.adherence_no_data))
+        sleepQualityChart.setNoDataTextColor(requireContext().getColor(R.color.analytics_muted))
 
-        val labelRoutineCompletion = view.findViewById<TextView>(R.id.label_routine_completion)
         val insightText = view.findViewById<TextView>(R.id.insight_text)
 
         val mainContent = view.findViewById<View>(R.id.mainContent)
@@ -77,29 +78,40 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
                 weekRangeLabel.text = formatRange(state.detailStart, 7)
                 btnNext.alpha = if (viewModel.canShiftDetailForward()) 1.0f else 0.3f
                 btnPrev.alpha = if (viewModel.canShiftDetailBack()) 1.0f else 0.3f
+                weekCounter.text = getString(R.string.analytics_week_counter, state.weekCounter)
+
+                // Real date labels — §3 bans Mon-Sun calendar framing, so all
+                // three charts label the same seven real dates.
+                val dateLabels = dateLabelsFor(state.detailStart)
 
                 // Sleep Quality chart — nulls become gaps, never zeros
-                SleepQualityChartConfig.setData(sleepQualityChart, requireContext(), state.detailScores)
+                SleepQualityChartConfig.setData(
+                    sleepQualityChart, requireContext(), state.detailScores, dateLabels
+                )
 
                 // Bedtime Adherence chart, built from the onsets already resolved
                 // for this window so the pair chart and the completion cells can
                 // never disagree about which nights exist.
                 val targetBedtimeTime = parseTargetBedtime(state.targetBedtime)
-                val adherence = (0 until 7).map { offset ->
+                val adherence = dateLabels.indices.map { offset ->
                     adherenceCalculator.classify(
                         sessionDate = state.detailStart.plusDays(offset.toLong()),
                         targetBedtime = targetBedtimeTime,
                         sleepOnsetTime = state.detailOnsets.getOrNull(offset)?.toString()
                     )
                 }
-                bedtimeAdherenceChart.setData(adherence)
+                bedtimeAdherenceChart.setData(adherence, dateLabels)
 
                 // Completion cells
-                routineCompletionChart.setData(state.detailCompletion)
+                routineCompletionChart.setData(state.detailCompletion, dateLabels)
 
-                // §2.1: the cells speak — no totals, no percentages. Phase 4
-                // removes the summary label from the layout entirely.
-                labelRoutineCompletion.text = ""
+                // §7 locked caption. No SD yet means no caption at all rather
+                // than a fabricated "±0 min".
+                variability.text = state.variabilitySd?.let {
+                    getString(R.string.analytics_variability, it)
+                }.orEmpty()
+                variability.visibility =
+                    if (state.variabilitySd == null) View.GONE else View.VISIBLE
 
                 // Last Night card — §2.4. No window, no navigation: always the
                 // most recent row, ignoring both range controls. The score keeps
@@ -164,6 +176,15 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         val end = start.plusDays((days - 1).toLong())
         return "${start.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))} - " +
             end.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
+    }
+
+    /**
+     * "Jun 14" for each of the seven nights starting at [start]. All three charts
+     * in the block share this list so their x-axes line up pixel for pixel.
+     */
+    private fun dateLabelsFor(start: LocalDate): List<String> {
+        val fmt = DateTimeFormatter.ofPattern("MMM d")
+        return (0 until DETAIL_DAYS).map { start.plusDays(it.toLong()).format(fmt) }
     }
 
     private fun formatDate(isoDate: String): String = try {

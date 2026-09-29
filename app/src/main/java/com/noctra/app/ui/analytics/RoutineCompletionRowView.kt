@@ -10,10 +10,24 @@ import androidx.core.content.ContextCompat
 import com.noctra.app.R
 
 /**
- * Displays 7 vertical pill-shaped bars representing routine completion status
- * for each day of the week (Monday through Sunday).
+ * One pill cell per night for the 7-day block (ANALYTICS_SPEC.md §2.1, §6 item 5).
  *
- * Call [setData] to update the chart with the week's session statuses.
+ * Four visually distinct states, and the distinction between the last two is
+ * the point of the whole exercise:
+ *
+ * | state       | fill                          | meaning                              |
+ * |-------------|-------------------------------|--------------------------------------|
+ * | COMPLETED   | solid green                   | routine finished                     |
+ * | MISSED      | solid pink                    | decided, not done — includes no row  |
+ * | PENDING     | solid yellow                  | awaiting its grace-period verdict    |
+ * | INELIGIBLE  | hollow, no fill               | onboarding finished after the window |
+ *
+ * MISSED and PENDING must never share a colour: a night still in flight is not
+ * a failure, and painting it pink would punish the user for a verdict that has
+ * not landed yet. INELIGIBLE is hollow rather than grey-filled so it cannot be
+ * mistaken for either.
+ *
+ * §3: read-only — this view never consumes touches.
  */
 class RoutineCompletionRowView @JvmOverloads constructor(
     context: Context,
@@ -22,75 +36,85 @@ class RoutineCompletionRowView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     /**
-     * Per-night completion state for the 7-day block (ANALYTICS_SPEC.md §2.1).
+     * Per-night completion state for the 7-day block.
      *
-     * The spec requires four visually distinct states, not three:
-     *  - COMPLETED  — filled green
-     *  - MISSED     — pink; a night with no record counts as missed
-     *  - PENDING    — yellow; a session still awaiting its grace-period
-     *                 verdict. Never rendered pink, and excluded from every
-     *                 rate so a pending night cannot skew a denominator.
-     *  - INELIGIBLE — neutral hollow; onboarding finished after this night's
-     *                 routine window closed, so the user could not have
-     *                 participated. Distinct from both missed and pending.
-     *
-     * INCOMPLETE and NO_DATA previously collapsed MISSED and "no record" into
-     * one grey. They are gone: "no record" is now MISSED per the spec, and the
-     * grey fill is freed up for INELIGIBLE.
+     * UPCOMING is not a data state — it marks a slot whose night has not
+     * happened yet. §2.1 requires it to be visibly scaffolding: an empty slot
+     * with a faint date label and no outline, so it can never be misread as a
+     * night we measured and found missed.
      */
-    enum class DayStatus { COMPLETED, MISSED, PENDING, INELIGIBLE }
+    enum class DayStatus { COMPLETED, MISSED, PENDING, INELIGIBLE, UPCOMING }
 
-    // Default: 7 missed nights — overwritten by setData()
-    private var statuses: List<DayStatus> = List(7) { DayStatus.MISSED }
-    private val dayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    private var statuses: List<DayStatus> = List(DETAIL_DAYS) { DayStatus.UPCOMING }
+    private var labels: List<String> = emptyList()
 
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-
+    private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val hollowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = dpToPx(1.5f)
+    }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = dpToPx(12f)
-        color = ContextCompat.getColor(context, R.color.noctra_purple_dark)
-        isFakeBoldText = false
+        textSize = dpToPx(11f)
+        color = ContextCompat.getColor(context, R.color.analytics_muted)
     }
 
-    private val labelHeightPx = dpToPx(20f)   // space below bars for labels
-    private val barSpacingPx = dpToPx(8f)     // horizontal space between bars
-    private val barCornerPx = dpToPx(20f)     // pill corner radius
-
-    private val barRect = RectF()
+    private val labelHeightPx = dpToPx(18f)
+    private val cellSpacingPx = dpToPx(12f)   // §6: 12dp gaps
+    private val cornerPx = dpToPx(10f)
+    private val cellRect = RectF()
 
     /**
-     * Update the data and redraw.
-     * @param statuses must be exactly 7 entries, one per day Mon→Sun
+     * @param statuses   one entry per night in the window
+     * @param dateLabels one date label per night, already formatted
      */
-    fun setData(statuses: List<DayStatus>) {
-        require(statuses.size == 7) { "Expected 7 statuses, got ${statuses.size}" }
+    fun setData(statuses: List<DayStatus>, dateLabels: List<String>) {
+        require(statuses.size == dateLabels.size) {
+            "statuses (${statuses.size}) and labels (${dateLabels.size}) must line up"
+        }
         this.statuses = statuses
+        this.labels = dateLabels
         invalidate()
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+        if (statuses.isEmpty()) return
 
-        val w = width.toFloat()
-        val h = height.toFloat()
+        val count = statuses.size
+        val totalSpacing = cellSpacingPx * (count - 1)
+        val cellWidth = (width - totalSpacing) / count
+        val cellHeight = height - labelHeightPx
 
-        val totalSpacing = barSpacingPx * 6  // gaps between 7 bars
-        val barWidth = (w - totalSpacing) / 7f
-        val barAreaHeight = h - labelHeightPx
+        for (i in 0 until count) {
+            val left = i * (cellWidth + cellSpacingPx)
+            val right = left + cellWidth
+            cellRect.set(left, 0f, right, cellHeight)
 
-        for (i in 0 until 7) {
-            val left = i * (barWidth + barSpacingPx)
-            val right = left + barWidth
-            barRect.set(left, 0f, right, barAreaHeight)
+            when (statuses[i]) {
+                // Not yet: no fill, no outline, faint label. Scaffolding, not a mark.
+                DayStatus.UPCOMING -> Unit
+                DayStatus.INELIGIBLE -> {
+                    // Hollow: fill nothing, outline only.
+                    fillPaint.color = ContextCompat.getColor(context, R.color.completion_grey)
+                    canvas.drawRoundRect(cellRect, cornerPx, cornerPx, fillPaint)
+                    fillPaint.color = ContextCompat.getColor(context, R.color.analytics_card_bg)
+                    val inset = hollowPaint.strokeWidth / 2f
+                    cellRect.set(left + inset, inset, right - inset, cellHeight - inset)
+                    canvas.drawRoundRect(cellRect, cornerPx, cornerPx, hollowPaint)
+                }
+                else -> {
+                    fillPaint.color = colorForStatus(statuses[i])
+                    canvas.drawRoundRect(cellRect, cornerPx, cornerPx, fillPaint)
+                }
+            }
 
-            paint.color = colorForStatus(statuses[i])
-            canvas.drawRoundRect(barRect, barCornerPx, barCornerPx, paint)
-
-            // Day label below
-            val labelX = (left + right) / 2f
-            val labelY = h - dpToPx(4f)
-            canvas.drawText(dayLabels[i], labelX, labelY, labelPaint)
+            canvas.drawText(
+                labels.getOrElse(i) { "" },
+                (left + right) / 2f,
+                height - dpToPx(5f),
+                labelPaint
+            )
         }
     }
 
@@ -100,6 +124,7 @@ class RoutineCompletionRowView @JvmOverloads constructor(
         // Pending reuses the shared yellow per spec §6's overwrite rule.
         DayStatus.PENDING -> ContextCompat.getColor(context, R.color.noctra_health_yellow)
         DayStatus.INELIGIBLE -> ContextCompat.getColor(context, R.color.completion_grey)
+        DayStatus.UPCOMING -> ContextCompat.getColor(context, R.color.analytics_card_bg)
     }
 
     private fun dpToPx(dp: Float): Float =

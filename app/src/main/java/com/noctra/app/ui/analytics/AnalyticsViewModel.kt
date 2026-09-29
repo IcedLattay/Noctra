@@ -324,10 +324,16 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
         eligibleFrom: LocalDate?
     ): List<RoutineCompletionRowView.DayStatus> {
         val byDate = sessions.associateBy { it.sessionDate }
+        val today = LocalDate.now()
         return (0 until DETAIL_DAYS).map { offset ->
             val date = start.plusDays(offset.toLong())
             val session = byDate[date.toString()]
             when {
+                // §2.1: a night that has not happened yet is scaffolding, not a
+                // missed night. Checked first so the future never falls through
+                // to MISSED.
+                date.isAfter(today) ->
+                    RoutineCompletionRowView.DayStatus.UPCOMING
                 eligibleFrom != null && date.isBefore(eligibleFrom) ->
                     RoutineCompletionRowView.DayStatus.INELIGIBLE
                 session == null ->
