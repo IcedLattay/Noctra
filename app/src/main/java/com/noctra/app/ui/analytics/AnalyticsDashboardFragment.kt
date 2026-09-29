@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -35,6 +36,9 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         val statOnset = view.findViewById<TextView>(R.id.stat_sleep_onset)
         val statHr = view.findViewById<TextView>(R.id.stat_avg_hr)
         val statRestlessness = view.findViewById<TextView>(R.id.stat_restlessness)
+        val muted = ContextCompat.getColor(requireContext(), R.color.analytics_muted)
+        val score = ContextCompat.getColor(requireContext(), R.color.analytics_score)
+        val black = ContextCompat.getColor(requireContext(), R.color.black)
 
         val bedtimeAdherenceChart = view.findViewById<BedtimeAdherenceChartView>(R.id.chart_bedtime_adherence)
         val adherenceCalculator = BedtimeAdherenceCalculator()
@@ -97,25 +101,36 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
                 // removes the summary label from the layout entirely.
                 labelRoutineCompletion.text = ""
 
-                // Last Night card
+                // Last Night card — §2.4. No window, no navigation: always the
+                // most recent row, ignoring both range controls. The score keeps
+                // one fixed colour (§6 item 3); the band lives in the label text,
+                // so a low score reads as information rather than as an alarm.
                 val record = state.lastNightRecord
                 if (record != null) {
                     lastNightDate.text = formatDate(record.sessionDate)
-                    lastNightScore.text = record.compositeScore?.toString() ?: "—"
-                    lastNightScore.setTextColor(scoreColor(record.compositeScore))
+                    lastNightScore.text =
+                        record.compositeScore?.toString() ?: getString(R.string.analytics_placeholder_dash)
+                    // Set explicitly rather than left to the XML: the no-data
+                    // branch below mutes these, and a score that arrives after a
+                    // failed load must win its colour back.
+                    lastNightScore.setTextColor(score)
                     lastNightLabel.text = qualityLabel(record.compositeScore)
+                    lastNightLabel.setTextColor(black)
                     statDuration.text = formatDuration(record.sleepDurationMinutes)
                     statOnset.text = formatOnsetTime(record.sleepOnsetTime)
-                    statHr.text = record.avgHeartRateBpm?.let { "${it.toInt()} bpm" } ?: "—"
+                    statHr.text = record.avgHeartRateBpm?.let { "${it.toInt()} bpm" }
+                        ?: getString(R.string.analytics_placeholder_dash)
                     statRestlessness.text = restlessnessLabel(record.movementEventCount)
                 } else {
+                    // Honest no-data state: muted, and no score number invented.
                     lastNightDate.text = ""
-                    lastNightScore.text = "—"
-                    lastNightLabel.text = "No sleep data recorded last night"
-                    statDuration.text = "—"
-                    statOnset.text = "—"
-                    statHr.text = "—"
-                    statRestlessness.text = "—"
+                    lastNightScore.text = getString(R.string.analytics_no_score)
+                    lastNightScore.setTextColor(muted)
+                    lastNightLabel.text = getString(R.string.analytics_no_sleep_data)
+                    lastNightLabel.setTextColor(muted)
+                    listOf(
+                        statDuration, statOnset, statHr, statRestlessness
+                    ).forEach { it.text = getString(R.string.analytics_placeholder_dash) }
                 }
 
                 // Insight computation
@@ -156,14 +171,14 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
     } catch (e: Exception) { isoDate }
 
     private fun formatDuration(minutes: Int?): String {
-        if (minutes == null) return "—"
+        if (minutes == null) return getString(R.string.analytics_placeholder_dash)
         val h = minutes / 60
         val m = minutes % 60
         return "${h}h ${m}m"
     }
 
     private fun formatOnsetTime(isoTimestamp: String?): String {
-        if (isoTimestamp == null) return "—"
+        if (isoTimestamp == null) return getString(R.string.analytics_placeholder_dash)
         return try {
             // Parse as UTC then convert to local time
             val instant = java.time.Instant.parse(isoTimestamp)
@@ -176,23 +191,13 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
 
     private fun qualityLabel(score: Int?): String = when {
         score == null -> ""
-        score >= 75 -> "Good sleep quality"
-        score >= 50 -> "Moderate sleep quality"
-        else -> "Poor sleep quality"
-    }
-
-    private fun scoreColor(score: Int?): Int {
-        val ctx = requireContext()
-        return when {
-            score == null -> ctx.getColor(R.color.noctra_label_grey)
-            score >= 75 -> android.graphics.Color.parseColor("#2E9F66")  // green
-            score >= 50 -> android.graphics.Color.parseColor("#E8A33D")  // orange
-            else -> android.graphics.Color.parseColor("#D4183D")          // red
-        }
+        score >= 75 -> getString(R.string.analytics_quality_good)
+        score >= 50 -> getString(R.string.analytics_quality_moderate)
+        else -> getString(R.string.analytics_quality_poor)
     }
 
     private fun restlessnessLabel(count: Int?): String = when {
-        count == null -> "—"
+        count == null -> getString(R.string.analytics_placeholder_dash)
         count <= 10 -> "Low"
         count <= 30 -> "Moderate"
         else -> "High"

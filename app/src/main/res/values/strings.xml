@@ -61,6 +61,19 @@
     <string name="health_settings_status_unavailable">Health Connect isn\'t available on this device</string>
     <string name="health_settings_manage">Open Health Connect Settings</string>
 
+    <!-- Analytics (ANALYTICS_SPEC.md §2.4, §6, §7) -->
+    <string name="analytics_last_night">LAST NIGHT</string>
+    <string name="analytics_placeholder_dash">—</string>
+    <string name="analytics_no_score">—</string>
+    <string name="analytics_no_sleep_data">No sleep data recorded last night</string>
+    <string name="analytics_label_duration">Duration</string>
+    <string name="analytics_label_onset">Sleep onset time</string>
+    <string name="analytics_label_hr">Avg heart rate</string>
+    <string name="analytics_label_restlessness">Restlessness</string>
+    <string name="analytics_quality_good">Good sleep quality</string>
+    <string name="analytics_quality_moderate">Moderate sleep quality</string>
+    <string name="analytics_quality_poor">Poor sleep quality</string>
+
     <!-- Offline State -->
     <string name="offline_title">No Internet Connection</string>
     <string name="offline_description">Noctra requires an internet connection to sync your sleep data</string>

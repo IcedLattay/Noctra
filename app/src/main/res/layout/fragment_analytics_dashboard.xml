@@ -30,12 +30,15 @@
             android:textStyle="bold" />
 
         <!-- ─── LAST NIGHT CARD ──────────────────────────────────────── -->
+        <!-- ANALYTICS_SPEC.md §2.4 + §6 item 3: score #7746FF is the only
+             coloured element; label, date, classification and all four values
+             are black, the four stat labels are analytics_muted. -->
         <LinearLayout
             android:id="@+id/card_last_night"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:background="@drawable/card_status_outline"
+            android:background="@drawable/bg_analytics_card"
             android:orientation="vertical"
             android:padding="20dp">
 
@@ -50,8 +53,9 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:fontFamily="@font/poppins"
                     android:letterSpacing="0.05"
-                    android:text="LAST NIGHT"
+                    android:text="@string/analytics_last_night"
                     android:textColor="@color/black"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -60,30 +64,34 @@
                     android:id="@+id/last_night_date"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins"
                     android:textColor="@color/black"
                     android:textSize="14sp"
                     android:textStyle="bold"
-                    tools:text="May 24, 2026" />
+                    tools:text="June 20, 2026" />
             </LinearLayout>
 
-            <!-- Composite score -->
+            <!-- Composite score — the only coloured element in this card -->
             <TextView
                 android:id="@+id/last_night_score"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:fontFamily="@font/poppins"
+                android:textColor="@color/analytics_score"
                 android:textSize="48sp"
                 android:textStyle="bold"
-                tools:text="82"
-                tools:textColor="#2E9F66" />
+                tools:text="82" />
 
             <!-- Quality label -->
             <TextView
                 android:id="@+id/last_night_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/noctra_purple_dark"
+                android:fontFamily="@font/poppins"
+                android:textColor="@color/black"
                 android:textSize="15sp"
+                android:textStyle="bold"
                 tools:text="Good sleep quality" />
 
             <!-- 2x2 stat grid -->
@@ -102,7 +110,7 @@
 
                     <TextView
                         style="@style/StatTileLabel"
-                        android:text="Duration" />
+                        android:text="@string/analytics_label_duration" />
 
                     <TextView
                         android:id="@+id/stat_duration"
@@ -119,7 +127,7 @@
 
                     <TextView
                         style="@style/StatTileLabel"
-                        android:text="Sleep onset time" />
+                        android:text="@string/analytics_label_onset" />
 
                     <TextView
                         android:id="@+id/stat_sleep_onset"
@@ -143,7 +151,7 @@
 
                     <TextView
                         style="@style/StatTileLabel"
-                        android:text="Avg heart rate" />
+                        android:text="@string/analytics_label_hr" />
 
                     <TextView
                         android:id="@+id/stat_avg_hr"
@@ -160,7 +168,7 @@
 
                     <TextView
                         style="@style/StatTileLabel"
-                        android:text="Restlessness" />
+                        android:text="@string/analytics_label_restlessness" />
 
                     <TextView
                         android:id="@+id/stat_restlessness"
