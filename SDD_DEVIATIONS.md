@@ -286,6 +286,28 @@ Both are nullable, so no insert default is overridden and no backfill is require
 
 ---
 
+## Analytics Redesign — Phase 4 Seven-Day Detail Block
+
+**Spec:** `ANALYTICS_SPEC.md` §2.1, §3 (read-only charts, unknowns honest, no calendar frames), §6 items 4–5, §7 locked caption.
+
+**A fifth completion state was required.** §2.1 asks for upcoming slots to render as scaffolding — "empty but their date labels show upfront as scaffolding (faint, no slot outlines: clearly 'not yet,' never mistakable for missing data)". That is a fifth visual state, not a data state, so `UPCOMING` joins `COMPLETED` / `MISSED` / `PENDING` / `INELIGIBLE`. `buildCompletionStatuses` tests for it **first**, otherwise a future date falls straight through to `MISSED` and the user sees tomorrow painted pink.
+
+**The sleep-score gap fix is the load-bearing change.** A single MPAndroidChart `LineDataSet` draws a path between its outermost points regardless of how far apart they sit in x — so one dataset silently drew a straight line *through* missing nights, which §2.1 explicitly forbids. `setData` now emits one dataset per **contiguous run** of scored nights, making a gap structurally impossible rather than merely unlikely. `Mode.LINEAR` replaces `CUBIC_BEZIER` so the series also cannot bow into a gap between runs.
+
+**Two visual honesty fixes in the bedtime chart:**
+- The target dot became a hollow **dashed** ring (§6 item 4) and is drawn last, so it stays legible as the anchor even when a connector passes behind it.
+- A night with no data previously drew a *second dot sitting on the target row*. That made "we did not measure this night" render identically to "we measured zero delay". It now draws the ring alone.
+
+**`SleepQualityMarkerView` deleted.** §3 makes the charts read-only, so the tap marker, touch, drag and zoom are all off. The class and `marker_sleep_quality.xml` had no remaining references.
+
+**The completion totals label is gone from the layout**, not just blanked. §2.1: "No totals or percentages — the cells speak."
+
+**`INELIGIBLE` renders hollow rather than grey-filled** (outline only, card-coloured interior) so it cannot be confused with either missed or pending. `completion_grey` still supplies its outline.
+
+**Deferred to Phase 8's `[MEASURE]` pass:** the completion cell height/width ratio and the ring/dot diameters are set from the §6 approximations, not measured off the wireframe.
+
+---
+
 ## Updates
 
 *Add new deviations here as they are discovered.*
