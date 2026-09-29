@@ -262,7 +262,27 @@ Each step saves its own draft on advance (`draft_bedtime` + `draft_activity_ids`
 - **Pending yellow not tokenised.** The spec names `analytics_pending` `#FFC90E` but also names "shared yellows" as the example of what *not* to duplicate. `noctra_health_yellow` is already exactly `#FFC90E` (used by one health-status dot), so pending reuses it rather than adding a second name for one value. Phase 4d must tint pending cells with `@color/noctra_health_yellow`.
 - **`adherence_connector` `#83828C` inferred.** The spec gives no connector colour for the bedtime-pairs chart. It previously was lavender `#A78BFA`, which would have clashed against the new `#444444` target ring, so it was moved to the muted neutral.
 
-**Unresolved conflict — section headings (needs a call before Phase 3/4):** spec §6 says section labels are "black, ALL CAPS, 13sp, `letterSpacing 0.05`", but `NEW_ANALYTICS_UI.png` renders them in title case at roughly 18sp ("Sleep Score", "Bedtime Adherence", "Routine Completion", "Insights"). Both styles now exist — `AnalyticsSectionLabel` (spec literal) and `AnalyticsSectionHeading` (wireframe-faithful, 18sp black bold). The wireframe has been treated as visual truth per the spec's own precedence rule, but this is a spec defect to settle, not something to quietly pick.
+**Resolved — section headings follow the wireframe:** spec §6 describes section labels as "black, ALL CAPS, 13sp, `letterSpacing 0.05`", but `NEW_ANALYTICS_UI.png` renders them in title case at roughly 18sp ("Sleep Score", "Bedtime Adherence", "Routine Completion", "Insights"). Confirmed with the user: the wireframe wins, per the spec's own "wireframe is visual truth" precedence. `AnalyticsSectionHeading` (18sp black bold, Poppins) is the style the dashboard consumes. `AnalyticsSectionLabel` is retained only as the literal §6 definition; if nothing ends up using it by Phase 8, delete it rather than leave two near-identical heading styles to confuse the next reader.
+
+---
+
+## Analytics Redesign — Phase 2 Data Layer
+
+**Spec:** `ANALYTICS_SPEC.md` §5 (backend per view) and §3 (global rules).
+
+**Migration 5 added.** The spec's Eligibility rule and its window anchoring both needed columns `user_profiles` did not carry:
+- `onboarding_completed_at TIMESTAMPTZ` — stamped by `markOnboardingComplete`. Required to exclude a night whose routine window closed before onboarding finished.
+- `created_at TIMESTAMPTZ DEFAULT now()` (`IF NOT EXISTS`) — the §3 fallback anchor when no `sleep_records`/`routine_sessions` rows exist yet.
+
+Both are nullable, so no insert default is overridden and no backfill is required. The model mirrors them as nullable so rows predating the migration still decode.
+
+**Three judgement calls:**
+
+- **Unknown onboarding timestamp means "everything eligible."** `resolveEligibilityStart()` returns null when neither `onboarding_completed_at` nor `created_at` is readable, and null is read downstream as *treat every night as eligible*. Hiding real historical data is a worse failure than showing a possibly-unfair mark, and the spec itself calls the case "rare by construction."
+- **`DayStatus.INCOMPLETE` and `NO_DATA` were removed, not aliased.** A first attempt kept them as computed properties returning `MISSED`. That would make `when (status) { DayStatus.NO_DATA -> … }` silently match `MISSED` — precisely the confusion the four-state model exists to prevent. `NO_DATA` grey is now free for `INELIGIBLE`, which is the honest use of it: a night the user could not have attempted should not read as a failure.
+- **Variability uses the mean of the displayed onsets**, not the target bedtime as the mean, because the spec defines it as the standard deviation of the displayed onsets. This also means it does not depend on an in-flight target-bedtime read. With a target 20 min from the mean this yields the same number, so the SDD-era intent is preserved.
+
+**Not yet consumed:** `trendPoints`, `trendAverages`, `hasEnoughForTrend` and `weekCounter` are computed and exposed but have no UI until Phases 4–5. The detail block still renders through the legacy `SleepQualityChartConfig` / `BedtimeAdherenceChartView`, which still assume Mon–Sun day labels — Phase 4 replaces their day labelling with real dates.
 
 ---
 
