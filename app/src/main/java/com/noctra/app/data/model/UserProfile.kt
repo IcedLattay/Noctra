@@ -15,5 +15,11 @@ data class UserProfile(
     @SerialName("hr_baseline_bpm") val hrBaselineBpm: Double? = null,
     @SerialName("is_email_verified") val isEmailVerified: Boolean = false,
     @SerialName("draft_bedtime") val draftBedtime: String? = null,
-    @SerialName("draft_activity_ids") val draftActivityIds: List<String>? = null
+    @SerialName("draft_activity_ids") val draftActivityIds: List<String>? = null,
+
+    // Analytics eligibility + journey anchoring (ANALYTICS_SPEC.md §3, Migration 5).
+    // Both nullable: no DB default is overridden on insert, and rows predating
+    // Migration 5 read back as null rather than failing to decode.
+    @SerialName("onboarding_completed_at") val onboardingCompletedAt: String? = null,
+    @SerialName("created_at") val createdAt: String? = null
 )

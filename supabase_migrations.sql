@@ -120,3 +120,29 @@ CREATE POLICY "reactions_insert" ON encouragement_reactions
 
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS draft_bedtime TEXT;
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS draft_activity_ids JSONB;
+
+-- ============================================================
+-- MIGRATION 5: analytics eligibility columns on user_profiles
+-- ============================================================
+-- What this does:
+--   1. Adds onboarding_completed_at. ANALYTICS_SPEC.md section 3
+--      ("Eligibility") requires knowing when onboarding finished so a
+--      night can be excluded if the routine window closed before the
+--      user ever had the app configured (e.g. onboarded at 11 PM with
+--      an 8 PM target). Such a night renders as a neutral hollow cell
+--      and is left out of every rate and average, so nobody's first
+--      mark is for hours that passed before they arrived.
+--   2. Adds created_at if absent. Section 3 also anchors the
+--      "Week N" journey counter and the 7-day/30-day window start to
+--      the first recorded data, falling back to created_at only when
+--      no sleep_records or routine_sessions rows exist yet.
+--
+-- Both are nullable, so no default is overridden on insert and no
+-- backfill is required. Rows predating this migration have a NULL
+-- onboarding_completed_at; the client then falls back to created_at,
+-- and failing that treats every night as eligible so that real
+-- historical data is never hidden. Owned-row RLS already applies.
+-- ============================================================
+
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS onboarding_completed_at TIMESTAMPTZ;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();

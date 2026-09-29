@@ -318,6 +318,36 @@ class RoutineSessionRepository {
         }
     }
 
+    /**
+     * Returns the earliest session_date the user has ever recorded, or null if
+     * they have no rows at all.
+     *
+     * ANALYTICS_SPEC.md §3: windows and the "Week N" counter anchor to the
+     * first recorded night, not to profile creation. Paired with
+     * [SleepRecordRepository.getEarliestSessionDate]; the caller takes the
+     * earlier of the two.
+     */
+    suspend fun getEarliestSessionDate(userId: String): String? {
+        return try {
+            client.from("routine_sessions")
+                .select {
+                    filter { eq("user_id", userId) }
+                    order("session_date", Order.ASCENDING)
+                    limit(1)
+                }
+                .decodeSingleOrNull<SessionDateOnly>()
+                ?.sessionDate
+        } catch (e: Exception) {
+            Log.w(tag, "Could not read earliest routine_sessions date", e)
+            null
+        }
+    }
+
+    @Serializable
+    private data class SessionDateOnly(
+        @SerialName("session_date") val sessionDate: String
+    )
+
     suspend fun getSessionsInRange(
         userId: String,
         startDate: String,
