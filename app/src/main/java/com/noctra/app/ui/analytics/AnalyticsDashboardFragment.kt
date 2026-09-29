@@ -53,9 +53,9 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         val noInternetView = view.findViewById<View>(R.id.noInternetView)
 
 
-        // Week navigation
-        btnPrev.setOnClickListener { viewModel.previousWeek(requireContext()) }
-        btnNext.setOnClickListener { viewModel.nextWeek(requireContext()) }
+        // Detail block navigation — ±1 day per tap (§3 small steps)
+        btnPrev.setOnClickListener { viewModel.shiftDetail(-1) }
+        btnNext.setOnClickListener { viewModel.shiftDetail(+1) }
 
         lifecycleScope.launch {
             viewModel.state.collect { state ->
@@ -70,25 +70,32 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
                     mainContent.visibility = View.VISIBLE
                 }
 
-                weekRangeLabel.text = state.weekRangeLabel
-                btnNext.alpha = if (state.canGoForward) 1.0f else 0.3f
+                weekRangeLabel.text = formatRange(state.detailStart, 7)
+                btnNext.alpha = if (viewModel.canShiftDetailForward()) 1.0f else 0.3f
+                btnPrev.alpha = if (viewModel.canShiftDetailBack()) 1.0f else 0.3f
 
-                // Sleep Quality chart
-                val scores = buildScoresByDay(state.weekStart, state.weekSleepRecords)
-                SleepQualityChartConfig.setData(sleepQualityChart, requireContext(), scores)
+                // Sleep Quality chart — nulls become gaps, never zeros
+                SleepQualityChartConfig.setData(sleepQualityChart, requireContext(), state.detailScores)
 
-                // Bedtime Adherence chart
+                // Bedtime Adherence chart, built from the onsets already resolved
+                // for this window so the pair chart and the completion cells can
+                // never disagree about which nights exist.
                 val targetBedtimeTime = parseTargetBedtime(state.targetBedtime)
-                val adherence = adherenceCalculator.classifyWeek(
-                    weekStart = state.weekStart,
-                    targetBedtime = targetBedtimeTime,
-                    sleepRecords = state.weekSleepRecords
-                )
+                val adherence = (0 until 7).map { offset ->
+                    adherenceCalculator.classify(
+                        sessionDate = state.detailStart.plusDays(offset.toLong()),
+                        targetBedtime = targetBedtimeTime,
+                        sleepOnsetTime = state.detailOnsets.getOrNull(offset)?.toString()
+                    )
+                }
                 bedtimeAdherenceChart.setData(adherence)
 
-                // Build a 7-day status array (Mon→Sun) from the week's sessions
-                val statuses = buildCompletionStatuses(state.weekStart, state.weekSessions)
-                routineCompletionChart.setData(statuses)
+                // Completion cells
+                routineCompletionChart.setData(state.detailCompletion)
+
+                // §2.1: the cells speak — no totals, no percentages. Phase 4
+                // removes the summary label from the layout entirely.
+                labelRoutineCompletion.text = ""
 
                 // Last Night card
                 val record = state.lastNightRecord
@@ -109,17 +116,6 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
                     statOnset.text = "—"
                     statHr.text = "—"
                     statRestlessness.text = "—"
-                }
-
-                // Routine Completion header
-                val total = state.weekSessions.size
-                if (total == 0) {
-                    labelRoutineCompletion.text = "ROUTINE COMPLETION - NO DATA THIS WEEK"
-                } else {
-                    val completed = state.weekSessions.count { it.status == "COMPLETED" }
-                    val pct = (completed * 100 / total)
-                    labelRoutineCompletion.text =
-                        "ROUTINE COMPLETION - $completed OF $total NIGHTS ($pct%)"
                 }
 
                 // Insight computation
@@ -144,6 +140,16 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
     }
 
     // ─── Formatting helpers ──────────────────────────────────────────────
+
+    /**
+     * §7 locked range format: "Jun 14, 2026 - Jun 20, 2026". Plain dates only —
+     * no Monday/Sunday framing, no month names standing in for a range.
+     */
+    private fun formatRange(start: LocalDate, days: Int): String {
+        val end = start.plusDays((days - 1).toLong())
+        return "${start.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))} - " +
+            end.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
+    }
 
     private fun formatDate(isoDate: String): String = try {
         LocalDate.parse(isoDate).format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
@@ -190,38 +196,6 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         count <= 10 -> "Low"
         count <= 30 -> "Moderate"
         else -> "High"
-    }
-
-    private fun buildCompletionStatuses(
-        weekStart: LocalDate,
-        sessions: List<com.noctra.app.data.model.RoutineSession>
-    ): List<RoutineCompletionRowView.DayStatus> {
-
-        val byDate = sessions.associateBy { it.sessionDate }
-
-        return (0..6).map { dayOffset ->
-            val date = weekStart.plusDays(dayOffset.toLong())
-            val session = byDate[date.toString()]
-            when {
-                session == null -> RoutineCompletionRowView.DayStatus.NO_DATA
-                session.status == "COMPLETED" -> RoutineCompletionRowView.DayStatus.COMPLETED
-                else -> RoutineCompletionRowView.DayStatus.INCOMPLETE
-            }
-        }
-    }
-
-    private fun buildScoresByDay(
-        weekStart: LocalDate,
-        sleepRecords: List<com.noctra.app.data.model.SleepRecord>
-    ): List<Int?> {
-        // Index by session_date for quick lookup
-        val byDate = sleepRecords.associateBy { it.sessionDate }
-
-        return (0..6).map { dayOffset ->
-            val date = weekStart.plusDays(dayOffset.toLong())
-            val record = byDate[date.toString()]
-            record?.compositeScore
-        }
     }
 
     private fun parseTargetBedtime(stored: String?): java.time.LocalTime? {
