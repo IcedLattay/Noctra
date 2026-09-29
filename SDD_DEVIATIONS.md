@@ -247,6 +247,25 @@ Each step saves its own draft on advance (`draft_bedtime` + `draft_activity_ids`
 
 ---
 
+## Analytics Redesign — Phase 1 Design Tokens
+
+**Spec:** `ANALYTICS_SPEC.md` §6 (UI annex), with the "Overwrite rule" — where a resource already exists for a component, the new value wins; write over, don't duplicate.
+
+**Overwrite blast radius — checked, zero outside analytics.** Before overwriting, every consumer of the six affected colors was traced. `completion_green`, `completion_pink`, `adherence_target`, `adherence_on_time`, `adherence_slight_delay` and `adherence_connector` are referenced only by `BedtimeAdherenceChartView`, `RoutineCompletionRowView`, and the analytics `legend_dot_*` drawables. So the spec's global overwrite is safe here and does not recolour companion, profile, or shop UI.
+
+**Overwritten:** `completion_green` `#7BC97D`→`#00A63E` · `completion_pink` `#F08FA1`→`#D4183D` · `adherence_on_time` `#2E9F66`→`#00A63E` · `adherence_slight_delay` `#E8A33D`→`#F0B100` · `adherence_target` `#A78BFA`→`#444444` (hollow ring) · `adherence_no_data` `#1A1342`→`#83828C` (chart dates are muted) · `adherence_connector` `#A78BFA`→`#83828C`.
+
+**Added:** `analytics_card_bg` `#EEEAF9` · `analytics_score` `#7746FF` · `analytics_muted` `#83828C` · `analytics_trend_dot` `#8457FF` · `analytics_trend_avg` `#D0BEFF` · `analytics_axis` `#C6B8EC` · `analytics_card_outline` `#E2DCF3` (faint card stroke — value not given in spec, inferred).
+
+**Two judgement calls:**
+
+- **Pending yellow not tokenised.** The spec names `analytics_pending` `#FFC90E` but also names "shared yellows" as the example of what *not* to duplicate. `noctra_health_yellow` is already exactly `#FFC90E` (used by one health-status dot), so pending reuses it rather than adding a second name for one value. Phase 4d must tint pending cells with `@color/noctra_health_yellow`.
+- **`adherence_connector` `#83828C` inferred.** The spec gives no connector colour for the bedtime-pairs chart. It previously was lavender `#A78BFA`, which would have clashed against the new `#444444` target ring, so it was moved to the muted neutral.
+
+**Unresolved conflict — section headings (needs a call before Phase 3/4):** spec §6 says section labels are "black, ALL CAPS, 13sp, `letterSpacing 0.05`", but `NEW_ANALYTICS_UI.png` renders them in title case at roughly 18sp ("Sleep Score", "Bedtime Adherence", "Routine Completion", "Insights"). Both styles now exist — `AnalyticsSectionLabel` (spec literal) and `AnalyticsSectionHeading` (wireframe-faithful, 18sp black bold). The wireframe has been treated as visual truth per the spec's own precedence rule, but this is a spec defect to settle, not something to quietly pick.
+
+---
+
 ## Updates
 
 *Add new deviations here as they are discovered.*

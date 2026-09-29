@@ -90,30 +90,73 @@
         <item name="android:textColorPrimary">@color/noctra_purple_dark</item>
     </style>
 
-    <!-- Section labels like "BEDTIME ADHERENCE & SLEEP ONSET" -->
+    <!-- ══ ANALYTICS STYLES (ANALYTICS_SPEC.md §6) ══ -->
+
+    <!-- Section label — spec §6 literal: black, ALL CAPS, 13sp, letterSpacing 0.05 -->
     <style name="AnalyticsSectionLabel">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">@color/noctra_purple_dark</item>
+        <item name="android:fontFamily">@font/poppins</item>
+        <item name="android:textFontWeight">700</item>
+        <item name="android:textColor">@color/black</item>
         <item name="android:textSize">13sp</item>
         <item name="android:letterSpacing">0.05</item>
+        <item name="android:textAllCaps">true</item>
         <item name="android:textStyle">bold</item>
     </style>
 
-    <!-- Stat tile label (above the value) -->
+    <!-- Section heading — matches the NEW_ANALYTICS_UI wireframe, which renders
+         section titles in title case ("Sleep Score", "Bedtime Adherence") rather
+         than the ALL CAPS that spec §6 describes. The spec names the wireframe as
+         visual truth, so this is the style the dashboard uses. Kept separate from
+         AnalyticsSectionLabel until the conflict is resolved. -->
+    <style name="AnalyticsSectionHeading">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">@font/poppins</item>
+        <item name="android:textFontWeight">700</item>
+        <item name="android:textColor">@color/black</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Range control label — the "Jun 14, 2026 - Jun 20, 2026" subtitle -->
+    <style name="AnalyticsRangeLabel">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:fontFamily">@font/poppins</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/black</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <!-- Chart legend label — spec §6: 12sp black -->
+    <style name="AnalyticsLegendLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">@font/poppins</item>
+        <item name="android:textColor">@color/black</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <!-- Stat tile label (above the value) — spec §6 item 3: the four labels are
+         analytics_muted, values are black -->
     <style name="StatTileLabel">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">@color/noctra_label_grey</item>
+        <item name="android:fontFamily">@font/poppins</item>
+        <item name="android:textColor">@color/analytics_muted</item>
         <item name="android:textSize">13sp</item>
     </style>
 
-    <!-- Stat tile value -->
+    <!-- Stat tile value — black per spec §6 item 3 -->
     <style name="StatTileValue">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">2dp</item>
-        <item name="android:textColor">@color/noctra_purple_dark</item>
+        <item name="android:fontFamily">@font/poppins</item>
+        <item name="android:textColor">@color/black</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
     </style>
