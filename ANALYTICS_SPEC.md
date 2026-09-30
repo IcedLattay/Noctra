@@ -22,11 +22,12 @@ the older "Analytics Redesign" sketch in `SDD_DEVIATIONS.md`.
 
 ### 2.1 Seven-day detail (one control moves all three charts one day per tap)
 
-First week: fixed 7 slots starting at the first recorded night, filling
-left to right — upcoming slots stay empty but their date labels show
-upfront as scaffolding (faint, no slot outlines: clearly "not yet,"
-never mistakable for missing data). Once history exceeds 7 days the
-window slides (rolling last 7).
+First week: fixed 7 slots starting at the first eligible night
+(onboarding day if onboarding beat its routine window, else the next
+day), filling left to right — upcoming slots stay empty but their date
+labels show upfront as scaffolding (faint, no slot outlines: clearly
+"not yet," never mistakable for missing data). Once history exceeds 7
+days the window slides (rolling last 7).
 
 - **Sleep quality line.** One dot per night. Missing nights leave a gap —
   the line never connects across gaps or fills them with zeros.
@@ -89,11 +90,10 @@ Latest night's score and details. No window, no navigation. Unchanged.
   everywhere. (Pre-first-data nights need no skipping — they aren't
   shown.)
 - **Eligibility.** A night counts only if onboarding completed before
-  its routine window closed. Join at 11 PM with an 8 PM bedtime → day
-  one was never eligible: renders as a neutral hollow cell (distinct
-  from pink missed and yellow pending), excluded from all math. Rare
-  by construction (only onboarding day itself), but closes the last
-  fairness hole — nobody's first mark is for hours that passed before
+  its routine window closed — and the window itself starts there. Join
+  at 11 PM with an 8 PM bedtime → day one never renders; every chart
+  starts the next day. Rare by construction (only onboarding day
+  itself), but nobody's first mark is for hours that passed before
   they arrived.
 - **Session-date attribution (4 AM rule).** Routine sessions starting
   before 4 AM stamp the previous calendar day
@@ -123,10 +123,10 @@ Latest night's score and details. No window, no navigation. Unchanged.
   mutually consistent. The existing `loadWeek` batch already does
   this; keep it.
 - **Motivation without frames.** A "Week N" counter gives the journey
-  feeling; no calendar needed. Week 1 starts at the first recorded
-  data (earliest `sleep_records` or `routine_sessions` date), not
-  profile creation — the journey starts when tracking starts. Falls
-  back to profile `created_at` when no data exists yet.
+  feeling; no calendar needed. Week 1 starts at the first eligible
+  night (same anchor as the windows), not profile creation — the
+  journey starts when nights start counting. Falls back to profile
+  `created_at` when no eligible night exists yet.
 
 ## 4. Left out on purpose
 
@@ -146,8 +146,8 @@ All reads go through `AnalyticsViewModel`; no view queries anything directly.
   yellow; no row = missed/pink).
 - **Bedtime pairs + variability:** `sleep_records.sleep_onset_time` vs
   `user_profiles.target_bedtime`; variability = standard deviation of
-  the displayed onsets. Window start and Week N key off first recorded
-  data (profile `created_at` only as fallback).
+  the displayed onsets. Window start and Week N key off the first
+  eligible night (profile `created_at` only as fallback).
 - **Trend + average:** same composite column, wider range; average =
   trailing-7 mean of scored nights (gaps shrink the divisor, never
   zero-fill).
