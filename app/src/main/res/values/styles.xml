@@ -131,4 +131,5 @@
         <item name="android:textStyle">bold</item>
         <item name="android:fontFamily">@font/poppinsbold</item>
     </style>
+
 </resources>
