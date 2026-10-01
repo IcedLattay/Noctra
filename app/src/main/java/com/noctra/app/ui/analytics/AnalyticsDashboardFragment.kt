@@ -211,7 +211,36 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
             }
         }
 
+        setupScrollToTop(view)
+
         viewModel.load(requireContext())
+    }
+
+    /**
+     * §8: the FAB appears once scrolled past ~1.5 screens and hides near the
+     * top; tapping it does a smooth scroll to 0.
+     *
+     * Driven by a plain scroll listener — §8 notes there is no swipe-refresh on
+     * this screen, so there are no gestures for it to fight.
+     */
+    private fun setupScrollToTop(root: View) {
+        val scrollView = root.findViewById<androidx.core.widget.NestedScrollView>(R.id.mainContent)
+            ?: return
+        val fab = root.findViewById<
+            com.google.android.material.floatingactionbutton.FloatingActionButton
+            >(R.id.btn_scroll_top) ?: return
+
+        // ~1.5 screens, measured rather than hard-coded, so it stays right on
+        // tall and short devices alike.
+        val threshold = (scrollView.resources.displayMetrics.heightPixels * 1.5f).toInt()
+
+        scrollView.setOnScrollChangeListener { _, _, scrollY, _, _ ->
+            if (scrollY > threshold) fab.show() else fab.hide()
+        }
+
+        fab.setOnClickListener {
+            scrollView.smoothScrollTo(0, 0)
+        }
     }
 
     // ─── Formatting helpers ──────────────────────────────────────────────
