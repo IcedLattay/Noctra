@@ -365,4 +365,52 @@ Implemented as specified: a 56dp `FloatingActionButton` in `noctra_purple` `#5C2
 
 ## Updates
 
+## Analytics Redesign — Phase 8 Integration and Verification
+
+**Spec:** `ANALYTICS_SPEC.md` §3 (batched loading, read-only charts, two clocks, fair denominators), §5 (loading/refresh), §6 `[MEASURE]` pass.
+
+### Verification results
+
+| Check | Result |
+|---|---|
+| 8.2 Offline placeholder + retry | Confirmed intact — the existing `layout_no_internet` include and its retry handler are untouched and still gate on `isOffline` |
+| 8.3 No swipe-refresh | Confirmed absent — no `SwipeRefreshLayout` in the analytics layout. §5's revisit-only reload covers it |
+| 8.4 Charts read-only | Confirmed — the only click listeners on the screen are the four range arrows, the scroll-to-top FAB, and the offline retry. Exactly the set §3 permits |
+| 8.5 Two clocks never shared | Confirmed — `shiftDetail` reads and writes only `detailStart` (±1 day); `shiftTrend` only `trendStart` (±7 days). Neither reads the other's field |
+| 8.6 Fair denominators | Confirmed — PENDING excluded from the insight comparison (Phase 6); unmeasured nights shrink the trailing-average divisor rather than zero-filling; ineligible nights excluded from the variability SD |
+| 8.7 Clean build | `clean assembleDebug` green. **Zero warnings from analytics code** — the four remaining warnings are pre-existing in `FriendshipRepository` (deprecated `filter`) and `UserProfileViewModel` (annotation target) |
+
+### §6 `[MEASURE]` pass — completed
+
+Done against `NEW_ANALYTICS_UI.png` at its native 400px width, where 1px maps to roughly 1dp.
+
+- **Completion cells** measured ~38 × 50dp (ratio ~0.76). They were rendering 38 × 78 — a row of narrow pillars rather than the wireframe's chunky pills. Cell height is pinned by the container, so the FrameLayout drops 120dp → 92dp.
+- **Completion corner radius** 10dp → 20dp; at 50dp tall the wireframe pills read as near-stadium.
+- **7-day score dots** 10dp → 12dp diameter.
+- **Bedtime ring** 12dp → 14dp, **actual dot** 10dp → 12dp, keeping the ring just proud of the dot it anchors.
+
+Each measured constant now carries a `[MEASURE]` comment naming the wireframe it came from, so it can be re-derived rather than guessed.
+
+### Batched loading — spinner gated on `isLoading && !hasLoaded`
+
+Both conditions are load-bearing. Without the second, every range-arrow tap would flash a spinner over already-rendered content, because `refresh()` re-fetches the batch on each shift.
+
+### The "companion Shleepy loader" does not exist
+
+§3 describes the spinner as "the same component as the companion Shleepy loader". No such shared component exists — the closest is a Lottie lightbulb panel scoped inside `fragment_routine_start.xml`, which is a fixed 2s pre-flight beat rather than a network-state indicator. §3's literal requirement, a centred `#522ABE` spinner, was implemented directly.
+
+### `AnalyticsSectionLabel` deleted
+
+Phase 1 kept both it and `AnalyticsSectionHeading` because §6 and the wireframe disagreed on section-heading format, with a note to delete the literal variant in Phase 8 if nothing referenced it. Nothing did. Two near-identical heading styles is exactly the confusion the next reader should not inherit.
+
+### Known trade-off, not fixed
+
+`refresh()` re-fetches the whole batch — both windows, the insight range, last night and the profile — on *any* arrow tap. Shifting the 7-day clock therefore re-queries 30-day trend data that cannot have changed. §3 is explicit that the batch should be kept ("The existing `loadWeek` batch already does this; keep it"), and §3's two-clocks rule governs range *position*, not network calls, so this is compliant. Splitting the fetch per window would cut the query count but would deviate from an instruction the spec gave on purpose. Flagging it rather than silently optimising.
+
+### Open question for the spec author
+
+§2.3 says insight wording should share the trend's vocabulary — "climbing" / "steady" / "slipping" — but none of the four §7 locked strings contain those words. §7 is titled "Final copy (locked strings)" and is more specific, so the locked strings shipped verbatim. If the vocabulary line is the real intent, §7 needs rewriting too. See Phase 6.
+
+---
+
 *Add new deviations here as they are discovered.*
