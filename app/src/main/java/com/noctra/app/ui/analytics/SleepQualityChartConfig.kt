@@ -29,7 +29,9 @@ import com.noctra.app.R
  */
 object SleepQualityChartConfig {
 
-    private const val DOT_RADIUS_DP = 5f      // ~10dp diameter
+    // [MEASURE] against NEW_ANALYTICS_UI.png: the 7-day score dots read ~12dp
+    // across, and the connector ~2dp.
+    private const val DOT_RADIUS_DP = 6f
     private const val LINE_WIDTH_DP = 2f
     private const val GRID_STEPS = 5           // 0 / 25 / 50 / 75 / 100
 

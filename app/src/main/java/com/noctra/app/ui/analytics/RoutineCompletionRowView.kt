@@ -61,7 +61,11 @@ class RoutineCompletionRowView @JvmOverloads constructor(
 
     private val labelHeightPx = dpToPx(18f)
     private val cellSpacingPx = dpToPx(12f)   // §6: 12dp gaps
-    private val cornerPx = dpToPx(10f)
+    // [MEASURE] against NEW_ANALYTICS_UI.png: cells read roughly 38dp wide by
+    // 50dp tall (ratio ~0.76), with a near-stadium corner close to half the
+    // cell height. The container height is what pins the cell height — see
+    // the FrameLayout in fragment_analytics_dashboard.xml.
+    private val cornerPx = dpToPx(20f)
     private val cellRect = RectF()
 
     /**

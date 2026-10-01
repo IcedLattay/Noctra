@@ -375,10 +375,12 @@
             android:text="@string/analytics_section_completion" />
 
         <!-- §2.1: the cells speak — no totals, no percentages, so the old
-             "5 OF 7 NIGHTS (71%)" summary label is gone for good. -->
+             "5 OF 7 NIGHTS (71%)" summary label is gone for good.
+             [MEASURE] height is 92dp so the cells land at the wireframe's
+             ~38x50dp (12dp padding + 50dp cell + 18dp date labels). -->
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="120dp"
+            android:layout_height="92dp"
             android:layout_marginTop="12dp"
             android:background="@drawable/bg_analytics_card"
             android:padding="12dp">

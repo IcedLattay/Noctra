@@ -53,8 +53,11 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
         color = ContextCompat.getColor(context, R.color.analytics_muted)
     }
 
-    private val ringRadiusPx = dpToPx(6f)
-    private val dotRadiusPx = dpToPx(5f)
+    // [MEASURE] against NEW_ANALYTICS_UI.png: the dashed target ring reads
+    // ~14dp across and the actual dot ~12dp, so the ring sits just proud of
+    // the dot it anchors.
+    private val ringRadiusPx = dpToPx(7f)
+    private val dotRadiusPx = dpToPx(6f)
     private val labelHeightPx = dpToPx(20f)
     private val verticalPadding = dpToPx(10f)
 

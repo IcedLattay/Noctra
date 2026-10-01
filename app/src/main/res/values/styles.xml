@@ -92,24 +92,14 @@
 
     <!-- ══ ANALYTICS STYLES (ANALYTICS_SPEC.md §6) ══ -->
 
-    <!-- Section label — spec §6 literal: black, ALL CAPS, 13sp, letterSpacing 0.05 -->
-    <style name="AnalyticsSectionLabel">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:fontFamily">@font/poppins</item>
-        <item name="android:textFontWeight">700</item>
-        <item name="android:textColor">@color/black</item>
-        <item name="android:textSize">13sp</item>
-        <item name="android:letterSpacing">0.05</item>
-        <item name="android:textAllCaps">true</item>
-        <item name="android:textStyle">bold</item>
-    </style>
-
-    <!-- Section heading — matches the NEW_ANALYTICS_UI wireframe, which renders
-         section titles in title case ("Sleep Score", "Bedtime Adherence") rather
-         than the ALL CAPS that spec §6 describes. The spec names the wireframe as
-         visual truth, so this is the style the dashboard uses. Kept separate from
-         AnalyticsSectionLabel until the conflict is resolved. -->
+    <!-- Section heading — follows NEW_ANALYTICS_UI, which renders section titles
+         in title case at 18sp ("Sleep Score", "Bedtime Adherence") rather than
+         the ALL CAPS 13sp that spec §6's token list describes. Confirmed with
+         the user that the wireframe wins, per the spec's own "wireframe is
+         visual truth" precedence. The literal §6 variant was carried through
+         development as AnalyticsSectionLabel and deleted in Phase 8 once
+         nothing referenced it — two near-identical heading styles is exactly
+         the confusion the next reader should not inherit. -->
     <style name="AnalyticsSectionHeading">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
