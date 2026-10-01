@@ -8,6 +8,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.noctra.app.data.utils.RoutinePersistenceHelper
+import com.noctra.app.workers.AuditBackfillWorker
 import com.noctra.app.workers.MissedSessionCheckerWorker
 import com.noctra.app.workers.MorningSyncWorker
 import com.noctra.app.workers.SleepFinalizationWorker
@@ -28,6 +29,7 @@ class NoctraApplication : Application() {
         setupMorningSyncWorker()
         setupMissedSessionWorker()
         setupSleepFinalizationWorker()
+        setupAuditBackfillWorker()
         createNotificationChannels()
     }
 
@@ -46,6 +48,11 @@ class NoctraApplication : Application() {
 
     private fun setupMissedSessionWorker() {
         val missedSessionRequest = PeriodicWorkRequestBuilder<MissedSessionCheckerWorker>(24, TimeUnit.HOURS)
+            .setConstraints(
+                androidx.work.Constraints.Builder()
+                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                    .build()
+            )
             .setInitialDelay(calculateDelayUntil(9, 30), TimeUnit.MILLISECONDS)
             .addTag("MissedSessionCheckerWorker")
             .build()
@@ -67,6 +74,24 @@ class NoctraApplication : Application() {
             "SleepFinalizationWorker",
             ExistingPeriodicWorkPolicy.KEEP,
             finalizationRequest
+        )
+    }
+
+    private fun setupAuditBackfillWorker() {
+        val backfillRequest = PeriodicWorkRequestBuilder<AuditBackfillWorker>(24, TimeUnit.HOURS)
+            .setConstraints(
+                androidx.work.Constraints.Builder()
+                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                    .build()
+            )
+            .setInitialDelay(calculateDelayUntil(22, 0), TimeUnit.MILLISECONDS)
+            .addTag("AuditBackfillWorker")
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "AuditBackfillWorker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            backfillRequest
         )
     }
 

@@ -48,33 +48,55 @@ class ReconciliationAuditUseCase(
 
         // 3. Sequential Audit Loop
         for (date in auditDates) {
-            val dateString = date.toString()
-            val session = sessionRepository.getSessionsByDate(userId, dateString).firstOrNull()
-
-            // A. SYNC: Fetch/refresh this night's sleep data from Health Connect.
-            // The syncer handles aggregation, scoring, and idempotent upsert.
-            // The verdict below always re-runs, even when the sync finds nothing new.
-            syncSleepForDate(userId, date)
-
-            // B. VERDICT: Determine if the day was a success
-            val finalStatus = determineStatus(userId, date, session)
-            
-            // Update the session in DB if status changed
-            if (session != null && session.status != finalStatus) {
-                sessionRepository.insertSession(session.copy(status = finalStatus))
-            } else if (session == null && date.isBefore(LocalDate.now())) {
-                // Create a missed record for empty days in the past
-                sessionRepository.recordMissedSession(userId, dateString)
-            }
-
-            // C. AUDIT: Apply Game Rules
-            currentLedger = applyPenaltyChain(currentLedger, finalStatus, date)
+            currentLedger = auditDate(
+                userId = userId,
+                date = date,
+                currentLedger = currentLedger,
+                syncSleep = true
+            )
         }
 
         // 4. Final Save
         rewardRepository.updateRewardLedger(currentLedger.copy(
             lastUpdated = OffsetDateTime.now().toString()
         ))
+    }
+
+    /**
+     * Audits one date: sleep sync (optional) → verdict → write/update row →
+     * penalty fold. Shared by the open-path audit and the backfill worker
+     * so both apply identical rules.
+     */
+    suspend fun auditDate(
+        userId: String,
+        date: LocalDate,
+        currentLedger: RewardLedger,
+        syncSleep: Boolean
+    ): RewardLedger {
+        val dateString = date.toString()
+        val session = sessionRepository.getSessionsByDate(userId, dateString).firstOrNull()
+
+        // A. SYNC: Fetch/refresh this night's sleep data from Health Connect.
+        // The syncer handles aggregation, scoring, and idempotent upsert.
+        // The verdict below always re-runs, even when the sync finds nothing new.
+        // Skipped by the backfill worker (ancient HC data is gone; judge stored rows).
+        if (syncSleep) {
+            syncSleepForDate(userId, date)
+        }
+
+        // B. VERDICT: Determine if the day was a success
+        val finalStatus = determineStatus(userId, date, session)
+
+        // Update the session in DB if status changed
+        if (session != null && session.status != finalStatus) {
+            sessionRepository.insertSession(session.copy(status = finalStatus))
+        } else if (session == null && date.isBefore(LocalDate.now())) {
+            // Create a missed record for empty days in the past
+            sessionRepository.recordMissedSession(userId, dateString)
+        }
+
+        // C. AUDIT: Apply Game Rules
+        return applyPenaltyChain(currentLedger, finalStatus, date)
     }
 
     /**

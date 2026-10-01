@@ -120,3 +120,15 @@ CREATE POLICY "reactions_insert" ON encouragement_reactions
 
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS draft_bedtime TEXT;
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS draft_activity_ids JSONB;
+
+-- ============================================================
+-- MIGRATION 5: onboarding completion timestamp on user_profiles
+-- ============================================================
+-- What this does:
+--   1. Adds onboarding_completed_at for audit eligibility + Week N
+--      anchoring. Set once by markOnboardingComplete(); read by the
+--      audit backfill worker and analytics. Covered by existing
+--      own-row RLS policies, no new policies needed.
+-- ============================================================
+
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS onboarding_completed_at TIMESTAMPTZ;

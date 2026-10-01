@@ -184,6 +184,19 @@ class OnboardingSummaryFragment : Fragment() {
                 // 3. Mark onboarding complete
                 profileRepository.markOnboardingComplete(userId)
 
+                // 3b. Seed the audit anchor (day before today) so the audit
+                // range covers onboarding day. Best-effort: never blocks.
+                // Fill-only — existing stamps are never rewound.
+                try {
+                    com.noctra.app.data.repository.RewardLedgerRepository()
+                        .ensureAuditAnchor(
+                            userId,
+                            java.time.LocalDate.now().minusDays(1).toString()
+                        )
+                } catch (e: Exception) {
+                    android.util.Log.e("OnboardingSummary", "Audit anchor seeding failed", e)
+                }
+
                 // 3b. Clear the onboarding draft (best-effort, never blocks)
                 try {
                     profileRepository.clearDraft(userId)

@@ -71,6 +71,7 @@ class UserProfileRepository {
             client.from("user_profiles").update({
                 set("onboarding_completed", true)
                 set("onboarding_step", 5)
+                set("onboarding_completed_at", "now()")
                 set("updated_at", "now()")
             }) { filter { eq("user_id", userId) } }
         } catch (e: IOException) {
