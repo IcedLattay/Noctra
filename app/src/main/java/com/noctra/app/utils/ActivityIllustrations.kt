@@ -25,7 +25,7 @@ object ActivityIllustrations {
         "Bedtime To-Do List Writing"    to "illus_todo_list",
         "Reading"                       to "illus_reading",
         "White/Pink Noise"              to "illus_white_pink_noise",
-        "Mindfulness"                   to "illus_mindfulness",
+        "Mindfulness"                   to "illus_mindfullness",
         "Warm Shower"                   to "illus_warm_shower",
         "Slow-Paced Breathing"          to "illus_breathing",
         "Progressive Muscle Relaxation" to "illus_pmr",

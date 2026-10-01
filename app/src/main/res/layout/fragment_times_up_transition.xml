@@ -189,17 +189,18 @@
                 android:textSize="12sp" />
 
             <FrameLayout
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="6dp">
 
                 <com.google.android.material.progressindicator.CircularProgressIndicator
                     android:id="@+id/progress_countdown"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:max="100"
                     android:progress="100"
                     app:indicatorColor="#4B2FB5"
+                    app:indicatorInset="0dp"
                     app:indicatorSize="64dp"
                     app:trackColor="#E4DDF3"
                     app:trackThickness="5dp" />

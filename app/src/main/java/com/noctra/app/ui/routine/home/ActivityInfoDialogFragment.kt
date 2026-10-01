@@ -67,6 +67,7 @@ class ActivityInfoDialogFragment : DialogFragment() {
                 "BREATHING"  -> "Breathing · Follow the guided breathing circle"
                 "JOURNALING" -> "Journaling · Write down your thoughts"
                 "STEPPER"    -> "Guided steps · Follow each movement on screen"
+                "PHYS", "PHYSICAL" -> "Physical · Gentle movement to relax your body"
                 else         -> raw.lowercase().replace('_', ' ')
                     .replaceFirstChar { it.uppercase() }
             }
