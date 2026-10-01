@@ -347,6 +347,22 @@ Both are nullable, so no insert default is overridden and no backfill is require
 
 ---
 
+## Analytics Redesign — Phase 7 Scroll-to-Top FAB
+
+**Spec:** `ANALYTICS_SPEC.md` §8, §6 "FAB".
+
+Implemented as specified: a 56dp `FloatingActionButton` in `noctra_purple` `#5C25F0` with a white ↑, bottom-end, 16dp margins, appearing past ~1.5 screens and scrolling smoothly to 0 on tap.
+
+**One margin covers both requirements.** §8 asks for "16dp margins clear of the bottom nav" and §6 for "16dp from bottom nav + screen end". `activity_main.xml` already constrains `nav_host` `bottom_toTopOf="@id/bottom_nav"`, so the fragment's own bottom edge *is* the top of the bottom nav — a single 16dp margin inside the fragment clears both. No offset against the nav height is needed, and none should be added later.
+
+**The threshold is measured, not hard-coded.** `displayMetrics.heightPixels * 1.5` rather than a fixed dp value, so "~1.5 screens" means the same thing on a tall phone and a short one.
+
+**Two things that would have shipped wrong:**
+- `app:fabSize="mini"` overrides explicit `layout_width`/`layout_height` and renders a 40dp FAB. It was dropped; the default normal size gives the required 56dp.
+- The FAB and scroll view are looked up by their concrete types rather than casting from `View`, so `show()`/`hide()` resolve without an unchecked downcast.
+
+---
+
 ## Updates
 
 *Add new deviations here as they are discovered.*
