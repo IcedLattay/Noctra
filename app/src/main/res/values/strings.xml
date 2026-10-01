@@ -96,6 +96,13 @@
     <string name="analytics_nav_earlier">Earlier</string>
     <string name="analytics_nav_later">Later</string>
 
+    <!-- 30-day trend (§2.2, §6 item 6, §7 locked placeholder) -->
+    <string name="analytics_section_trend">30-Day Sleep Score Trend</string>
+    <string name="analytics_legend_score">Sleep Score</string>
+    <string name="analytics_legend_weekly_avg">Weekly Average</string>
+    <!-- §7 locked: "Your 30-day trend unlocks after ~2 weeks of nights." -->
+    <string name="analytics_trend_placeholder">Your 30-day trend unlocks after ~2 weeks of nights.</string>
+
     <!-- Offline State -->
     <string name="offline_title">No Internet Connection</string>
     <string name="offline_description">Noctra requires an internet connection to sync your sleep data</string>

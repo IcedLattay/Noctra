@@ -54,6 +54,13 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
 
         val insightText = view.findViewById<TextView>(R.id.insight_text)
 
+        // 30-day trend — its own clock, never shared with the block above
+        val btnTrendPrev = view.findViewById<ImageView>(R.id.btn_trend_prev)
+        val btnTrendNext = view.findViewById<ImageView>(R.id.btn_trend_next)
+        val trendRangeLabel = view.findViewById<TextView>(R.id.text_trend_range)
+        val trendChart = view.findViewById<SleepTrendChartView>(R.id.chart_trend)
+        val trendPlaceholder = view.findViewById<TextView>(R.id.trend_placeholder)
+
         val mainContent = view.findViewById<View>(R.id.mainContent)
         val noInternetView = view.findViewById<View>(R.id.noInternetView)
 
@@ -61,6 +68,8 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         // Detail block navigation — ±1 day per tap (§3 small steps)
         btnPrev.setOnClickListener { viewModel.shiftDetail(-1) }
         btnNext.setOnClickListener { viewModel.shiftDetail(+1) }
+        btnTrendPrev.setOnClickListener { viewModel.shiftTrend(-1) }
+        btnTrendNext.setOnClickListener { viewModel.shiftTrend(+1) }
 
         lifecycleScope.launch {
             viewModel.state.collect { state ->
@@ -112,6 +121,35 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
                 }.orEmpty()
                 variability.visibility =
                     if (state.variabilitySd == null) View.GONE else View.VISIBLE
+
+                // ─── 30-day trend ─────────────────────────────────────────
+                trendRangeLabel.text = formatRange(state.trendStart, TREND_DAYS)
+                btnTrendNext.alpha = if (viewModel.canShiftTrendForward()) 1.0f else 0.3f
+                btnTrendPrev.alpha = if (viewModel.canShiftTrendBack()) 1.0f else 0.3f
+
+                // §2.2: only the trend waits. Everything else shows from night one.
+                val showTrend = state.hasEnoughForTrend
+                trendPlaceholder.visibility = if (showTrend) View.GONE else View.VISIBLE
+                trendChart.visibility = if (showTrend) View.VISIBLE else View.INVISIBLE
+                btnTrendPrev.isEnabled = showTrend
+                btnTrendNext.isEnabled = showTrend
+
+                if (showTrend) {
+                    // First / middle / last date labels only — a 30-point axis of
+                    // full dates would be unreadable at phone width.
+                    val fmt = DateTimeFormatter.ofPattern("MMM d")
+                    val end = state.trendStart.plusDays((TREND_DAYS - 1).toLong())
+                    val mid = state.trendStart.plusDays((TREND_DAYS / 2).toLong())
+                    trendChart.setData(
+                        state.trendPoints,
+                        state.trendAverages,
+                        listOf(
+                            state.trendStart.format(fmt),
+                            mid.format(fmt),
+                            end.format(fmt)
+                        )
+                    )
+                }
 
                 // Last Night card — §2.4. No window, no navigation: always the
                 // most recent row, ignoring both range controls. The score keeps

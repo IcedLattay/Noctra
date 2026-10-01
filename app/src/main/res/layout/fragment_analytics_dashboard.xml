@@ -429,6 +429,110 @@
                 android:text="@string/analytics_legend_missed" />
         </LinearLayout>
 
+<!-- ═══════════════════════════════════════════════════════════
+             THIRTY-DAY TREND  (ANALYTICS_SPEC.md §2.2)
+             Its OWN range control moving ±7 days. Never shares state with
+             the 7-day block above.
+        ═══════════════════════════════════════════════════════════ -->
+        <LinearLayout
+            android:id="@+id/trend_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="36dp"
+            android:orientation="vertical">
+
+            <!-- Own range control -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/btn_trend_prev"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="@string/analytics_nav_earlier"
+                    android:padding="4dp"
+                    android:rotation="180"
+                    android:src="@drawable/ic_chevron_right" />
+
+                <TextView
+                    android:id="@+id/text_trend_range"
+                    style="@style/AnalyticsRangeLabel"
+                    tools:text="Jun 14, 2026 - July 13, 2026" />
+
+                <ImageView
+                    android:id="@+id/btn_trend_next"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="@string/analytics_nav_later"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_chevron_right" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/AnalyticsSectionHeading"
+                android:layout_marginTop="16dp"
+                android:text="@string/analytics_section_trend" />
+
+            <!-- Gated until ~2 weeks of history exist (§2.2 "show early,
+                 gate late" — only the trend waits). 260dp so the view's
+                 200dp minimum plot area plus axis labels always fits. -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="260dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_analytics_card">
+
+                <com.noctra.app.ui.analytics.SleepTrendChartView
+                    android:id="@+id/chart_trend"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="12dp" />
+
+                <TextView
+                    android:id="@+id/trend_placeholder"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:fontFamily="@font/poppins"
+                    android:gravity="center"
+                    android:paddingHorizontal="32dp"
+                    android:text="@string/analytics_trend_placeholder"
+                    android:textColor="@color/analytics_muted"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/legend_dot_score" />
+
+                <TextView
+                    style="@style/AnalyticsLegendLabel"
+                    android:layout_marginStart="6dp"
+                    android:text="@string/analytics_legend_score" />
+
+                <View
+                    android:layout_width="14dp"
+                    android:layout_height="2dp"
+                    android:layout_marginStart="16dp"
+                    android:background="@drawable/legend_line_avg" />
+
+                <TextView
+                    style="@style/AnalyticsLegendLabel"
+                    android:layout_marginStart="6dp"
+                    android:text="@string/analytics_legend_weekly_avg" />
+            </LinearLayout>
+        </LinearLayout>
         <!-- ─── INSIGHT CARD ─────────────────────────────────────────── -->
         <LinearLayout
             android:id="@+id/card_insight"
