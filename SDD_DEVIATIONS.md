@@ -308,6 +308,29 @@ Both are nullable, so no insert default is overridden and no backfill is require
 
 ---
 
+## Analytics Redesign — Phase 5 Thirty-Day Trend
+
+**Spec:** `ANALYTICS_SPEC.md` §2.2, §3 (chart implementation, two clocks, show early/gate late), §6 item 6, §7 locked placeholder.
+
+**New component, hand-rolled as specified.** §3 says "gap-breaking + min-4 averaging + custom legend fight chart libraries; ~200 lines, no new dependency", and that turned out to be accurate on all three counts:
+- MPAndroidChart cannot break a line at a missing point without splitting into multiple datasets, so a genuine gap costs a dataset per run.
+- A trailing average that shrinks its own divisor has no expression in its data model at all.
+- Aligning axis-line ends flush to tick-label edges is not expressible without overriding its axis renderer.
+
+`SleepTrendChartView` is therefore Canvas, ~200 lines, no new dependency.
+
+**Plan correction — the MPAndroidChart dependency stays.** The Phase 4 plan listed "remove BarChart + LineChart deps from this screen" for this phase. That was wrong: only the **30-day trend** is hand-rolled per §3. The 7-day sleep-score line still runs through `SleepQualityChartConfig`, which uses `LineDataSet` and its contiguous-run splitting. The dependency is untouched.
+
+**Axis geometry is deliberately non-standard.** §6 requires axis lines to "span exactly label-edge to label-edge (top of '100' flush with line end, bottom of '0' flush with line start)" and that "tick labels never stick out past the line". This is the opposite of the usual chart convention, where the axis spans the plot rect and tick labels centre on their tick positions. The view measures its own tick text and aligns the line ends to it. Worth remembering before anyone "fixes" it back to the conventional layout.
+
+**The 200dp plot floor needed its container sized to match.** The view floors its plot area at 200dp per §6, but its container was originally 240dp — which clipped the x-axis labels once the floor engaged (12 + 200 + 18 + 12 = 242dp minimum). The FrameLayout is now 260dp so the floor is always satisfiable inside the view rather than being clipped by it.
+
+**Averaging semantics.** `trailingAverages()` treats the window as seven *positions* wide and filters nulls out of it, so a missing night shortens the divisor without shortening the window for its neighbours. That is §2.2's "a missing night hosts no anchor itself but still counts as history for its neighbors", read literally.
+
+**Gate also disables the arrows.** Swapping the chart for the §7 placeholder is not enough on its own — a visible-but-inert range control reads as broken. Both arrows are disabled while gated.
+
+---
+
 ## Updates
 
 *Add new deviations here as they are discovered.*
