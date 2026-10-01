@@ -183,18 +183,28 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
                     ).forEach { it.text = getString(R.string.analytics_placeholder_dash) }
                 }
 
-                // Insight computation
+                // §2.3 / §7: the use case decides the outcome and the number;
+                // the locked sentence lives in strings.xml. No bold spans — §6
+                // drops the emphasised metric so the points read off the same
+                // scale as the trend line above.
                 when (val result = state.insightResult) {
-                    is InsightGenerationUseCase.Result.Insight -> {
-                        insightText.text = result.message
+                    is InsightGenerationUseCase.Result.Available -> {
+                        insightText.text = when (result.outcome) {
+                            InsightGenerationUseCase.Outcome.BETTER ->
+                                getString(R.string.analytics_insight_better, result.points)
+                            InsightGenerationUseCase.Outcome.WORSE ->
+                                getString(R.string.analytics_insight_worse)
+                            InsightGenerationUseCase.Outcome.SIMILAR ->
+                                getString(R.string.analytics_insight_similar)
+                        }
                         insightText.alpha = 1.0f
                     }
                     is InsightGenerationUseCase.Result.InsufficientData -> {
-                        insightText.text = result.message
+                        insightText.text = getString(R.string.analytics_insight_insufficient)
                         insightText.alpha = 0.7f
                     }
                     null -> {
-                        insightText.text = "Loading insight..."
+                        insightText.text = ""
                         insightText.alpha = 0.5f
                     }
                 }

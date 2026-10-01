@@ -533,12 +533,20 @@
                     android:text="@string/analytics_legend_weekly_avg" />
             </LinearLayout>
         </LinearLayout>
-        <!-- ─── INSIGHT CARD ─────────────────────────────────────────── -->
+        <!-- ─── INSIGHT CARD ───────────────────────────────────────────
+             §6 "Insight card": light-lavender fill (#EDE9FB), bulb icon
+             #8457FF, 14sp dark body. Section 2.3 adds no headline verdict —
+             the trend's average line already carries the direction. -->
+        <TextView
+            style="@style/AnalyticsSectionHeading"
+            android:layout_marginTop="36dp"
+            android:text="@string/analytics_section_insights" />
+
         <LinearLayout
             android:id="@+id/card_insight"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="12dp"
             android:background="@drawable/insight_card_background"
             android:gravity="center_vertical"
             android:orientation="horizontal"
@@ -548,6 +556,7 @@
                 android:layout_width="32dp"
                 android:layout_height="32dp"
                 android:layout_marginEnd="12dp"
+                android:contentDescription="@string/analytics_insight_icon_desc"
                 android:padding="6dp"
                 android:src="@drawable/ic_lightbulb" />
 
@@ -556,9 +565,10 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textColor="@color/noctra_purple_dark"
+                android:fontFamily="@font/poppins"
+                android:textColor="@color/black"
                 android:textSize="14sp"
-                tools:text="Your sleep quality was 18% higher on nights you completed your routine. Try to maintain your routine every night this week for better sleep quality!" />
+                tools:text="Your sleep quality is about 18 points higher on nights you complete your routine. Try to keep it up for better sleep!" />
         </LinearLayout>
 
     </LinearLayout>

@@ -78,6 +78,8 @@
     <string name="analytics_section_sleep_score">Sleep Score</string>
     <string name="analytics_section_bedtime">Bedtime Adherence</string>
     <string name="analytics_section_completion">Routine Completion</string>
+    <string name="analytics_section_insights">Insights</string>
+    <string name="analytics_insight_icon_desc">Insight</string>
     <string name="analytics_legend_good">Good (&gt;74)</string>
     <string name="analytics_legend_moderate">Moderate (50-74)</string>
     <string name="analytics_legend_poor">Poor (&lt;50)</string>
@@ -95,6 +97,13 @@
     <string name="analytics_week_counter">Week %1$d</string>
     <string name="analytics_nav_earlier">Earlier</string>
     <string name="analytics_nav_later">Later</string>
+
+    <!-- Mechanism insight (§2.3). §7 locks these four strings verbatim —
+         do not reword. {X} is the absolute point difference. -->
+    <string name="analytics_insight_better">Your sleep quality is about %1$d points higher on nights you complete your routine. Try to keep it up for better sleep!</string>
+    <string name="analytics_insight_worse">Your sleep quality has been higher on nights without the routine. One off week doesn\'t mean much — keep building the habit.</string>
+    <string name="analytics_insight_similar">Your sleep quality is similar with and without the routine. More consistency may reveal clearer patterns.</string>
+    <string name="analytics_insight_insufficient">Need more data to generate an insight. Keep logging routines and sleep to unlock comparisons.</string>
 
     <!-- 30-day trend (§2.2, §6 item 6, §7 locked placeholder) -->
     <string name="analytics_section_trend">30-Day Sleep Score Trend</string>
