@@ -351,7 +351,26 @@ The "Equipped Outfit Schema Change" entry above says `profiles` — the actual S
 ---
 
 
-## Analytics � see ANALYTICS_SPEC.md
+## Analytics � see ANALYTICS_SPEC.md
 
 The analytics requirements live exclusively in ANALYTICS_SPEC.md (authoritative spec: views, windows, navigation, copy, backend, rejected alternatives). The rolling-window redesign notes that previously lived here were superseded by that file.
+
+---
+
+## Audit — Anchor Seeding, Eligibility, Backfill Worker (design decision)
+
+**Gap:** the audit range anchors on `lastSessionDate`/oldest-pending, neither of which exists for fresh accounts — every open audited [today] only, so pre-anchor days were never examined (no rows, no verdicts).
+
+**Changes (all on `feature/auth-sync-polish`):**
+- `markOnboardingComplete()` stamps `onboarding_completed_at` (Migration 5); `ensureAuditAnchor()` seeds `lastSessionDate` = onboarding-minus-1 at onboarding end, fill-only (never rewinds — rewinding would re-audit judged dates and double-count streaks/XP).
+- `auditDate()` extracted from the audit loop and shared with the new `AuditBackfillWorker` — identical verdict/write/penalty rules on both paths. (An `isNightEligible` gate briefly existed; removed — every night from onboarding counts, no exemptions.)
+- `AuditBackfillWorker` (daily 22:00): covers [onboarding day, open-audit cap) in ≤30-day chunks with a persisted per-user cursor; skips HC sync (ancient data gone — judges stored rows); single ledger fold per run.
+
+**Full audit behavior (for the record — open path + workers):**
+- *Open-path audit (every app open):* bulk-flip PENDING older than 14 days → walk [anchor+1 … today] (anchor = oldest pending, else `lastSessionDate`+1, else today; 14-day cap) → per date: sync sleep from Health Connect → verdict → write/update row → streak fold → save ledger once.
+- *Verdicts:* COMPLETED stays; empty past day → MISSED row written; PENDING → 1-hour sleep-onset rule can still COMPLETE it, else >24h → MISSED; today with no row → PENDING, no row.
+- *Penalties:* PENDING touches nothing; COMPLETED +1 streak (best updates longest); first MISSED sets warning, consecutive MISSED zeroes streak. >14-day absence zeroes streak + warns on sight, without fabricating rows.
+- *Sleep sync per date:* wake-up-anchor window (sessions ending 4 AM–4 PM next day); wide fetch (prior noon → anchor end) with in-code end-inside-anchor filter, because HC matches interval starts; provisional pass ~9 AM (`isPartialData`), finalization ~5 PM overwrites idempotently.
+- *Daily worker (9:30 AM):* yesterday empty → MISSED row + same penalty chain. Check-then-insert on both paths prevents duplicates.
+- *Backfill worker (10 PM, new):* as above — the only writer covering pre-cap history.
 

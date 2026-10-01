@@ -125,6 +125,7 @@ Code expects these schemas (verified in `RoutineSession.kt`, `RewardLedger.kt`, 
 - [x] **DONE — friendships**: table created per SDD ERD (`id`, `requester_id`/`receiver_id` TEXT FK → `user_profiles`, `status`, `created_at`/`updated_at`) + Realtime publication + RLS policies
 - [ ] **LATER — encouragement_reactions**: only needed when the encouragement feature gets a UI (parked for future update)
 - [x] **DONE — user_profiles drafts**: `draft_bedtime TEXT`, `draft_activity_ids JSONB` columns already exist
+- [ ] **RUN — user_profiles onboarding_completed_at**: `onboarding_completed_at TIMESTAMPTZ` (Migration 5 in `supabase_migrations.sql`) — audit eligibility + Week N anchoring; set once by `markOnboardingComplete()`
 
 ## 8. Analytics: PENDING state in completion chart — NOTED, NOT STARTED
 
