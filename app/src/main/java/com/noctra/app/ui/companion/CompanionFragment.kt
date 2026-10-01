@@ -74,36 +74,58 @@ class CompanionFragment : Fragment() {
 
     private fun processNextDialog() {
         if (isDialogShowing || dialogQueue.isEmpty()) return
-        
-        isDialogShowing = true
+        if (!isAdded) return
+
         val next = dialogQueue.removeAt(0)
-        
-        when (next) {
-            is PendingDialog.MorningRecap -> {
-                MorningSleepPopupDialog.newInstance(next.score, next.xp).apply {
-                    setOnDismissCallback { onDialogClosed() }
-                    show(childFragmentManager, "MorningSleepPopup")
+
+        // NOTE: inside `.apply { }` the receiver is the dialog itself, so an
+        // unqualified `childFragmentManager` resolves to the DIALOG's — which
+        // throws IllegalStateException because it was never attached. It must be
+        // qualified back to this fragment. All three branches were affected;
+        // StreakNotice just happened to be the first one to fire.
+        try {
+            isDialogShowing = true
+            when (next) {
+                is PendingDialog.MorningRecap -> {
+                    MorningSleepPopupDialog.newInstance(next.score, next.xp).apply {
+                        setOnDismissCallback { onDialogClosed() }
+                        show(this@CompanionFragment.childFragmentManager, "MorningSleepPopup")
+                    }
+                }
+                is PendingDialog.StreakNotice -> {
+                    StreakNoticeDialogFragment.newInstance(next.type).apply {
+                        setOnDismissCallback { onDialogClosed() }
+                        show(this@CompanionFragment.childFragmentManager, "StreakNoticePopup")
+                    }
+                }
+                is PendingDialog.Evolution -> {
+                    EvolutionDialogFragment.newInstance(next.stageName).apply {
+                        setOnDismissCallback { onDialogClosed() }
+                        show(this@CompanionFragment.childFragmentManager, "EvolutionPopup")
+                    }
                 }
             }
-            is PendingDialog.StreakNotice -> {
-                StreakNoticeDialogFragment.newInstance(next.type).apply {
-                    setOnDismissCallback { onDialogClosed() }
-                    show(childFragmentManager, "StreakNoticePopup")
-                }
-            }
-            is PendingDialog.Evolution -> {
-                EvolutionDialogFragment.newInstance(next.stageName).apply {
-                    setOnDismissCallback { onDialogClosed() }
-                    show(childFragmentManager, "EvolutionPopup")
-                }
-            }
+        } catch (e: Exception) {
+            // Never leave the queue wedged: a dropped dialog must still let the
+            // next one through, otherwise every later dialog is silently lost.
+            android.util.Log.e("CompanionFragment", "Failed to show ${next::class.simpleName}", e)
+            isDialogShowing = false
+            dialogQueue.add(0, next)
         }
     }
 
     private fun onDialogClosed() {
         isDialogShowing = false
-        // Delay slightly to avoid window focus flickers
-        view?.postDelayed({ processNextDialog() }, 300)
+        // Delay slightly to avoid window focus flickers.
+        val v = view
+        if (v != null) {
+            v.postDelayed({ processNextDialog() }, 300)
+        } else {
+            // The view went away between dismiss and this callback, so the
+            // postDelayed anchor is gone. Drop the backlog rather than leave
+            // isDialogShowing latched and every queued dialog stranded.
+            dialogQueue.clear()
+        }
     }
 
     // Store latest equipped items to apply when animations change
