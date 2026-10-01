@@ -331,6 +331,22 @@ Both are nullable, so no insert default is overridden and no backfill is require
 
 ---
 
+## Analytics Redesign — Phase 6 Mechanism Insight
+
+**Spec:** `ANALYTICS_SPEC.md` §2.3, §6 "Insight card", §7 locked copy, §3 fair denominators.
+
+**The Use Case now returns structure, not prose.** It previously built a finished English sentence inside `InsightGenerationUseCase`. Two rules collide there: §7 locks the wording and locked copy belongs in `strings.xml`, while the SDD forbids Android framework dependencies in Use Cases — so a Use Case has no way to read a string resource. It now returns `Result.Available(outcome, points)` or `Result.InsufficientData`, and `AnalyticsDashboardFragment` maps the outcome to its locked string. The ViewModel passes the result through untouched, so this stayed a two-file change.
+
+**Fair-denominator fix — PENDING was counting as a miss.** `withoutRoutine` was built from *all* scored records not in the completed set, so a session still awaiting its grace-period verdict landed in the non-routine group and dragged the comparison downward. §3 says rates and averages skip pending nights everywhere, so pending nights are now excluded outright. Status matching also became case-insensitive, matching Phase 2's `buildCompletionStatuses`.
+
+**Spec defect found — §2.3 contradicts §7 on vocabulary.** §2.3 says "Wording shares the trend's vocabulary ('climbing' / 'steady' / 'slipping')", but none of the four §7 locked strings contain those words. §7 is titled "Final copy (locked strings)" and is the more specific instruction, so the locked strings were implemented verbatim and the vocabulary line was treated as superseded. Worth confirming with whoever wrote the spec — if the intent was for the insight to say "climbing", the §7 strings need rewriting too.
+
+**Card restyled to §6:** fill `noctra_lavender_bg` `#EDE9FB`, bulb icon restroked `#8457FF`, body 14sp black. Both drawables were analytics-only, so they were retuned in place rather than duplicated. The missing **Insights** section heading was added — both §2.3 and the wireframe show it, and it was absent from the layout.
+
+**No bolded metric.** §6 drops the emphasised figure so the points read off the same scale as the trend line above. There was no bold markup to remove, but the stale `tools:text` preview still showed the old percent-framed copy, which would have kept misleading anyone reading the layout.
+
+---
+
 ## Updates
 
 *Add new deviations here as they are discovered.*
