@@ -41,6 +41,7 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         val muted = ContextCompat.getColor(requireContext(), R.color.analytics_muted)
         val score = ContextCompat.getColor(requireContext(), R.color.analytics_score)
         val black = ContextCompat.getColor(requireContext(), R.color.black)
+        val loadingSpinner = view.findViewById<View>(R.id.loadingSpinner)
 
         val bedtimeAdherenceChart = view.findViewById<BedtimeAdherenceChartView>(R.id.chart_bedtime_adherence)
         val adherenceCalculator = BedtimeAdherenceCalculator()
@@ -73,7 +74,14 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
 
         lifecycleScope.launch {
             viewModel.state.collect { state ->
-                // Handle offline state
+                // §3 batched loading: one spinner for the whole content block,
+                // shown only on the very first resolve. Later window shifts reuse
+                // the already-loaded snapshot, so a spinner there would be a lie.
+                val showSpinner = state.isLoading && !state.hasLoaded
+                loadingSpinner.visibility = if (showSpinner) View.VISIBLE else View.GONE
+
+                // Handle offline state (§5: revisit-only data, so the existing
+                // offline placeholder with retry is the right surface)
                 if (state.isOffline) {
                     noInternetView.visibility = View.VISIBLE
                     mainContent.visibility = View.GONE

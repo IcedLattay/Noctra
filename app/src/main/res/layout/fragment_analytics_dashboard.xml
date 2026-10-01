@@ -574,6 +574,18 @@
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
 
+<!-- BATCHED LOADING — §3: "a centered purple (#522ABE) spinner while the
+     batch resolves … every analytics card awaits the same backend round
+     trip, so nothing meaningful arrives early." One spinner for the whole
+     content block, not one per card. -->
+<ProgressBar
+    android:id="@+id/loadingSpinner"
+    android:layout_width="48dp"
+    android:layout_height="48dp"
+    android:layout_gravity="center"
+    android:indeterminateTint="@color/analytics_loading"
+    android:visibility="gone" />
+
 <!-- SCROLL TO TOP — ANALYTICS_SPEC.md §8: 56dp circle, noctra_purple
      #5C25F0, white ↑, 16dp from the bottom nav and the screen end.
      The fragment container already sits above the bottom nav, so 16dp here

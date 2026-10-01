@@ -27,6 +27,8 @@
     <color name="analytics_trend_avg">#D0BEFF</color>
     <color name="analytics_axis">#C6B8EC</color>
     <color name="analytics_card_outline">#E2DCF3</color>
+    <!-- §3 batched loading spinner -->
+    <color name="analytics_loading">#522ABE</color>
 
     <!-- Routine completion cells (§6 item 5): completed / pending / missed.
          "pending" reuses the shared yellow `noctra_health_yellow` (#FFC90E)
