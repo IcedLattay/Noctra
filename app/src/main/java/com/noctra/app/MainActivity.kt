@@ -655,6 +655,16 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         }
     }
 
+    override fun onBackfillNow() {
+        androidx.work.WorkManager.getInstance(applicationContext).enqueueUniqueWork(
+            "AuditBackfillNow",
+            androidx.work.ExistingWorkPolicy.REPLACE,
+            androidx.work.OneTimeWorkRequestBuilder<com.noctra.app.workers.AuditBackfillWorker>()
+                .build()
+        )
+        Toast.makeText(applicationContext, "Backfill enqueued — watch logcat", Toast.LENGTH_SHORT).show()
+    }
+
     override fun onSeedDemoData() {
         lifecycleScope.launch {
             try {

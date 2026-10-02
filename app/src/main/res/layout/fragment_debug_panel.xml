@@ -276,6 +276,16 @@
                     <TextView
                         style="@style/DebugDescription"
                         android:text="Forces a full sync of yesterday's session (idempotent upsert). Use for late-arriving data." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_backfill_now"
+                        style="@style/DebugButton"
+                        android:text="Run Backfill Now" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Runs the audit backfill worker immediately instead of waiting for 22:00. Same code path." />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
