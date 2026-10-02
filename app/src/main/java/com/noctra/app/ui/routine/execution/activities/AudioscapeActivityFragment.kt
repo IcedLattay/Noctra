@@ -55,7 +55,7 @@ class AudioscapeActivityFragment : Fragment() {
 
         // TEMPORARY FOR TESTING — set to false once all activities are
         // manually verified, to restore real per-activity durations from the DB.
-        private const val TEST_MODE_SHORT_DURATION = true
+        private const val TEST_MODE_SHORT_DURATION = false
         private const val TEST_DURATION_SECONDS = 15
 
         private const val LABEL_MINDFULNESS = "Mindfulness"

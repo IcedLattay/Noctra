@@ -58,7 +58,7 @@ class BreathingActivityFragment : Fragment() {
 
         // TEMPORARY FOR TESTING — set to false once all activities are
         // manually verified, to restore the real 5-minute DB duration.
-        private const val TEST_MODE_SHORT_DURATION = true
+        private const val TEST_MODE_SHORT_DURATION = false
         private const val TEST_DURATION_SECONDS = 15
     }
 
