@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.os.CountDownTimer
 import android.view.LayoutInflater
 import android.view.View
-
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import androidx.core.content.ContextCompat
@@ -35,6 +34,9 @@ import kotlinx.coroutines.launch
  *
  * FIXED: previous PRE_COUNTDOWN_SECONDS was 10L, not the standard 15L every
  * other activity uses — inconsistent with the wireframe. Corrected to 15L.
+ *
+ * Session 5: keyboard-inset handling (R3), and typing is locked once the
+ * journal timer reaches 0 (R7).
  */
 class GratitudeJournalingActivityFragment : Fragment() {
 
@@ -44,6 +46,10 @@ class GratitudeJournalingActivityFragment : Fragment() {
     private val routineViewModel: RoutineViewModel by activityViewModels()
 
     private var preCountdownTimer: CountDownTimer? = null
+
+    // Session 5 (R7): true once the real journal timer starts, so the
+    // "timer = 0" lock doesn't fire on the VM's leftover 0 value.
+    private var journalTimerStarted = false
 
     companion object {
         private const val PRE_COUNTDOWN_SECONDS = 15L
@@ -64,9 +70,7 @@ class GratitudeJournalingActivityFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         showPreCountdownPanel()
-        showPreCountdownPanel()
         setupKeyboardInsets()
-        setupListeners()
         setupListeners()
         observeVm()
         startPreCountdown()
@@ -125,6 +129,7 @@ class GratitudeJournalingActivityFragment : Fragment() {
         imm.showSoftInput(binding.etJournalEntry, InputMethodManager.SHOW_IMPLICIT)
         val durationSeconds = if (TEST_MODE_SHORT_DURATION) TEST_DURATION_SECONDS
         else (routineViewModel.currentActivity?.defaultDurationMinutes ?: 0) * 60
+        journalTimerStarted = true
         routineViewModel.startCurrentActivityTimer(durationSeconds)
     }
 
@@ -157,6 +162,9 @@ class GratitudeJournalingActivityFragment : Fragment() {
                         updateTimerDisplay(secs.toLong())
                         updateTimerColor(secs.toLong())
 
+                        // Session 5 (R7): time's up — no more typing.
+                        if (secs == 0 && journalTimerStarted) lockJournalEntry()
+
                         // Show "Complete Routine" button if timer is 0 AND it's the last step
                         if (secs == 0 && routineViewModel.isLastStep) {
                             binding.btnCompleteRoutine.visibility = View.VISIBLE
@@ -184,6 +192,15 @@ class GratitudeJournalingActivityFragment : Fragment() {
             }
             else -> {}
         }
+    }
+
+    /** Session 5 (R7): time's up — stop typing and close the keyboard. */
+    private fun lockJournalEntry() {
+        if (_binding == null) return
+        binding.etJournalEntry.isEnabled = false
+        binding.etJournalEntry.clearFocus()
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(binding.etJournalEntry.windowToken, 0)
     }
 
     private fun clearEntryAndDismissKeyboard() {

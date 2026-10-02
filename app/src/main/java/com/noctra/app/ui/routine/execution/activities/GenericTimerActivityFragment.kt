@@ -27,17 +27,14 @@ import kotlinx.coroutines.launch
  * an "action" phase (tense / pose, green timer) and a "rest" phase (default
  * color timer) across a fixed list of sub-steps.
  *
- * Frame cycling: each sub-activity's imageAssets list can be ANY length —
- * confirmed real asset counts below are 1, 2, 3, or 4, not a fixed number.
- * During the action phase, frames cycle forward on a 1s interval, wrapping
- * to the first frame after the last. A single-frame list just displays
- * statically. The loop runs ONLY during the action phase — rest phase
- * shows no image.
+ * Session 5 (R8):
+ *   - Each image can have its own on-screen time (StepperStepConfig.frameDurationsMs),
+ *     e.g. neck-roll holds 2s and transitions 0.2s.
+ *   - REST phase shows a pause icon (ic_pause_rest) instead of the step images.
+ *   - Pose lengths changed so each stretch shows its full image sequence.
  *
  * IMPORTANT: computes its own total duration (sum of all step action+rest
  * durations) and passes it into routineViewModel.startCurrentActivityTimer().
- * Without this, the VM's own countdown fires GoToTransition at the 15s
- * default regardless of how many steps remain.
  */
 class GenericTimerActivityFragment : Fragment() {
 
@@ -55,27 +52,19 @@ class GenericTimerActivityFragment : Fragment() {
 
     companion object {
         private const val PRE_COUNTDOWN_SECONDS = 15L
-        private const val FRAME_INTERVAL_MILLIS = 1000L
+        private const val DEFAULT_FRAME_MILLIS = 1000L
 
-        // TEMPORARY FOR TESTING — set back to false once all activities
-        // verified, to restore real durations.
-        private const val TEST_MODE_SHORT_DURATIONS = true
+        // TEMPORARY FOR TESTING — true shortens every pose to 1s and rest to
+        // 2s, which is too short to see the image sequences. Kept FALSE so the
+        // new timings can be checked; flip to true only for quick flow tests.
+        private const val TEST_MODE_SHORT_DURATIONS = false
         private const val TEST_ACTION_SECONDS = 1
         private const val TEST_REST_SECONDS = 2
 
-        // Real asset filenames (confirmed, no longer placeholders), minus
-        // the .png extension — Android's getIdentifier() looks up drawable
-        // resources by name without the file extension.
-        //
-        // Confirmed frame counts per sub-activity:
-        //   PMR:        arms=1, eyes=1, eyebrows=1, hands=1, feet(toes)=1
-        //   Stretching: neck_rolls=4, shoulder_rolls=3,
-        //               overhead_arm_reach=1, side_neck_stretch=2,
-        //               seated_side_stretch=2
-        // PMR is now entirely single-frame (static) — a change from an
-        // earlier draft that assumed 2 frames each; real assets came back
-        // as 1 static pose per PMR sub-activity.
+        // Drawable names without the .png extension.
         private val STEPS_BY_LABEL: Map<String, Pair<String, List<StepperStepConfig>>> = mapOf(
+
+            // PMR — all static images. Tense 5s, release 10s.
             "Progressive Muscle Relaxation" to ("Release." to listOf(
                 StepperStepConfig("hands", "Hands", "Make a fist with your hands as tight as possible for 5 seconds", listOf("hands"), 5, 10),
                 StepperStepConfig("arms", "Arms", "Flex your biceps of your arms as tight as you can for 5 seconds", listOf("arm1"), 5, 10),
@@ -83,15 +72,56 @@ class GenericTimerActivityFragment : Fragment() {
                 StepperStepConfig("eyebrows", "Eyebrows", "Raise your brows for 5 seconds", listOf("eyebrow"), 5, 10),
                 StepperStepConfig("eyes", "Eyes", "Squeeze your eyes and make a tight smile for 5 seconds", listOf("eye"), 5, 10)
             )),
+
+            // Bedtime Stretching — rest 15s after every pose.
             "Bedtime Stretching" to ("Rest." to listOf(
-                // 4 frames: left hold -> left transition -> right hold ->
-                // right transition -> loops back to left hold.
-                StepperStepConfig("neck_rolls", "Neck Rolls", "Move your head in a slow, continuous half-circle by dropping your chin to your chest and rolling it smoothly from one shoulder to the other.", listOf("neckrolllefthold", "neckrollllefttransition", "neckrollrighthold", "neckrollrighttransition"), 3, 15),
-                // 3 frames: up -> back -> down, matching the physical motion.
-                StepperStepConfig("shoulder_rolls", "Shoulder Rolls", "Move your shoulders in a slow, continuous circle by lifting them up toward your ears, rolling them backward, and dropping them down in a smooth motion.", listOf("shoulderollup", "shoulderollback", "shoulderolldown"), 3, 15),
-                StepperStepConfig("overhead_arm_reach", "Overhead Arm Reach", "Interlock your fingers with your palms facing up, then push your hands straight toward the ceiling while reaching as high as you can.", listOf("overheadarmreach"), 3, 15),
-                StepperStepConfig("side_neck_stretch", "Side Neck Stretch", "Gently tilt your head to one side, bringing your ear toward your shoulder, and hold before slowly returning to center and repeating on the other side.", listOf("sideneckstretchleft", "sideneckstretchright"), 3, 15),
-                StepperStepConfig("seated_side_stretch", "Seated Side Stretch", "Sit down, reach one arm straight up, and lean your upper body to the opposite side until you feel a stretch along your ribs", listOf("seatedsidestretchleft", "seatedsidestretchright"), 3, 15)
+
+                // Loop: left hold 2s -> left transition 0.2s -> right transition 0.2s
+                //       -> right hold 2s -> right transition 0.2s -> left transition 0.2s
+                // One full loop = 4.8s, so pose = 5s.
+                StepperStepConfig(
+                    "neck_rolls", "Neck Rolls",
+                    "Move your head in a slow, continuous half-circle by dropping your chin to your chest and rolling it smoothly from one shoulder to the other.",
+                    listOf("neckrolllefthold", "neckrolllefttransition", "neckrollrighttransition",
+                        "neckrollrighthold", "neckrollrighttransition", "neckrolllefttransition"),
+                    5, 15,
+                    listOf(2000L, 200L, 200L, 2000L, 200L, 200L)
+                ),
+
+                // Loop: up -> back -> down, 0.5s each (1.5s per roll). Pose 3s = 2 rolls.
+                StepperStepConfig(
+                    "shoulder_rolls", "Shoulder Rolls",
+                    "Move your shoulders in a slow, continuous circle by lifting them up toward your ears, rolling them backward, and dropping them down in a smooth motion.",
+                    listOf("shoulderollup", "shoulderollback", "shoulderolldown"),
+                    3, 15,
+                    listOf(500L, 500L, 500L)
+                ),
+
+                // Static.
+                StepperStepConfig(
+                    "overhead_arm_reach", "Overhead Arm Reach",
+                    "Interlock your fingers with your palms facing up, then push your hands straight toward the ceiling while reaching as high as you can.",
+                    listOf("overheadarmreach"),
+                    3, 15
+                ),
+
+                // Left 20s -> hold 5s -> right 20s. Pose = 45s (plays once).
+                StepperStepConfig(
+                    "side_neck_stretch", "Side Neck Stretch",
+                    "Gently tilt your head to one side, bringing your ear toward your shoulder, and hold before slowly returning to center and repeating on the other side.",
+                    listOf("sideneckstretchleft", "sideneckstretchhold", "sideneckstretchright"),
+                    45, 15,
+                    listOf(20_000L, 5_000L, 20_000L)
+                ),
+
+                // Left 30s -> right 30s. Pose = 60s (plays once).
+                StepperStepConfig(
+                    "seated_side_stretch", "Seated Side Stretch",
+                    "Sit down, reach one arm straight up, and lean your upper body to the opposite side until you feel a stretch along your ribs",
+                    listOf("seatedsidestretchleft", "seatedsidestretchright"),
+                    60, 15,
+                    listOf(30_000L, 30_000L)
+                )
             ))
         )
     }
@@ -120,6 +150,7 @@ class GenericTimerActivityFragment : Fragment() {
 
         binding.tvPreTitle.text = label
         binding.tvPreInstruction.text = activity?.instruction ?: ""
+        binding.tvStepActivityLabel.text = label
 
         setupListeners()
         showPreCountdownPanel()
@@ -156,10 +187,12 @@ class GenericTimerActivityFragment : Fragment() {
         when (event) {
             is RoutineViewModel.NavigationEvent.GoToTransition -> {
                 stopStepTimer()
+                stopFrameLoop()
                 findNavController().navigate(R.id.timesUpTransitionFragment)
             }
             is RoutineViewModel.NavigationEvent.GoToCompletion -> {
                 stopStepTimer()
+                stopFrameLoop()
                 findNavController().navigate(R.id.routineCompletionOverlayFragment)
             }
             else -> {}
@@ -191,12 +224,14 @@ class GenericTimerActivityFragment : Fragment() {
     private fun startPreCountdown() {
         preCountdownTimer = object : CountDownTimer((PRE_COUNTDOWN_SECONDS * 1000L) + 500L, 1000L) {
             override fun onTick(millisUntilFinished: Long) {
+                if (_binding == null) return
                 val secs = (millisUntilFinished / 1000L).coerceAtMost(PRE_COUNTDOWN_SECONDS)
                 updatePreTimer(secs)
                 val colorRes = if (secs <= 5) R.color.timer_red else R.color.timer_green
                 binding.tvPreTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
             }
             override fun onFinish() {
+                if (_binding == null) return
                 updatePreTimer(0)
                 showStepPanel()
             }
@@ -217,14 +252,17 @@ class GenericTimerActivityFragment : Fragment() {
         if (isAction) {
             binding.tvStepTitle.text = step.name
             binding.tvStepInstruction.text = step.instruction
-            startFrameLoop(step.imageAssets)
+            binding.tvStepInstruction.visibility = View.VISIBLE
+            startFrameLoop(step.imageAssets, step.frameDurationsMs)
             runStepTimer(effectiveActionSeconds(step), isAction = true) {
                 runStep(index, isAction = false)
             }
         } else {
             binding.tvStepTitle.text = restLabel
             binding.tvStepInstruction.text = ""
+            binding.tvStepInstruction.visibility = View.INVISIBLE // keeps layout from jumping
             stopFrameLoop()
+            showRestIcon()
             runStepTimer(effectiveRestSeconds(step), isAction = false) {
                 val nextIndex = index + 1
                 if (nextIndex < steps.size) {
@@ -239,12 +277,14 @@ class GenericTimerActivityFragment : Fragment() {
         stepTimer?.cancel()
         stepTimer = object : CountDownTimer(durationSeconds * 1000L, 1000L) {
             override fun onTick(millisUntilFinished: Long) {
+                if (_binding == null) return
                 val secs = (millisUntilFinished / 1000L).coerceAtMost(durationSeconds.toLong())
                 updateStepTimer(secs)
                 val colorRes = if (isAction) R.color.timer_green else R.color.timer_default
                 binding.tvStepTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
             }
             override fun onFinish() {
+                if (_binding == null) return
                 updateStepTimer(0)
                 onFinish()
             }
@@ -264,12 +304,12 @@ class GenericTimerActivityFragment : Fragment() {
     }
 
     /**
-     * Cycles through `frames` at FRAME_INTERVAL_MILLIS (1s). Works for any
-     * list length: empty clears the image, 1 item shows statically, 2+
-     * items cycle forward and wrap to index 0. Runs only during action
-     * phase — stopFrameLoop() runs at the start of every rest phase.
+     * Plays `frames` in order during the action phase, each for its own time
+     * from `durationsMs` (same order). Missing/empty durations = 1s each.
+     * 1 frame = static. 2+ frames = loop until the pose timer ends
+     * (stopFrameLoop() is called when rest starts).
      */
-    private fun startFrameLoop(frames: List<String>) {
+    private fun startFrameLoop(frames: List<String>, durationsMs: List<Long>) {
         stopFrameLoop()
 
         if (frames.isEmpty()) {
@@ -286,7 +326,7 @@ class GenericTimerActivityFragment : Fragment() {
             var frameIndex = 0
             while (true) {
                 setStepImage(frames[frameIndex])
-                delay(FRAME_INTERVAL_MILLIS)
+                delay(durationsMs.getOrNull(frameIndex) ?: DEFAULT_FRAME_MILLIS)
                 frameIndex = (frameIndex + 1) % frames.size
             }
         }
@@ -295,6 +335,12 @@ class GenericTimerActivityFragment : Fragment() {
     private fun stopFrameLoop() {
         frameLoopJob?.cancel()
         frameLoopJob = null
+    }
+
+    /** REST phase: pause icon instead of the step images. */
+    private fun showRestIcon() {
+        if (_binding == null) return
+        binding.imgStepDemo.setImageResource(R.drawable.ic_pause_rest)
     }
 
     private fun setStepImage(imageAssetName: String?) {
@@ -307,7 +353,11 @@ class GenericTimerActivityFragment : Fragment() {
         if (resId != 0) {
             binding.imgStepDemo.setImageResource(resId)
         } else {
-            binding.imgStepDemo.setImageDrawable(null)
+            // Session 5 (R9): a missing/misspelled file used to CLEAR the
+            // image -> blank frame in the middle of a sequence. Now the
+            // previous image stays on screen, and the bad name is logged
+            // (Logcat tag "GenericTimer") so it can be fixed.
+            android.util.Log.w("GenericTimer", "Missing step image '$imageAssetName' — check the filename in res/drawable")
         }
     }
 

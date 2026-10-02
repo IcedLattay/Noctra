@@ -48,7 +48,7 @@ class CompanionFragment : Fragment() {
     private var isPlayingTappedAnimation = false
     private var isCustomizeMode = false
     private var currentCategory = "Hats"
-    
+
     // Dialog Queue Logic
     private sealed class PendingDialog {
         data class MorningRecap(val score: Int, val xp: Int) : PendingDialog()
@@ -62,7 +62,7 @@ class CompanionFragment : Fragment() {
     private fun enqueueDialog(dialog: PendingDialog) {
         dialogQueue.add(dialog)
         // Sort by Priority: Recap(0) > Notice(1) > Evolution(2)
-        dialogQueue.sortWith(compareBy { 
+        dialogQueue.sortWith(compareBy {
             when(it) {
                 is PendingDialog.MorningRecap -> 0
                 is PendingDialog.StreakNotice -> 1
@@ -74,27 +74,34 @@ class CompanionFragment : Fragment() {
 
     private fun processNextDialog() {
         if (isDialogShowing || dialogQueue.isEmpty()) return
-        
+        // Screen not ready (e.g. app still loading) — try again on the next enqueue/close.
+        if (!isAdded || isStateSaved) return
+
+        // FIX (Flag 32): grab the COMPANION screen's manager here. Inside
+        // `.apply { }` below, `childFragmentManager` would mean the DIALOG's
+        // own manager, which doesn't exist yet -> crash.
+        val fm = childFragmentManager
+
         isDialogShowing = true
         val next = dialogQueue.removeAt(0)
-        
+
         when (next) {
             is PendingDialog.MorningRecap -> {
                 MorningSleepPopupDialog.newInstance(next.score, next.xp).apply {
                     setOnDismissCallback { onDialogClosed() }
-                    show(childFragmentManager, "MorningSleepPopup")
+                    show(fm, "MorningSleepPopup")
                 }
             }
             is PendingDialog.StreakNotice -> {
                 StreakNoticeDialogFragment.newInstance(next.type).apply {
                     setOnDismissCallback { onDialogClosed() }
-                    show(childFragmentManager, "StreakNoticePopup")
+                    show(fm, "StreakNoticePopup")
                 }
             }
             is PendingDialog.Evolution -> {
                 EvolutionDialogFragment.newInstance(next.stageName).apply {
                     setOnDismissCallback { onDialogClosed() }
-                    show(childFragmentManager, "EvolutionPopup")
+                    show(fm, "EvolutionPopup")
                 }
             }
         }
@@ -141,7 +148,7 @@ class CompanionFragment : Fragment() {
         val userId = UserSession.getUserId(requireContext()) ?: return
         val lastShownSleepDate = requireContext().getSharedPreferences("noctra_prefs", Context.MODE_PRIVATE)
             .getString("last_shown_sleep_date", null)
-            
+
         viewModel.loadData(userId, lastShownSleepDate)
     }
 
@@ -291,7 +298,7 @@ class CompanionFragment : Fragment() {
     private fun updateUi(state: CompanionViewModel.CompanionUiState) {
         with(binding) {
             tvTokenBalance.text = state.tokenBalance.toString()
-            
+
             state.evolutionState?.let { evolution ->
                 tvStageLabel.text = evolution.stageName
                 tvXpValue.text = getString(R.string.companion_xp_unit, evolution.totalXp)
@@ -308,13 +315,13 @@ class CompanionFragment : Fragment() {
                 // 2. Update Accessories State
                 currentEquippedItems = state.equippedItems
                 refreshAccessoriesVisibility()
-                
+
                 // 3. Update Shop Items if in customize mode
                 if (isCustomizeMode) {
                     filterItems()
                 }
             }
-            
+
             if (state.error != null) {
                 android.widget.Toast.makeText(requireContext(), state.error, android.widget.Toast.LENGTH_LONG).show()
             }
@@ -332,16 +339,16 @@ class CompanionFragment : Fragment() {
 
     private fun triggerTappedAnimation() {
         if (isPlayingTappedAnimation || isCustomizeMode) return
-        
+
         val state = shleepyStates[currentStageLevel] ?: shleepyStates[1]!!
         isPlayingTappedAnimation = true
-        
+
         binding.petAnimationView.apply {
             removeAllAnimatorListeners()
             setAnimation(state.tappedRes)
             repeatCount = 0
             playAnimation()
-            
+
             addAnimatorListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
                     isPlayingTappedAnimation = false
@@ -355,7 +362,7 @@ class CompanionFragment : Fragment() {
     private fun refreshAccessoriesVisibility() {
         val petView = binding.petAnimationView
         val equippedItems = currentEquippedItems
-        
+
         val allHatLayers = listOf("hat_sleeping_hat", "hat_propeller_hat", "hat_floral_crown")
         val otherCategoryToLayer = mapOf(
             "OUTFIT" to "outfit_layer",
@@ -405,7 +412,7 @@ class CompanionFragment : Fragment() {
         binding.btnBack.setOnClickListener {
             toggleCustomizeMode(false)
         }
-        
+
         binding.petAnimationView.setOnClickListener {
             triggerTappedAnimation()
         }
@@ -413,7 +420,7 @@ class CompanionFragment : Fragment() {
 
     private fun toggleCustomizeMode(enabled: Boolean) {
         isCustomizeMode = enabled
-        
+
         val activityRoot = requireActivity().findViewById<ViewGroup>(R.id.mainActivityRoot) ?: return
         val bottomNav = requireActivity().findViewById<View>(R.id.bottom_nav)
 
@@ -422,49 +429,49 @@ class CompanionFragment : Fragment() {
             // Handle Bottom Nav: Slide + Fade to prevent "white bar"
             addTransition(Slide(Gravity.BOTTOM).addTarget(bottomNav))
             addTransition(Fade().addTarget(bottomNav))
-            
+
             // Handle Fragment internal UI: Panels
             addTransition(Slide(Gravity.BOTTOM).addTarget(binding.shopPanel))
             addTransition(Fade(Fade.IN).addTarget(binding.shopPanel))
             addTransition(Fade(Fade.OUT).addTarget(binding.shopPanel))
             addTransition(Fade(Fade.OUT).addTarget(binding.companionPanel))
             addTransition(Fade(Fade.IN).addTarget(binding.companionPanel))
-            
+
             // Smoothly animate the expansion/movement of everything else
             addTransition(ChangeBounds())
-            
+
             ordering = TransitionSet.ORDERING_TOGETHER
             duration = 450 // Slightly longer to let the curve feel smooth
             interpolator = FastOutSlowInInterpolator()
         }
-        
+
         TransitionManager.beginDelayedTransition(activityRoot, consolidatedTransition)
-        
+
         // Update Bottom Nav Visibility
         bottomNav?.visibility = if (enabled) View.GONE else View.VISIBLE
 
         if (enabled) {
             // Hide companion elements
             binding.companionPanel.visibility = View.GONE
-            
+
             // Show shop elements
             binding.shopPanel.visibility = View.VISIBLE
             binding.btnBack.visibility = View.VISIBLE
-            
+
             // Move Shleepy up
             val params = binding.shleepyFrame.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
             params.verticalBias = 0.02f
             binding.shleepyFrame.layoutParams = params
-            
+
             filterItems()
         } else {
             // Show companion elements
             binding.companionPanel.visibility = View.VISIBLE
-            
+
             // Hide shop elements
             binding.shopPanel.visibility = View.GONE
             binding.btnBack.visibility = View.GONE
-            
+
             // Move Shleepy back to center
             val params = binding.shleepyFrame.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
             params.verticalBias = 0.4f
