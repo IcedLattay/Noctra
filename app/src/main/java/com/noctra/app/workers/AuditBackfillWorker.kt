@@ -3,10 +3,8 @@ package com.noctra.app.workers
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.noctra.app.data.repository.RewardLedgerRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.data.repository.UserProfileRepository
-import com.noctra.app.domain.usecase.ReconciliationAuditUseCase
 import com.noctra.app.utils.UserSession
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
@@ -14,12 +12,11 @@ import java.time.temporal.ChronoUnit
 /**
  * Backfills routine history older than the open-path audit's 14-day cap.
  *
- * Coverage: [first eligible night, open-audit cap start). The open path
- * owns everything newer; this worker owns everything older — no overlap.
- * Bounded (30 days/run, oldest first) with a persisted cursor, so gaps of
- * any size converge without blocking app opens. Idempotent: reuses the
- * shared auditDate() verdict/write logic (check-then-insert inside
- * recordMissedSession), and the cursor only advances past completed dates.
+ * Row-writing only: pendings flip straight to MISSED (no grace re-check —
+ * long expired), empty past dates get MISSED rows. No verdicts, no ledger
+ * folds; streaks belong to the open path + big-gap rule. Coverage:
+ * [onboarding day, open-audit cap) in ≤30-day chunks with a persisted
+ * per-user cursor. Idempotent throughout.
  */
 class AuditBackfillWorker(
     context: Context,
@@ -27,9 +24,7 @@ class AuditBackfillWorker(
 ) : CoroutineWorker(context, params) {
 
     private val sessionRepository = RoutineSessionRepository()
-    private val rewardRepository = RewardLedgerRepository()
     private val profileRepository = UserProfileRepository()
-    private val auditUseCase = ReconciliationAuditUseCase()
 
     companion object {
         private const val PREFS = "noctra_backfill"
@@ -71,32 +66,36 @@ class AuditBackfillWorker(
                 ?.coerceAtLeast(firstEligible)
                 ?: firstEligible
             if (!cursor.isBefore(capStart)) {
-                prefs.edit().remove(cursorKey(userId)).apply()
                 return Result.success()
             }
 
             val endExclusive = minOf(cursor.plusDays(CHUNK_DAYS), capStart)
-            var ledger = rewardRepository.getRewardLedger(userId) ?: return Result.success()
+            android.util.Log.d(
+                "AuditBackfill",
+                "run cursor=$cursor end=$endExclusive cap=$capStart"
+            )
 
+            // Row-writing only: pendings flip straight to MISSED (no grace
+            // re-check — grace expired weeks ago by construction), empty
+            // past dates get MISSED rows. No verdicts, no ledger folds;
+            // streaks are owned exclusively by the open path + big-gap rule.
             var date = cursor
             while (date.isBefore(endExclusive)) {
-                ledger = auditUseCase.auditDate(
-                    userId = userId,
-                    date = date,
-                    currentLedger = ledger,
-                    syncSleep = false
-                )
+                val dateString = date.toString()
+                val session = sessionRepository.getSessionsByDate(userId, dateString).firstOrNull()
+                if (session != null && session.status == "PENDING") {
+                    sessionRepository.insertSession(session.copy(status = "MISSED"))
+                } else if (session == null && date.isBefore(LocalDate.now())) {
+                    sessionRepository.recordMissedSession(userId, dateString)
+                }
                 date = date.plusDays(1)
             }
-
-            rewardRepository.updateRewardLedger(
-                ledger.copy(lastUpdated = java.time.OffsetDateTime.now().toString())
-            )
-            if (endExclusive >= capStart) {
-                prefs.edit().remove(cursorKey(userId)).apply()
-            } else {
-                prefs.edit().putString(cursorKey(userId), endExclusive.toString()).apply()
-            }
+            // Always persist the cursor (even on catch-up): deleting it
+            // would restart every future run from onboarding day and
+            // re-sweep ancient history daily. The cursor doubles as the
+            // "caught up through" marker — tomorrow's cap moves one day
+            // forward and exactly one new date falls due.
+            prefs.edit().putString(cursorKey(userId), endExclusive.toString()).apply()
             Result.success()
         } catch (e: java.io.IOException) {
             Result.retry()

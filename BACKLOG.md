@@ -212,6 +212,7 @@ Reported: the begin-routine button still shows after the routine window closes.
 
 Suspect first: `MainActivity` line 73 sets `DebugSettings.setForceRoutineWindow(true)` (TEMP — remove before submission), and `RoutineHomeViewModel.loadHomeState()` treats that flag as an open window — so on debug builds the button shows 24/7 by design. The real window logic (`RoutineWindowProvider.isTimeInWindow` + expired-state handling) can only be assessed with the flag OFF.
 
+- [ ] Verify audit backfill on device: confirm `AuditBackfill` cursor log on a 22:00 tick, gap convergence over nights, single morning recap; then merge `origin/feature/revamped-analytics` (4 known conflicts: UserProfile fields, dueling Migration 5, CompanionFragment convergent fix, SDD tail — plus cutting their analytics eligibility UI per decision)
 - [ ] Reproduce with `forceRoutineWindow` off (or after TEMP removal); if the button still shows past the window, debug `isTimeInWindow`/expired-state handling for real
 - [ ] Resume-routine dialog fix + polish pass (styling, copy, spacing — flagged during dialog preview review)
 

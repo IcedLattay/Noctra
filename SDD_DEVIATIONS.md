@@ -363,8 +363,8 @@ The analytics requirements live exclusively in ANALYTICS_SPEC.md (authoritative 
 
 **Changes (all on `feature/auth-sync-polish`):**
 - `markOnboardingComplete()` stamps `onboarding_completed_at` (Migration 5); `ensureAuditAnchor()` seeds `lastSessionDate` = onboarding-minus-1 at onboarding end, fill-only (never rewinds — rewinding would re-audit judged dates and double-count streaks/XP).
-- `auditDate()` extracted from the audit loop and shared with the new `AuditBackfillWorker` — identical verdict/write/penalty rules on both paths. (An `isNightEligible` gate briefly existed; removed — every night from onboarding counts, no exemptions.)
-- `AuditBackfillWorker` (daily 22:00): covers [onboarding day, open-audit cap) in ≤30-day chunks with a persisted per-user cursor; skips HC sync (ancient data gone — judges stored rows); single ledger fold per run.
+- `auditDate()` extracted from the audit loop (open path keeps full verdict/write/penalty rules). The backfill worker intentionally does NOT share it — row-writing only (see below). (An `isNightEligible` gate briefly existed; removed — every night from onboarding counts, no exemptions.)
+- `AuditBackfillWorker` (daily 22:00): covers [onboarding day, open-audit cap) in ≤30-day chunks with a persisted per-user cursor. Row-writing only — pendings flip straight to MISSED, empty past dates get MISSED rows; no grace re-checks, no ledger folds.
 
 **Full audit behavior (for the record — open path + workers):**
 - *Open-path audit (every app open):* bulk-flip PENDING older than 14 days → walk [anchor+1 … today] (anchor = oldest pending, else `lastSessionDate`+1, else today; 14-day cap) → per date: sync sleep from Health Connect → verdict → write/update row → streak fold → save ledger once.
