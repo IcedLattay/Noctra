@@ -75,6 +75,15 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         btnTrendPrev.setOnClickListener { viewModel.shiftTrend(-1) }
         btnTrendNext.setOnClickListener { viewModel.shiftTrend(+1) }
 
+        // §8 scroll-to-top: appears past ~1.5 screens, hides near the top.
+        val btnScrollTop = view.findViewById<View>(R.id.btn_scroll_top)
+        val scroller = mainContent as androidx.core.widget.NestedScrollView
+        btnScrollTop.setOnClickListener { scroller.smoothScrollTo(0, 0) }
+        scroller.setOnScrollChangeListener { _, _, scrollY, _, _ ->
+            btnScrollTop.visibility =
+                if (scrollY > scroller.height * 3 / 2) View.VISIBLE else View.GONE
+        }
+
         lifecycleScope.launch {
             viewModel.state.collect { state ->
                 // §3 batched loading: one spinner for the whole content block,
@@ -88,6 +97,7 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
                 if (state.isOffline) {
                     noInternetView.visibility = View.VISIBLE
                     mainContent.visibility = View.GONE
+                    btnScrollTop.visibility = View.GONE
                     setupRetryButton(view)
                     return@collect
                 } else {
