@@ -266,4 +266,9 @@
         app:popUpTo="@id/nav_graph"
         app:popUpToInclusive="true" />
 
+    <!-- Debug preview only: no popUpTo, so Back returns to the debug panel. -->
+    <action
+        android:id="@+id/action_global_previewSequencing"
+        app:destination="@id/editRoutineSequencingFragment" />
+
 </navigation>

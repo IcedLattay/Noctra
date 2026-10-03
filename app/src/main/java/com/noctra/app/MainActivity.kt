@@ -671,7 +671,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
             val navHost =
                 supportFragmentManager.findFragmentById(R.id.nav_host) as androidx.navigation.fragment.NavHostFragment
             val args = android.os.Bundle().apply { putBoolean("previewMode", true) }
-            navHost.navController.navigate(R.id.editRoutineSequencingFragment, args)
+            navHost.navController.navigate(R.id.action_global_previewSequencing, args)
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "Preview arrange screen failed", e)
             Toast.makeText(applicationContext, "Preview failed: ${e.message}", Toast.LENGTH_LONG).show()
