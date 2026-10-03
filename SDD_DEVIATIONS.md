@@ -313,7 +313,7 @@ Both are nullable, so no insert default is overridden and no backfill is require
 
 **Eligibility cut (merge/audit-analytics):** the spec's Eligibility rule — nights before onboarding finished rendering as hollow `INELIGIBLE` cells excluded from every rate — was removed per decision. Every night from onboarding counts, no exemptions: `resolveEligibilityStart` deleted, `INELIGIBLE` removed from `DayStatus`, dead legend string deleted. `onboarding_completed_at`/`created_at` stay as audit + Week N anchors only.
 
-**Not yet consumed:** `trendPoints`, `trendAverages`, `hasEnoughForTrend` and `weekCounter` are computed and exposed but have no UI until Phases 4–5. The detail block still renders through the legacy `SleepQualityChartConfig` / `BedtimeAdherenceChartView`, which still assume Mon–Sun day labels — Phase 4 replaces their day labelling with real dates.
+**Week N pill removed (merge/audit-analytics).** The spec's §3 "Week N" journey counter sat beside the 7-day range but stayed frozen while the arrows moved the dates (anchored to today, not the window), with nothing explaining what "Week 3" meant. Removed the pill, its string, and `weekNumber`/`weekCounter` plumbing. `firstDataDate` stays — both windows' back-guards and the trend gate anchor there. The detail block still renders through the legacy `SleepQualityChartConfig` / `BedtimeAdherenceChartView`, which still assume Mon–Sun day labels — Phase 4 replaces their day labelling with real dates.
 
 ---
 

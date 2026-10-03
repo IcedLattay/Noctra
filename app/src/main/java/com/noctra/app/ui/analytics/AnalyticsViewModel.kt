@@ -218,8 +218,7 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
                         variabilitySd = standardDeviationMinutes(dr),
                         trendPoints = buildScores(s.trendStart, tr, TREND_DAYS),
                         trendAverages = trailingAverages(buildScores(s.trendStart, tr, TREND_DAYS)),
-                        insightResult = insightUseCase.generate(ir, iss),
-                        weekCounter = weekNumber(today, _state.value.firstDataDate)
+                        insightResult = insightUseCase.generate(ir, iss)
                     )
                 }
             } catch (e: Exception) {
@@ -247,11 +246,6 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
         if (candidates.isNotEmpty()) return candidates.min()
         val profile = profileRepo.getOrCreateProfile(userId)
         return parseDate(profile.createdAt) ?: LocalDate.now()
-    }
-
-    private fun weekNumber(today: LocalDate, firstData: LocalDate): Int {
-        val days = ChronoUnit.DAYS.between(firstData, today)
-        return (days / 7).toInt() + 1
     }
 
     // ─── Data shaping ─────────────────────────────────────────────────────
@@ -381,7 +375,7 @@ data class AnalyticsUiState(
     val isLoading: Boolean = false,
     val isOffline: Boolean = false,
 
-    /** First recorded night; both windows and the week counter anchor here. */
+    /** First recorded night; both windows anchor here. */
     val firstDataDate: LocalDate = LocalDate.now(),
 
     // ── 7-day detail block (moves ±1 day) ──
@@ -402,8 +396,7 @@ data class AnalyticsUiState(
 
     // ── Shared / navigation ──
     val lastNightRecord: SleepRecord? = null,
-    val targetBedtime: String? = null,
-    val weekCounter: Int = 1
+    val targetBedtime: String? = null
 ) {
     /**
      * §2.2 gate: the trend hides behind a placeholder until roughly two weeks of

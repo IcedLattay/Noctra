@@ -199,25 +199,11 @@
                 android:rotation="180"
                 android:src="@drawable/ic_chevron_right" />
 
-            <!-- §7 locked range format; §3 "Week N" for the journey feeling -->
+            <!-- §7 locked range format -->
             <TextView
                 android:id="@+id/text_week_range"
                 style="@style/AnalyticsRangeLabel"
                 tools:text="Jun 14, 2026 - Jun 20, 2026" />
-
-            <TextView
-                android:id="@+id/text_week_counter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_analytics_pill"
-                android:fontFamily="@font/poppins"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="3dp"
-                android:textColor="@color/analytics_score"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                tools:text="Week 3" />
 
             <ImageView
                 android:id="@+id/btn_week_next"

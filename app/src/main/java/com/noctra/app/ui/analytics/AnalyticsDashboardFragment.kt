@@ -26,7 +26,6 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         super.onViewCreated(view, savedInstanceState)
 
         val weekRangeLabel = view.findViewById<TextView>(R.id.text_week_range)
-        val weekCounter = view.findViewById<TextView>(R.id.text_week_counter)
         val variability = view.findViewById<TextView>(R.id.text_variability)
         val btnPrev = view.findViewById<ImageView>(R.id.btn_week_prev)
         val btnNext = view.findViewById<ImageView>(R.id.btn_week_next)
@@ -95,7 +94,6 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
                 weekRangeLabel.text = formatRange(state.detailStart, 7)
                 btnNext.alpha = if (viewModel.canShiftDetailForward()) 1.0f else 0.3f
                 btnPrev.alpha = if (viewModel.canShiftDetailBack()) 1.0f else 0.3f
-                weekCounter.text = getString(R.string.analytics_week_counter, state.weekCounter)
 
                 // Real date labels — §3 bans Mon-Sun calendar framing, so all
                 // three charts label the same seven real dates.

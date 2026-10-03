@@ -93,7 +93,6 @@
     <string name="analytics_no_bedtime_data">No bedtime data for this week</string>
     <!-- §7 locked: "Bedtimes varied ±{N} min this week" -->
     <string name="analytics_variability">Bedtimes varied ±%1$d min this week.</string>
-    <string name="analytics_week_counter">Week %1$d</string>
     <string name="analytics_nav_earlier">Earlier</string>
     <string name="analytics_nav_later">Later</string>
     <string name="analytics_scroll_to_top">Scroll back to top</string>
