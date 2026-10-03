@@ -6,7 +6,8 @@
     REPLACES the old flat single-panel design (icon + title + instruction +
     one timer for the whole activity) with a 2-panel Stepper:
       preCountdownPanel  → 15s green timer + Shleepy body + instructions
-      stepPanel          → per-step demo image + name + instruction + dots + step timer
+      stepPanel          → Shleepy mark + per-step demo image (pause icon during rest)
+                            + name + instruction + dots + step timer
                             (alternates action-phase green timer / rest-phase default timer)
                             + Complete Routine button (visible only on the last
                             activity in the whole routine, once its timer hits 0)
@@ -143,30 +144,47 @@
             android:scaleType="centerCrop"
             android:contentDescription="@null" />
 
+        <!-- Session 5 (R8): Shleepy mark at the top, same as every other activity screen -->
+        <ImageView
+            android:id="@+id/imgShleepyHeadStep"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="30dp"
+            android:contentDescription="@null"
+            android:scaleType="fitCenter"
+            android:src="@drawable/shleepylogo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <TextView
             android:id="@+id/tvStepActivityLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="8dp"
             android:fontFamily="@font/poppinsbold"
             android:textColor="#2c1769"
             android:textSize="11sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/imgShleepyHeadStep"
             tools:text="Progressive Muscle Relaxation" />
 
         <!-- Demo image / placeholder box for the current sub-step -->
+        <!-- Session 5 (R9): 16:9 box to match the 1920x1080 step images
+             (was a fixed 150dp height, which letterboxed them). -->
         <ImageView
             android:id="@+id/imgStepDemo"
             android:layout_width="0dp"
-            android:layout_height="150dp"
+            android:layout_height="0dp"
             android:layout_marginStart="24dp"
             android:layout_marginTop="14dp"
             android:layout_marginEnd="24dp"
             android:background="#F5F4FA"
+            android:contentDescription="@null"
             android:scaleType="fitCenter"
+            app:layout_constraintDimensionRatio="16:9"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvStepActivityLabel"
@@ -258,10 +276,17 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCompleteRoutine"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="56dp"
             android:layout_marginStart="32dp"
             android:layout_marginTop="16dp"
             android:layout_marginEnd="32dp"
+            android:background="@drawable/bg_button_primary"
+            app:backgroundTint="@null"
+            android:fontFamily="@font/poppinsbold"
+            android:stateListAnimator="@null"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="16sp"
             android:text="Complete Routine"
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"

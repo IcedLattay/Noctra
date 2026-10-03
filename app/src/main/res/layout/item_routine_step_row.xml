@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Single activity step row on the Routine Start screen -->
+<!--
+    Single activity step row on the Routine Start ("Ready for Tonight's
+    Routine?") screen — Session 5 (R2).
+    [number] [illustration] name / duration
+    Same look as the Arrange screen rows, minus the drag handle.
+    View IDs unchanged.
+-->
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -7,19 +13,21 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="10dp"
-    app:cardCornerRadius="14dp"
-    app:cardElevation="0dp"
-    app:cardBackgroundColor="@color/white">
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingTop="14dp"
-        android:paddingBottom="14dp">
+        android:orientation="horizontal"
+        android:paddingVertical="10dp"
+        android:paddingStart="14dp"
+        android:paddingEnd="16dp">
 
         <!-- Step number badge -->
         <TextView
@@ -27,29 +35,47 @@
             android:layout_width="28dp"
             android:layout_height="28dp"
             android:background="@drawable/bg_step_number_circle_2"
+            android:fontFamily="@font/poppinsbold"
             android:gravity="center"
             android:textColor="@color/noctra_purple_light"
             android:textSize="12sp"
-            android:textStyle="bold"
-            android:fontFamily="@font/poppinsbold"
             tools:text="1" />
 
-        <!-- Activity label and duration -->
+        <!-- Illustration thumbnail -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginStart="12dp"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp">
+
+            <ImageView
+                android:id="@+id/iv_activity_icon"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_illus_placeholder"
+                android:contentDescription="@null"
+                android:scaleType="centerCrop"
+                tools:src="@drawable/illus_breathing" />
+        </androidx.cardview.widget.CardView>
+
+        <!-- Name + duration -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:layout_marginStart="12dp"
+            android:layout_weight="1"
             android:orientation="vertical">
 
             <TextView
                 android:id="@+id/tv_activity_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:fontFamily="@font/poppinsbold"
+                android:maxLines="2"
                 android:textColor="@color/noctra_purple_dark"
                 android:textSize="14sp"
-                android:textStyle="bold"
-                android:fontFamily="@font/poppinsbold"
                 tools:text="Slow-Paced Breathing" />
 
             <TextView
@@ -57,23 +83,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:textColor="#888888"
-                android:textSize="12sp"
                 android:fontFamily="@font/poppinsregular"
+                android:textColor="#7B6FA0"
+                android:textSize="12sp"
                 tools:text="5 minutes" />
-
         </LinearLayout>
-
-        <!-- Activity icon -->
-        <ImageView
-            android:id="@+id/iv_activity_icon"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:background="@drawable/bg_activity_icon_circle"
-            android:padding="6dp"
-            android:contentDescription="activity icon"
-            tools:src="@drawable/ic_book" />
-
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>

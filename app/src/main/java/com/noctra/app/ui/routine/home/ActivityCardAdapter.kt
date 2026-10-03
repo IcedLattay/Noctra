@@ -10,17 +10,21 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.noctra.app.R
 import com.noctra.app.data.model.Activity
+import com.noctra.app.utils.ActivityIllustrations
 
 /**
  * ActivityCardAdapter
  *
- * Drives the 2-column activity grid on RoutineHomeFragment.
- * Uses ListAdapter with DiffUtil for efficient updates.
+ * Drives the activity list on RoutineHomeFragment.
+ * Session 5: single full-width column (was a 2-column grid), real
+ * illustrations via ActivityIllustrations, one-line description, and
+ * long-press -> onLongPress(activity, stepNumber) to open the info dialog.
  *
  * File location: com/noctra/app/ui/routine/home/ActivityCardAdapter.kt
  */
-class ActivityCardAdapter :
-    ListAdapter<Activity, ActivityCardAdapter.ActivityCardViewHolder>(ActivityDiffCallback()) {
+class ActivityCardAdapter(
+    private val onLongPress: ((activity: Activity, stepNumber: Int) -> Unit)? = null
+) : ListAdapter<Activity, ActivityCardAdapter.ActivityCardViewHolder>(ActivityDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ActivityCardViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -29,7 +33,14 @@ class ActivityCardAdapter :
     }
 
     override fun onBindViewHolder(holder: ActivityCardViewHolder, position: Int) {
-        holder.bind(getItem(position), position + 1) // position + 1 = step number (1-based)
+        val activity = getItem(position)
+        val stepNumber = position + 1 // 1-based
+        holder.bind(activity, stepNumber)
+
+        holder.itemView.setOnLongClickListener {
+            onLongPress?.invoke(activity, stepNumber)
+            onLongPress != null // true = long-press handled
+        }
     }
 
     // ─── ViewHolder ───────────────────────────────────────────────────────────
@@ -40,43 +51,31 @@ class ActivityCardAdapter :
         private val ivActivityIcon: ImageView = itemView.findViewById(R.id.iv_activity_icon)
         private val tvActivityLabel: TextView = itemView.findViewById(R.id.tv_activity_label)
         private val tvDuration: TextView      = itemView.findViewById(R.id.tv_activity_duration)
+        private val tvDescription: TextView   = itemView.findViewById(R.id.tv_activity_description)
 
         fun bind(activity: Activity, stepNumber: Int) {
-            tvStepNumber.text   = stepNumber.toString()
+            tvStepNumber.text    = stepNumber.toString()
             tvActivityLabel.text = activity.label
-            tvDuration.text     = "${activity.defaultDurationMinutes} min"
+            tvDuration.text      = "${activity.defaultDurationMinutes} min"
 
-            // Map activity type to icon drawable
-            val iconRes = getIconForActivityType(activity.activityType)
-            ivActivityIcon.setImageResource(iconRes)
-        }
-
-        /**
-         * Maps activity_type string from Supabase to a local drawable resource.
-         * Add new types here as the activity library grows.
-         */
-        private fun getIconForActivityType(activityType: String): Int {
-            return when (activityType.lowercase()) {
-                "breathing"           -> R.drawable.bg_breathing_circle
-                "audio", "audioscape" -> R.drawable.ic_nav_companion
-                "journaling"          -> R.drawable.ic_book
-                "stretching"          -> R.drawable.ic_nav_profile
-                "reading"             -> R.drawable.ic_book
-                "meditation"          -> R.drawable.ic_nav_companion
-                else                  -> R.drawable.ic_clock
+            if (activity.description.isNotBlank()) {
+                tvDescription.text = activity.description
+                tvDescription.visibility = View.VISIBLE
+            } else {
+                tvDescription.visibility = View.GONE
             }
+
+            ActivityIllustrations.load(ivActivityIcon, activity.label)
         }
     }
 
     // ─── DiffCallback ─────────────────────────────────────────────────────────
 
     class ActivityDiffCallback : DiffUtil.ItemCallback<Activity>() {
-        override fun areItemsTheSame(oldItem: Activity, newItem: Activity): Boolean {
-            return oldItem.activityId == newItem.activityId
-        }
+        override fun areItemsTheSame(oldItem: Activity, newItem: Activity): Boolean =
+            oldItem.activityId == newItem.activityId
 
-        override fun areContentsTheSame(oldItem: Activity, newItem: Activity): Boolean {
-            return oldItem == newItem
-        }
+        override fun areContentsTheSame(oldItem: Activity, newItem: Activity): Boolean =
+            oldItem == newItem
     }
 }

@@ -7,15 +7,12 @@
     android:background="@drawable/bg_card_white"
     android:padding="24dp">
 
-    <!-- Shleepy illustration -->
-    <!-- FLAG: placeholder — wireframe shows a distinct "sweating/tired"
-         Shleepy expression not matching any existing evolution-stage
-         drawable name. Swap for the real asset once available. -->
+    <!-- Shleepy illustration — real asset (Flag 11 resolved) -->
     <ImageView
         android:id="@+id/imgShleepyPaused"
         android:layout_width="96dp"
         android:layout_height="96dp"
-        android:src="@drawable/ic_shleepy_avatar"
+        android:src="@drawable/sweatingshleepy"
         android:contentDescription="@string/content_description_shleepy"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -58,15 +55,14 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- FLAG: placeholder icon — no dedicated "resume/undo" icon
-             exists yet in the drawable set; using ic_clock as a stand-in. -->
+        <!-- Real resume/restore icon (Flag 10 resolved) -->
         <ImageView
             android:id="@+id/imgResumeIcon"
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:background="@drawable/bg_avatar_circle"
             android:padding="6dp"
-            android:src="@drawable/ic_clock"
+            android:src="@drawable/ic_resume"
             android:contentDescription="@null"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -101,9 +97,7 @@
             app:layout_constraintEnd_toStartOf="@id/dotsContainer"
             app:layout_constraintBottom_toBottomOf="@id/imgResumeIcon" />
 
-        <!-- Progress dots — generated in code, mirrors the pattern used in
-             GenericTimerActivityFragment.renderStepDots(), but with 3
-             visual states (done / current / upcoming) instead of 2. -->
+        <!-- Progress dots — generated in code -->
         <LinearLayout
             android:id="@+id/dotsContainer"
             android:layout_width="wrap_content"
@@ -131,7 +125,7 @@
         android:textSize="15sp"
         android:textStyle="bold"
         app:cornerRadius="12dp"
-        app:icon="@drawable/ic_clock"
+        app:icon="@drawable/ic_resume"
         app:iconGravity="textStart"
         app:iconTint="#FFFFFF"
         app:layout_constraintTop_toBottomOf="@id/cardResumeInfo"

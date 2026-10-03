@@ -1,71 +1,105 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    "Choose Your Activities" grid card — Session 5 (R1).
+    Illustration on top, name + duration below, check badge when selected.
+    View IDs unchanged (ivActivityIcon, tvActivityName, tvActivityDuration,
+    ivCheckSelected) so ViewBinding names stay the same.
+-->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="170dp"
     android:layout_margin="6dp"
     android:clickable="true"
     android:focusable="true"
     app:cardBackgroundColor="#FFFFFF"
-    app:cardCornerRadius="16dp"
+    app:cardCornerRadius="20dp"
     app:cardElevation="0dp"
-    app:strokeWidth="2dp"
-    app:strokeColor="#D9D4F0">
+    app:strokeColor="#D9D4F0"
+    app:strokeWidth="2dp">
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <!-- Info button (top-right) -->
-        <ImageView
-            android:id="@+id/btnInfo"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:layout_gravity="top|end"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="4dp"
-            android:src="@drawable/ic_info_circle"
-            android:contentDescription="Activity details" />
+        android:layout_height="wrap_content">
 
         <!-- Card content -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="10dp">
 
-            <!-- Icon placeholder -->
-            <ImageView
-                android:id="@+id/ivActivityIcon"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_marginBottom="12dp"
-                android:src="@drawable/ic_alarm_clock"
-                android:contentDescription="Activity icon" />
+            <!-- Illustration -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp">
+
+                <ImageView
+                    android:id="@+id/ivActivityIcon"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_illus_placeholder"
+                    android:contentDescription="@null"
+                    android:scaleType="centerCrop"
+                    tools:src="@drawable/illus_reading" />
+            </androidx.cardview.widget.CardView>
 
             <TextView
                 android:id="@+id/tvActivityName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Activity Name"
+                android:layout_marginTop="10dp"
+                android:layout_marginHorizontal="4dp"
+                android:ellipsize="end"
+                android:fontFamily="@font/poppinsbold"
+                android:lines="2"
+                android:maxLines="2"
+                android:textColor="#16056E"
                 android:textSize="14sp"
-                android:textStyle="bold"
-                android:textColor="@android:color/black"
-                android:layout_marginBottom="4dp" />
+                tools:text="Slow-Paced Breathing" />
 
             <TextView
                 android:id="@+id/tvActivityDuration"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="5m"
+                android:layout_marginHorizontal="4dp"
+                android:layout_marginTop="2dp"
+                android:layout_marginBottom="4dp"
+                android:fontFamily="@font/poppinsregular"
+                android:textColor="#7B6FA0"
                 android:textSize="12sp"
-                android:textColor="#7B6FA0" />
-
+                tools:text="5 min" />
         </LinearLayout>
 
+        <!-- Info button (bottom-right): badge owns top-right when selected -->
+        <ImageView
+            android:id="@+id/btnInfo"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="4dp"
+            android:src="@drawable/ic_info_circle"
+            android:contentDescription="Activity details" />
+
+        <!-- Selected check badge -->
+        <ImageView
+            android:id="@+id/ivCheckSelected"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="top|end"
+            android:layout_margin="16dp"
+            android:contentDescription="Selected"
+            android:elevation="2dp"
+            android:src="@drawable/ic_selected_check"
+            android:visibility="gone"
+            tools:visibility="visible" />
     </FrameLayout>
 
 </com.google.android.material.card.MaterialCardView>

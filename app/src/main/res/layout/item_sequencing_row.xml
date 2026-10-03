@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    "Arrange Your Routine" row — hybrid (merge/routine-cards).
+    Their visuals: [number] [illustration] name/duration ... [drag handle].
+    Our chevrons: steppers between text and handle for exact moves.
+    Long-press row = info dialog. Drag ONLY from the handle.
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -14,21 +20,70 @@
         android:layout_marginTop="12dp"
         android:layout_marginStart="22dp"
         android:layout_marginEnd="24dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
+        app:cardBackgroundColor="@color/white"
         app:cardCornerRadius="14dp"
-        app:cardElevation="0dp"
-        app:cardBackgroundColor="@color/white">
+        app:cardElevation="0dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp">
+            android:orientation="horizontal"
+            android:paddingVertical="10dp"
+            android:paddingStart="14dp"
+            android:paddingEnd="8dp">
 
-            <!-- Chevron steppers -->
+            <!-- Illustration thumbnail -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp">
+
+                <ImageView
+                    android:id="@+id/iv_activity_illustration"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_illus_placeholder"
+                    android:contentDescription="@null"
+                    android:scaleType="centerCrop"
+                    tools:src="@drawable/illus_breathing" />
+            </androidx.cardview.widget.CardView>
+
+            <!-- Name + duration -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_activity_label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/poppinsbold"
+                    android:maxLines="2"
+                    android:textColor="@color/noctra_purple_dark"
+                    android:textSize="14sp"
+                    tools:text="Slow-Paced Breathing" />
+
+                <TextView
+                    android:id="@+id/tv_activity_duration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:fontFamily="@font/poppinsregular"
+                    android:textColor="#7B6FA0"
+                    android:textSize="12sp"
+                    tools:text="5 minutes" />
+            </LinearLayout>
+
+            <!-- Chevron steppers — tap to move one slot (exact moves) -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -39,64 +94,31 @@
                     android:layout_width="28dp"
                     android:layout_height="28dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Move up"
                     android:padding="6dp"
                     android:rotation="270"
-                    android:src="@drawable/ic_chevron_right"
-                    android:contentDescription="Move up" />
+                    android:src="@drawable/ic_chevron_right" />
 
                 <ImageView
                     android:id="@+id/btn_move_down"
                     android:layout_width="28dp"
                     android:layout_height="28dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Move down"
                     android:padding="6dp"
                     android:rotation="90"
-                    android:src="@drawable/ic_chevron_right"
-                    android:contentDescription="Move down" />
+                    android:src="@drawable/ic_chevron_right" />
 
             </LinearLayout>
 
-            <!-- Activity label, description and duration -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/tv_activity_label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:fontFamily="@font/poppinsbold"
-                    tools:text="Slow-Paced Breathing" />
-
-                <TextView
-                    android:id="@+id/tv_activity_description"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="@color/noctra_text_muted"
-                    android:textSize="12sp"
-                    android:fontFamily="@font/poppinsregular"
-                    android:maxLines="2"
-                    tools:text="Release tension with gentle movements" />
-
-                <TextView
-                    android:id="@+id/tv_activity_duration"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="#888888"
-                    android:textSize="12sp"
-                    android:fontFamily="@font/poppinsregular"
-                    tools:text="5 minutes" />
-
-            </LinearLayout>
-
+            <!-- Drag handle (bigger touch target: 48dp) -->
+            <ImageView
+                android:id="@+id/iv_drag_handle"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:contentDescription="Drag to reorder"
+                android:padding="12dp"
+                android:src="@drawable/ic_drag_handle" />
         </LinearLayout>
 
     </androidx.cardview.widget.CardView>
@@ -110,11 +132,11 @@
         android:layout_gravity="top|start"
         android:layout_marginStart="10dp"
         android:background="@drawable/bg_rank_circle"
+        android:fontFamily="@font/poppinsbold"
         android:gravity="center"
         android:textColor="@color/white"
         android:textSize="13sp"
         android:textStyle="bold"
-        android:fontFamily="@font/poppinsbold"
         tools:text="1" />
 
 </FrameLayout>

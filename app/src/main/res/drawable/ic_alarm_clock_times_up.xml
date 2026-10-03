@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Session 5 (R7): real alarm-clock illustration for the Time's Up screen.
+    (ic_alarm_clock is a plain purple circle placeholder and is still used
+    elsewhere, so this is a separate file.)
+    Gold bells, purple body, white face, navy hands.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- Legs -->
+    <path
+        android:pathData="M31,80 L22,93 M69,80 L78,93"
+        android:strokeColor="#3A2296"
+        android:strokeWidth="6"
+        android:strokeLineCap="round" />
+
+    <!-- Bells -->
+    <path android:fillColor="#E0A72E" android:pathData="M12,38 A17,17 0 0,1 36,14 Z" />
+    <path android:fillColor="#E0A72E" android:pathData="M88,38 A17,17 0 0,0 64,14 Z" />
+
+    <!-- Top knob -->
+    <path android:fillColor="#3A2296" android:pathData="M46,16 h8 v8 h-8 z" />
+
+    <!-- Body -->
+    <path
+        android:fillColor="#4B2FB5"
+        android:pathData="M18,56 a32,32 0 1,0 64,0 a32,32 0 1,0 -64,0 z" />
+
+    <!-- Face -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M25,56 a25,25 0 1,0 50,0 a25,25 0 1,0 -50,0 z" />
+
+    <!-- Hour ticks (12, 3, 6, 9) -->
+    <path
+        android:pathData="M50,35 L50,39 M71,56 L67,56 M50,77 L50,73 M29,56 L33,56"
+        android:strokeColor="#B9B0E0"
+        android:strokeWidth="3"
+        android:strokeLineCap="round" />
+
+    <!-- Hands -->
+    <path
+        android:pathData="M50,56 L50,42 M50,56 L61,62"
+        android:strokeColor="#1E1452"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+
+    <!-- Center dot -->
+    <path
+        android:fillColor="#E0A72E"
+        android:pathData="M47,56 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0 z" />
+</vector>

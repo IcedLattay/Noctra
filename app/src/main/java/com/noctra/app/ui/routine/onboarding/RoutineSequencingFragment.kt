@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -13,6 +14,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.noctra.app.R
 import com.noctra.app.databinding.FragmentRoutineSequencingBinding
+import com.noctra.app.ui.routine.home.ActivityInfoDialogFragment
+import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.launch
 
 class RoutineSequencingFragment : Fragment() {
@@ -23,6 +26,7 @@ class RoutineSequencingFragment : Fragment() {
     private val viewModel: OnboardingViewModel by navGraphViewModels(R.id.nav_graph)
     private lateinit var adapter: RoutineSequencingAdapter
     private lateinit var touchHelper: ItemTouchHelper
+    private var confirmText: CharSequence = "Confirm" // original button text from the layout
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -34,9 +38,11 @@ class RoutineSequencingFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        confirmText = binding.btnConfirm.text
 
         setupRecyclerView()
         observeActivities()
+        observeSaveState()
         setupButtons()
 
         // Fresh-process resume: restore the saved draft unless edit mode
@@ -108,6 +114,10 @@ class RoutineSequencingFragment : Fragment() {
                 )
             }
 
+            // Both drag paths live: handle touch-down AND row long-press
+            // (no info dialog on this screen to compete with) — so the
+            // default long-press-drag stays enabled: no override.
+
             // Visual feedback while dragging
             override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
                 super.onSelectedChanged(viewHolder, actionState)
@@ -123,10 +133,15 @@ class RoutineSequencingFragment : Fragment() {
                 viewHolder.itemView.alpha = 1f
                 viewHolder.itemView.scaleX = 1f
                 viewHolder.itemView.scaleY = 1f
+                // Re-draw the step numbers (1, 2, 3) after a drop — moving
+                // rows doesn't rebind them, so they'd show the old order.
+                recyclerView.post { adapter.notifyItemRangeChanged(0, adapter.itemCount) }
             }
         }
 
-        ItemTouchHelper(callback).attachToRecyclerView(binding.rvSequence)
+        touchHelper = ItemTouchHelper(callback)
+        touchHelper.attachToRecyclerView(binding.rvSequence)
+        adapter.touchHelper = touchHelper
 
         binding.rvSequence.layoutManager = LinearLayoutManager(requireContext())
         binding.rvSequence.adapter = adapter
@@ -159,16 +174,53 @@ class RoutineSequencingFragment : Fragment() {
         }
     }
 
+    /**
+     * Edit mode only: reacts to the save result.
+     *   Saving -> button disabled, "Saving..."
+     *   Saved  -> toast, clear edit data, go back to the Routine tab
+     *   Error  -> toast, re-enable button so the user can retry
+     */
+    private fun observeSaveState() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.saveState.collect { state ->
+                when (state) {
+                    is OnboardingViewModel.SaveState.Idle -> {
+                        binding.btnConfirm.text = confirmText
+                    }
+                    is OnboardingViewModel.SaveState.Saving -> {
+                        binding.btnConfirm.isEnabled = false
+                        binding.btnConfirm.alpha = 0.5f
+                        binding.btnConfirm.text = "Saving..."
+                    }
+                    is OnboardingViewModel.SaveState.Saved -> {
+                        Toast.makeText(requireContext(), "Routine updated", Toast.LENGTH_SHORT).show()
+                        viewModel.resetEditSession()
+                        goBackToRoutineHome()
+                    }
+                    is OnboardingViewModel.SaveState.Error -> {
+                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                        viewModel.resetSaveState()   // Idle restores the button text
+                        binding.btnConfirm.isEnabled = true
+                        binding.btnConfirm.alpha = 1f
+                    }
+                }
+            }
+        }
+    }
+
     private fun setupButtons() {
         binding.btnConfirm.setOnClickListener {
+            val userId = UserSession.getUserId(requireContext())
+
             if (viewModel.isEditMode) {
-                // Edit flow: return to the Routine tab instead of entering
-                // the onboarding-only health flow
-                if (!findNavController().popBackStack(R.id.routineHomeFragment, false)) {
-                    findNavController().navigate(R.id.action_routineSequencing_to_healthEducation)
+                // Edit mode saves and returns (never continues into the
+                // Health Connect onboarding screens).
+                if (userId == null) {
+                    Toast.makeText(requireContext(), "Please log in again.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
                 }
+                viewModel.saveEditedRoutine(userId)
             } else {
-                val userId = com.noctra.app.utils.UserSession.getUserId(requireContext())
                 if (userId != null) {
                     viewModel.updateStep(userId, 3)
                     viewModel.saveDraft(userId)
@@ -177,6 +229,19 @@ class RoutineSequencingFragment : Fragment() {
             }
         }
 
+    }
+
+    /**
+     * Routine Home is still on the back stack (Home -> Library -> Sequencing),
+     * so pop back to it. RoutineHomeFragment.onResume() calls refresh(),
+     * which re-reads the new active routine from Supabase.
+     * Fallback: the global action, in case Home isn't on the stack.
+     */
+    private fun goBackToRoutineHome() {
+        val popped = findNavController().popBackStack(R.id.routineHomeFragment, false)
+        if (!popped) {
+            findNavController().navigate(R.id.action_global_routineHomeFragment)
+        }
     }
 
     override fun onDestroyView() {

@@ -147,7 +147,9 @@ class RoutineStartFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        stepAdapter = RoutineStepAdapter()
+        stepAdapter = RoutineStepAdapter { activity, stepNumber ->
+            ActivityInfoDialogFragment.show(childFragmentManager, activity, stepNumber)
+        }
         rvActivitySteps.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = stepAdapter

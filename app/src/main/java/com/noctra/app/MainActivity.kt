@@ -52,6 +52,7 @@ import kotlin.random.Random
 import kotlinx.coroutines.launch
 import android.widget.Toast
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.noctra.app.data.model.UserProfile
 
 class MainActivity : AppCompatActivity(), DebugPanelListener {
 
@@ -74,8 +75,8 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         installSplashScreen().setKeepOnScreenCondition { isLoading }
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        DebugSettings.setForceRoutineWindow(true) // TEMP — remove before final submission
-        DebugSettings.setSkipCompletionCheck(true) // TEMP — remove before final submission
+        //DebugSettings.setForceRoutineWindow(true) // TEMP — remove before final submission
+        //DebugSettings.setSkipCompletionCheck(true) // TEMP — remove before final submission
 
         networkObserver = NetworkObserver(applicationContext)
 

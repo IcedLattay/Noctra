@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -13,6 +14,7 @@ import com.noctra.app.R
 import com.noctra.app.data.repository.RoutineRepository
 import com.noctra.app.data.repository.UserProfileRepository
 import com.noctra.app.databinding.FragmentActivityLibraryBinding
+import com.noctra.app.ui.routine.home.ActivityInfoDialogFragment
 import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.launch
 
@@ -25,6 +27,11 @@ import kotlinx.coroutines.launch
  * a GridLayoutManager + wrap_content measurement issue with an incomplete
  * final row, not a data-loading problem (confirmed the DB row itself is
  * valid and Logcat showed no fetch/decode errors).
+ *
+ * FIXED (edit-routine save bug): backing out of edit mode without saving now
+ * clears the edit data (viewModel.resetEditSession()), so the next
+ * "Edit Routine" reloads the real routine from the DB instead of showing
+ * leftover unsaved changes.
  */
 class ActivityLibraryFragment : Fragment() {
 
@@ -51,6 +58,7 @@ class ActivityLibraryFragment : Fragment() {
         viewModel.isEditMode = editMode
         if (editMode) {
             setupEditMode()
+            setupEditModeBackPress()
         }
 
         setupAdapter()
@@ -95,6 +103,23 @@ class ActivityLibraryFragment : Fragment() {
         }
     }
 
+    /** Phone back button in edit mode = cancel edit, discard changes. */
+    private fun setupEditModeBackPress() {
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    cancelEditAndGoBack()
+                }
+            }
+        )
+    }
+
+    private fun cancelEditAndGoBack() {
+        viewModel.resetEditSession()
+        findNavController().popBackStack()
+    }
+
     private fun setupAdapter() {
         adapter = ActivityGridAdapter(
             onActivityClick = { activity -> viewModel.toggleActivity(activity) },
@@ -127,6 +152,14 @@ class ActivityLibraryFragment : Fragment() {
             }
 
             findNavController().navigate(R.id.action_activityLibrary_to_routineSequencing)
+        }
+
+        binding.btnBack.setOnClickListener {
+            if (viewModel.isEditMode) {
+                cancelEditAndGoBack()
+            } else {
+                findNavController().popBackStack()
+            }
         }
 
         // Start disabled
@@ -208,11 +241,7 @@ class ActivityLibraryFragment : Fragment() {
     }
 
     private fun showActivityDetails(activity: com.noctra.app.data.model.Activity) {
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-            .setTitle(activity.label)
-            .setMessage("${activity.description}\n\nDuration: ${activity.defaultDurationMinutes} minutes")
-            .setPositiveButton("Got it", null)
-            .show()
+        ActivityInfoDialogFragment.show(childFragmentManager, activity)
     }
 
     override fun onDestroyView() {
