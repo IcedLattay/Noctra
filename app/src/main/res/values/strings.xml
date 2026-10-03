@@ -90,7 +90,6 @@
     <string name="analytics_legend_completed">Completed</string>
     <string name="analytics_legend_pending">Pending</string>
     <string name="analytics_legend_missed">Missed</string>
-    <string name="analytics_legend_ineligible">Not eligible</string>
     <string name="analytics_no_bedtime_data">No bedtime data for this week</string>
     <!-- §7 locked: "Bedtimes varied ±{N} min this week" -->
     <string name="analytics_variability">Bedtimes varied ±%1$d min this week.</string>

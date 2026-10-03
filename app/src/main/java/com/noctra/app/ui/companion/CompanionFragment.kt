@@ -96,6 +96,7 @@ class CompanionFragment : Fragment() {
                 dialog.setOnDismissCallback { onDialogClosed() }
                 dialog.show(childFragmentManager, "EvolutionPopup")
             }
+            }
         } catch (e: Exception) {
             // Never leave the queue wedged: a dropped dialog must still let the
             // next one through, otherwise every later dialog is silently lost.

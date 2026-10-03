@@ -205,9 +205,6 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
                     val ln = lastNight.await()
                     val p = profile.await()
 
-                    val target = parseTargetBedtime(p.targetBedtime)
-                    val eligibleFrom = resolveEligibilityStart(p)
-
                     _state.value = _state.value.copy(
                         isLoading = false,
                         isOffline = false,
@@ -215,10 +212,10 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
                         lastNightRecord = ln,
                         detailScores = buildScores(s.detailStart, dr, DETAIL_DAYS),
                         detailCompletion = buildCompletionStatuses(
-                            s.detailStart, ds, target, eligibleFrom
+                            s.detailStart, ds
                         ),
-                        detailOnsets = buildOnsets(s.detailStart, dr, DETAIL_DAYS, eligibleFrom),
-                        variabilitySd = standardDeviationMinutes(dr, eligibleFrom),
+                        detailOnsets = buildOnsets(s.detailStart, dr, DETAIL_DAYS),
+                        variabilitySd = standardDeviationMinutes(dr),
                         trendPoints = buildScores(s.trendStart, tr, TREND_DAYS),
                         trendAverages = trailingAverages(buildScores(s.trendStart, tr, TREND_DAYS)),
                         insightResult = insightUseCase.generate(ir, iss),
@@ -252,28 +249,6 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
         return parseDate(profile.createdAt) ?: LocalDate.now()
     }
 
-    /**
-     * §3 eligibility: a night counts only if onboarding completed before its
-     * routine window closed. Returns the first eligible date, or null when the
-     * moment is unknown — in which case the caller treats every night as
-     * eligible so real historical data is never hidden.
-     */
-    private fun resolveEligibilityStart(profile: UserProfile): LocalDate? {
-        val stamp = profile.onboardingCompletedAt ?: profile.createdAt ?: return null
-        val instant = runCatching { Instant.parse(stamp) }.getOrNull() ?: return null
-        val target = parseTargetBedtime(profile.targetBedtime) ?: return null
-        val zoned = instant.atZone(ZoneId.systemDefault())
-        val onboardDate = zoned.toLocalDate()
-        val onboardTime = zoned.toLocalTime()
-        // The routine window closes at the target bedtime. If onboarding
-        // finished after that moment, the night is ineligible.
-        return if (onboardTime.isAfter(target)) {
-            onboardDate.plusDays(1)
-        } else {
-            onboardDate
-        }
-    }
-
     private fun weekNumber(today: LocalDate, firstData: LocalDate): Int {
         val days = ChronoUnit.DAYS.between(firstData, today)
         return (days / 7).toInt() + 1
@@ -296,32 +271,25 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
     private fun buildOnsets(
         start: LocalDate,
         records: List<SleepRecord>,
-        days: Int,
-        eligibleFrom: LocalDate?
+        days: Int
     ): List<Instant?> {
         val byDate = records.associateBy { it.sessionDate }
         return (0 until days).map { offset ->
             val date = start.plusDays(offset.toLong())
-            if (eligibleFrom != null && date.isBefore(eligibleFrom)) {
-                null
-            } else {
-                byDate[date.toString()]?.sleepOnsetTime?.let {
-                    runCatching { Instant.parse(it) }.getOrNull()
-                }
+            byDate[date.toString()]?.sleepOnsetTime?.let {
+                runCatching { Instant.parse(it) }.getOrNull()
             }
         }
     }
 
     /**
      * §2.1: "a night with no record counts as missed"; PENDING stays yellow and
-     * is never collapsed to pink; a night before onboarding finished is
-     * INELIGIBLE and is left out of every rate.
+     * is never collapsed to pink. Every night from onboarding counts —
+     * no exemptions.
      */
     private fun buildCompletionStatuses(
         start: LocalDate,
-        sessions: List<RoutineSession>,
-        target: LocalTime?,
-        eligibleFrom: LocalDate?
+        sessions: List<RoutineSession>
     ): List<RoutineCompletionRowView.DayStatus> {
         val byDate = sessions.associateBy { it.sessionDate }
         val today = LocalDate.now()
@@ -334,8 +302,6 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
                 // to MISSED.
                 date.isAfter(today) ->
                     RoutineCompletionRowView.DayStatus.UPCOMING
-                eligibleFrom != null && date.isBefore(eligibleFrom) ->
-                    RoutineCompletionRowView.DayStatus.INELIGIBLE
                 session == null ->
                     RoutineCompletionRowView.DayStatus.MISSED
                 session.status.equals("COMPLETED", ignoreCase = true) ->
@@ -362,18 +328,13 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
 
     /**
      * §2.1 variability caption: standard deviation of the onsets currently on
-     * screen, in whole minutes. Ineligible nights are excluded.
+     * screen, in whole minutes.
      */
     private fun standardDeviationMinutes(
-        records: List<SleepRecord>,
-        eligibleFrom: LocalDate?
+        records: List<SleepRecord>
     ): Int? {
         val target = _state.value.targetBedtime?.let { parseTargetBedtime(it) }
         val minutes = records.mapNotNull { record ->
-            if (eligibleFrom != null && runCatching {
-                    LocalDate.parse(record.sessionDate).isBefore(eligibleFrom)
-                }.getOrDefault(false)
-            ) return@mapNotNull null
             val onset = record.sleepOnsetTime?.let { runCatching { Instant.parse(it) }.getOrNull() }
                 ?: return@mapNotNull null
             val date = runCatching { LocalDate.parse(record.sessionDate) }.getOrNull()

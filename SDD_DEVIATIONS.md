@@ -300,17 +300,18 @@ Each step saves its own draft on advance (`draft_bedtime` + `draft_activity_ids`
 
 **Spec:** `ANALYTICS_SPEC.md` §5 (backend per view) and §3 (global rules).
 
-**Migration 5 added.** The spec's Eligibility rule and its window anchoring both needed columns `user_profiles` did not carry:
-- `onboarding_completed_at TIMESTAMPTZ` — stamped by `markOnboardingComplete`. Required to exclude a night whose routine window closed before onboarding finished.
+**Migration 5 added.** The spec's window anchoring needed columns `user_profiles` did not carry:
+- `onboarding_completed_at TIMESTAMPTZ` — stamped by `markOnboardingComplete`. Audit anchor + Week N.
 - `created_at TIMESTAMPTZ DEFAULT now()` (`IF NOT EXISTS`) — the §3 fallback anchor when no `sleep_records`/`routine_sessions` rows exist yet.
 
 Both are nullable, so no insert default is overridden and no backfill is required. The model mirrors them as nullable so rows predating the migration still decode.
 
-**Three judgement calls:**
+**Two judgement calls:**
 
-- **Unknown onboarding timestamp means "everything eligible."** `resolveEligibilityStart()` returns null when neither `onboarding_completed_at` nor `created_at` is readable, and null is read downstream as *treat every night as eligible*. Hiding real historical data is a worse failure than showing a possibly-unfair mark, and the spec itself calls the case "rare by construction."
-- **`DayStatus.INCOMPLETE` and `NO_DATA` were removed, not aliased.** A first attempt kept them as computed properties returning `MISSED`. That would make `when (status) { DayStatus.NO_DATA -> … }` silently match `MISSED` — precisely the confusion the four-state model exists to prevent. `NO_DATA` grey is now free for `INELIGIBLE`, which is the honest use of it: a night the user could not have attempted should not read as a failure.
+- **`DayStatus.INCOMPLETE` and `NO_DATA` were removed, not aliased.** A first attempt kept them as computed properties returning `MISSED`. That would make `when (status) { DayStatus.NO_DATA -> … }` silently match `MISSED` — precisely the confusion the four-state model exists to prevent.
 - **Variability uses the mean of the displayed onsets**, not the target bedtime as the mean, because the spec defines it as the standard deviation of the displayed onsets. This also means it does not depend on an in-flight target-bedtime read. With a target 20 min from the mean this yields the same number, so the SDD-era intent is preserved.
+
+**Eligibility cut (merge/audit-analytics):** the spec's Eligibility rule — nights before onboarding finished rendering as hollow `INELIGIBLE` cells excluded from every rate — was removed per decision. Every night from onboarding counts, no exemptions: `resolveEligibilityStart` deleted, `INELIGIBLE` removed from `DayStatus`, dead legend string deleted. `onboarding_completed_at`/`created_at` stay as audit + Week N anchors only.
 
 **Not yet consumed:** `trendPoints`, `trendAverages`, `hasEnoughForTrend` and `weekCounter` are computed and exposed but have no UI until Phases 4–5. The detail block still renders through the legacy `SleepQualityChartConfig` / `BedtimeAdherenceChartView`, which still assume Mon–Sun day labels — Phase 4 replaces their day labelling with real dates.
 
@@ -320,7 +321,7 @@ Both are nullable, so no insert default is overridden and no backfill is require
 
 **Spec:** `ANALYTICS_SPEC.md` §2.1, §3 (read-only charts, unknowns honest, no calendar frames), §6 items 4–5, §7 locked caption.
 
-**A fifth completion state was required.** §2.1 asks for upcoming slots to render as scaffolding — "empty but their date labels show upfront as scaffolding (faint, no slot outlines: clearly 'not yet,' never mistakable for missing data)". That is a fifth visual state, not a data state, so `UPCOMING` joins `COMPLETED` / `MISSED` / `PENDING` / `INELIGIBLE`. `buildCompletionStatuses` tests for it **first**, otherwise a future date falls straight through to `MISSED` and the user sees tomorrow painted pink.
+**A fourth completion state was required.** §2.1 asks for upcoming slots to render as scaffolding — "empty but their date labels show upfront as scaffolding (faint, no slot outlines: clearly 'not yet,' never mistakable for missing data)". That is a fourth visual state, not a data state, so `UPCOMING` joins `COMPLETED` / `MISSED` / `PENDING`. `buildCompletionStatuses` tests for it **first**, otherwise a future date falls straight through to `MISSED` and the user sees tomorrow painted pink.
 
 **The sleep-score gap fix is the load-bearing change.** A single MPAndroidChart `LineDataSet` draws a path between its outermost points regardless of how far apart they sit in x — so one dataset silently drew a straight line *through* missing nights, which §2.1 explicitly forbids. `setData` now emits one dataset per **contiguous run** of scored nights, making a gap structurally impossible rather than merely unlikely. `Mode.LINEAR` replaces `CUBIC_BEZIER` so the series also cannot bow into a gap between runs.
 
@@ -331,8 +332,6 @@ Both are nullable, so no insert default is overridden and no backfill is require
 **`SleepQualityMarkerView` deleted.** §3 makes the charts read-only, so the tap marker, touch, drag and zoom are all off. The class and `marker_sleep_quality.xml` had no remaining references.
 
 **The completion totals label is gone from the layout**, not just blanked. §2.1: "No totals or percentages — the cells speak."
-
-**`INELIGIBLE` renders hollow rather than grey-filled** (outline only, card-coloured interior) so it cannot be confused with either missed or pending. `completion_grey` still supplies its outline.
 
 **Deferred to Phase 8's `[MEASURE]` pass:** the completion cell height/width ratio and the ring/dot diameters are set from the §6 approximations, not measured off the wireframe.
 
@@ -405,7 +404,7 @@ Implemented as specified: a 56dp `FloatingActionButton` in `noctra_purple` `#5C2
 | 8.3 No swipe-refresh | Confirmed absent — no `SwipeRefreshLayout` in the analytics layout. §5's revisit-only reload covers it |
 | 8.4 Charts read-only | Confirmed — the only click listeners on the screen are the four range arrows, the scroll-to-top FAB, and the offline retry. Exactly the set §3 permits |
 | 8.5 Two clocks never shared | Confirmed — `shiftDetail` reads and writes only `detailStart` (±1 day); `shiftTrend` only `trendStart` (±7 days). Neither reads the other's field |
-| 8.6 Fair denominators | Confirmed — PENDING excluded from the insight comparison (Phase 6); unmeasured nights shrink the trailing-average divisor rather than zero-filling; ineligible nights excluded from the variability SD |
+| 8.6 Fair denominators | Confirmed — PENDING excluded from the insight comparison (Phase 6); unmeasured nights shrink the trailing-average divisor rather than zero-filling (eligibility exclusion removed with the cut — every night counts) |
 | 8.7 Clean build | `clean assembleDebug` green. **Zero warnings from analytics code** — the four remaining warnings are pre-existing in `FriendshipRepository` (deprecated `filter`) and `UserProfileViewModel` (annotation target) |
 
 ### §6 `[MEASURE]` pass — completed

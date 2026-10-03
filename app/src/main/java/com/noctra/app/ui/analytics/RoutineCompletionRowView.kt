@@ -12,7 +12,7 @@ import com.noctra.app.R
 /**
  * One pill cell per night for the 7-day block (ANALYTICS_SPEC.md §2.1, §6 item 5).
  *
- * Four visually distinct states, and the distinction between the last two is
+ * Three visually distinct states, and the distinction between the last two is
  * the point of the whole exercise:
  *
  * | state       | fill                          | meaning                              |
@@ -20,12 +20,10 @@ import com.noctra.app.R
  * | COMPLETED   | solid green                   | routine finished                     |
  * | MISSED      | solid pink                    | decided, not done — includes no row  |
  * | PENDING     | solid yellow                  | awaiting its grace-period verdict    |
- * | INELIGIBLE  | hollow, no fill               | onboarding finished after the window |
  *
  * MISSED and PENDING must never share a colour: a night still in flight is not
  * a failure, and painting it pink would punish the user for a verdict that has
- * not landed yet. INELIGIBLE is hollow rather than grey-filled so it cannot be
- * mistaken for either.
+ * not landed yet.
  *
  * §3: read-only — this view never consumes touches.
  */
@@ -43,16 +41,12 @@ class RoutineCompletionRowView @JvmOverloads constructor(
      * with a faint date label and no outline, so it can never be misread as a
      * night we measured and found missed.
      */
-    enum class DayStatus { COMPLETED, MISSED, PENDING, INELIGIBLE, UPCOMING }
+    enum class DayStatus { COMPLETED, MISSED, PENDING, UPCOMING }
 
     private var statuses: List<DayStatus> = List(DETAIL_DAYS) { DayStatus.UPCOMING }
     private var labels: List<String> = emptyList()
 
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val hollowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeWidth = dpToPx(1.5f)
-    }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
         textSize = dpToPx(11f)
@@ -98,15 +92,6 @@ class RoutineCompletionRowView @JvmOverloads constructor(
             when (statuses[i]) {
                 // Not yet: no fill, no outline, faint label. Scaffolding, not a mark.
                 DayStatus.UPCOMING -> Unit
-                DayStatus.INELIGIBLE -> {
-                    // Hollow: fill nothing, outline only.
-                    fillPaint.color = ContextCompat.getColor(context, R.color.completion_grey)
-                    canvas.drawRoundRect(cellRect, cornerPx, cornerPx, fillPaint)
-                    fillPaint.color = ContextCompat.getColor(context, R.color.analytics_card_bg)
-                    val inset = hollowPaint.strokeWidth / 2f
-                    cellRect.set(left + inset, inset, right - inset, cellHeight - inset)
-                    canvas.drawRoundRect(cellRect, cornerPx, cornerPx, hollowPaint)
-                }
                 else -> {
                     fillPaint.color = colorForStatus(statuses[i])
                     canvas.drawRoundRect(cellRect, cornerPx, cornerPx, fillPaint)
@@ -127,7 +112,6 @@ class RoutineCompletionRowView @JvmOverloads constructor(
         DayStatus.MISSED -> ContextCompat.getColor(context, R.color.completion_pink)
         // Pending reuses the shared yellow per spec §6's overwrite rule.
         DayStatus.PENDING -> ContextCompat.getColor(context, R.color.noctra_health_yellow)
-        DayStatus.INELIGIBLE -> ContextCompat.getColor(context, R.color.completion_grey)
         DayStatus.UPCOMING -> ContextCompat.getColor(context, R.color.analytics_card_bg)
     }
 
