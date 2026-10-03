@@ -568,7 +568,7 @@ The analytics requirements live exclusively in ANALYTICS_SPEC.md (authoritative 
 ### Routine polish merge (merge/routine-cards)
 
 - **Step-2 cards:** their badge + illustrations + Poppins kept; our info button kept but moved bottom-right (badge owns top-right), now opening their `ActivityInfoDialogFragment` (replacing our plain Material dialog). Ripple-kill on maxed cards kept.
-- **Step-3 rows:** their visuals (thumbnails, handle, rank badge) + our chevrons added back; both drag paths live (handle + long-press — no info dialog on the reorder screen, info lives on selection only); moves commit DiffUtil-only (their manual `notifyItemMoved` dropped — it cancels the animation); clamp, draft-restore, edit-save flow kept.
+- **Step-3 rows:** their visuals (thumbnails, rank badge) + our chevrons added back; reorder by chevron tap or row long-press (no info dialog on the reorder screen, info lives on selection only); moves commit DiffUtil-only (their manual `notifyItemMoved` dropped — it cancels the animation); clamp, draft-restore, edit-save flow kept.
 - **Companion:** ours wholesale (theirs was whitespace + the old-form guard we already converged).
 - **Took as-is:** step-2 Back button, edit-mode save flow, home single-column list + resume fallback, timer/keyboard/TimesUp polish, all illustration assets.
 - **Side effect noted:** auto-merge took their testing flags — real routine windows and full exercise durations by default now (our force-window/short-duration conveniences live only behind debug toggles).

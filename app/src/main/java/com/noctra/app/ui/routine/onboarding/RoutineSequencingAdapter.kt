@@ -17,7 +17,7 @@ import com.noctra.app.utils.ActivityIllustrations
  * Hybrid (merge/routine-cards):
  *   - their visuals: illustration thumbnail per row, drag handle
  *   - our chevrons: tap to move one slot (exact, accessible moves)
- *   - drag starts from the drag handle OR row long-press (both work)
+ *   - reorder by chevron tap (exact) or row long-press drag
  *   - moves commit through onMove only — never notifyItemMoved manually
  *     (manual + DiffUtil double-handling cancels the move out)
  */
@@ -25,12 +25,9 @@ class RoutineSequencingAdapter(
     private val onMove: (from: Int, to: Int) -> Unit
 ) : ListAdapter<Activity, RoutineSequencingAdapter.ViewHolder>(DIFF) {
 
-    var touchHelper: ItemTouchHelper? = null
-
     inner class ViewHolder(val binding: ItemSequencingRowBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
-        @SuppressLint("ClickableViewAccessibility")
         fun bind(activity: Activity, position: Int) {
             binding.tvStepNumber.text = "${position + 1}"
             binding.tvActivityLabel.text = activity.label
@@ -46,14 +43,6 @@ class RoutineSequencingAdapter(
             binding.btnMoveDown.setOnClickListener {
                 val from = adapterPosition
                 if (from != RecyclerView.NO_POSITION && from < itemCount - 1) onMove(from, from + 1)
-            }
-
-            // Drag handle — start drag on touch down
-            binding.ivDragHandle.setOnTouchListener { _, event ->
-                if (event.actionMasked == MotionEvent.ACTION_DOWN) {
-                    touchHelper?.startDrag(this)
-                }
-                false
             }
 
             // No row long-press action: info dialogs live on the selection

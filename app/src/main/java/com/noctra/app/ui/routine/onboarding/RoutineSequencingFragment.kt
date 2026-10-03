@@ -25,7 +25,6 @@ class RoutineSequencingFragment : Fragment() {
 
     private val viewModel: OnboardingViewModel by navGraphViewModels(R.id.nav_graph)
     private lateinit var adapter: RoutineSequencingAdapter
-    private lateinit var touchHelper: ItemTouchHelper
     private var confirmText: CharSequence = "Confirm" // original button text from the layout
 
     override fun onCreateView(
@@ -158,9 +157,7 @@ class RoutineSequencingFragment : Fragment() {
             }
         }
 
-        touchHelper = ItemTouchHelper(callback)
-        touchHelper.attachToRecyclerView(binding.rvSequence)
-        adapter.touchHelper = touchHelper
+        ItemTouchHelper(callback).attachToRecyclerView(binding.rvSequence)
 
         binding.rvSequence.layoutManager = LinearLayoutManager(requireContext())
         binding.rvSequence.adapter = adapter
