@@ -51,10 +51,18 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
     var routineConfigId: String = ""; private set
     var currentStreak: Int = 0; private set
 
+    /**
+     * Debug preview only: when true, session completion skips every write
+     * (ledger, XP, session row) — look freely, finish freely, nothing lands
+     * in the DB. Cleared by the next real setupSession().
+     */
+    var previewMode: Boolean = false
+
     fun setupSession(activities: List<Activity>, routineConfigId: String, currentStreak: Int) {
         this.activities = activities
         this.routineConfigId = routineConfigId
         this.currentStreak = currentStreak
+        previewMode = false
         _isInitialized.value = true
         _sessionState.value = SessionState.Ready
     }
@@ -468,6 +476,13 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
             val userId = userId ?: return@launch
             cancelAllTimers()
             _sessionState.value = SessionState.Completed
+
+            // Debug preview: show the completion screen, write nothing —
+            // no resume-cache clear, no ledger, no session row.
+            if (previewMode) {
+                _navigationEvent.emit(NavigationEvent.GoToCompletion)
+                return@launch
+            }
 
             // Routine finished normally — clear the local resume cache so a
             // completed session can never be mistaken for a resumable one

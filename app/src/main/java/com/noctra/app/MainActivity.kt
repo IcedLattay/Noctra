@@ -687,6 +687,60 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         }
     }
 
+    override fun onPreviewBreathing() = previewActivityFlow(
+        labels = setOf("Slow-Paced Breathing"),
+        actionId = R.id.action_global_previewBreathing
+    )
+
+    override fun onPreviewAudioscape() = previewActivityFlow(
+        labels = setOf(
+            "Bedtime To-Do List Writing", "Reading", "White/Pink Noise",
+            "Warm Shower", "Mindfulness", "Low-Stimulus Audio Listening"
+        ),
+        actionId = R.id.action_global_previewAudioscape
+    )
+
+    override fun onPreviewGratitude() = previewActivityFlow(
+        labels = setOf("Gratitude Journaling"),
+        actionId = R.id.action_global_previewGratitude
+    )
+
+    override fun onPreviewTimer() = previewActivityFlow(
+        labels = setOf("Progressive Muscle Relaxation", "Bedtime Stretching"),
+        actionId = R.id.action_global_previewTimer
+    )
+
+    /**
+     * Debug preview: seeds the shared RoutineViewModel with one library
+     * activity (memory only, writes disabled via previewMode) and opens
+     * that flow's player. Back returns to the debug panel.
+     */
+    private fun previewActivityFlow(labels: Set<String>, actionId: Int) {
+        lifecycleScope.launch {
+            try {
+                val vm = androidx.lifecycle.ViewModelProvider(this@MainActivity)
+                    .get(com.noctra.app.ui.routine.RoutineViewModel::class.java)
+                val library = com.noctra.app.data.repository.RoutineRepository().getActivityLibrary()
+                val activity = labels.mapNotNull { label ->
+                    library.firstOrNull { it.label == label }
+                }.firstOrNull() ?: library.firstOrNull() ?: return@launch
+                vm.setupSession(listOf(activity), "", 0)
+                vm.previewMode = true
+                val navHost =
+                    supportFragmentManager.findFragmentById(R.id.nav_host) as androidx.navigation.fragment.NavHostFragment
+                try {
+                    navHost.navController.navigate(actionId)
+                } catch (e: Exception) {
+                    navHost.navController.popBackStack()
+                    navHost.navController.navigate(actionId)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Preview activity flow failed", e)
+                Toast.makeText(applicationContext, "Preview failed: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     override fun onSeedDemoData() {
         lifecycleScope.launch {
             try {

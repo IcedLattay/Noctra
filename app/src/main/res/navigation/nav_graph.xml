@@ -270,5 +270,17 @@
     <action
         android:id="@+id/action_global_previewSequencing"
         app:destination="@id/editRoutineSequencingFragment" />
+    <action
+        android:id="@+id/action_global_previewBreathing"
+        app:destination="@id/breathingActivityFragment" />
+    <action
+        android:id="@+id/action_global_previewAudioscape"
+        app:destination="@id/audioscapeActivityFragment" />
+    <action
+        android:id="@+id/action_global_previewGratitude"
+        app:destination="@id/gratitudeJournalingActivityFragment" />
+    <action
+        android:id="@+id/action_global_previewTimer"
+        app:destination="@id/genericTimerActivityFragment" />
 
 </navigation>

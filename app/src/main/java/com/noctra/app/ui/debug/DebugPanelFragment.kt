@@ -29,6 +29,10 @@ interface DebugPanelListener {
     fun onResyncLastNight()
     fun onBackfillNow()
     fun onPreviewSequencing()
+    fun onPreviewBreathing()
+    fun onPreviewAudioscape()
+    fun onPreviewGratitude()
+    fun onPreviewTimer()
     fun onSeedDemoData()
     fun onClearDemoData()
 }
@@ -124,6 +128,18 @@ class DebugPanelFragment : Fragment() {
         }
         view.findViewById<MaterialButton>(R.id.btn_preview_sequencing).setOnClickListener {
             listener?.onPreviewSequencing()
+        }
+        view.findViewById<MaterialButton>(R.id.btn_preview_breathing).setOnClickListener {
+            listener?.onPreviewBreathing()
+        }
+        view.findViewById<MaterialButton>(R.id.btn_preview_audioscape).setOnClickListener {
+            listener?.onPreviewAudioscape()
+        }
+        view.findViewById<MaterialButton>(R.id.btn_preview_gratitude).setOnClickListener {
+            listener?.onPreviewGratitude()
+        }
+        view.findViewById<MaterialButton>(R.id.btn_preview_timer).setOnClickListener {
+            listener?.onPreviewTimer()
         }
 
         // Section 5: Data
