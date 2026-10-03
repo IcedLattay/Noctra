@@ -75,19 +75,16 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         btnTrendPrev.setOnClickListener { viewModel.shiftTrend(-1) }
         btnTrendNext.setOnClickListener { viewModel.shiftTrend(+1) }
 
-        // §8 scroll-to-top: hidden at the top, appears only once deep down
-        // the screen. Threshold is relative to this screen's own scroll
-        // travel (a fixed viewport multiple can exceed the max travel and
-        // hide the button forever).
+        // §8 scroll-to-top: hidden at the very top, shown on any real
+        // scroll. Fixed dp slop (not travel-relative): proportional
+        // thresholds kept missing on this screen, a hair-trigger can't.
         val btnScrollTop = view.findViewById<View>(R.id.btn_scroll_top)
         val scroller = mainContent as androidx.core.widget.NestedScrollView
         btnScrollTop.setOnClickListener { scroller.smoothScrollTo(0, 0) }
+        val showSlopPx = (24 * resources.displayMetrics.density).toInt()
         scroller.setOnScrollChangeListener { _, _, scrollY, _, _ ->
-            val maxTravel =
-                ((scroller.getChildAt(0)?.height ?: 0) - scroller.height)
-                    .coerceAtLeast(0)
             btnScrollTop.visibility =
-                if (maxTravel > 0 && scrollY > maxTravel * 3 / 4) View.VISIBLE else View.GONE
+                if (scrollY > showSlopPx) View.VISIBLE else View.GONE
         }
 
         lifecycleScope.launch {
