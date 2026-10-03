@@ -196,7 +196,14 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
                             userId, insightFrom.toString(), today.toString()
                         )
                     }
-                    val lastNight = async { sleepRepo.getMostRecentRecord(userId) }
+                    // §2.4: strictly last night (yesterday's session date). A stale
+                    // row from days ago must not fill this card — no row for
+                    // last night means the honest no-data branch below.
+                    val lastNight = async {
+                        sleepRepo.getSleepRecordForDate(
+                            userId, LocalDate.now().minusDays(1).toString()
+                        )
+                    }
                     val profile = async { profileRepo.getOrCreateProfile(userId) }
 
                     val dr = detailRecords.await()

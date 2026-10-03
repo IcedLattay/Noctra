@@ -178,8 +178,10 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
                         ?: getString(R.string.analytics_placeholder_dash)
                     statRestlessness.text = restlessnessLabel(record.movementEventCount)
                 } else {
-                    // Honest no-data state: muted, and no score number invented.
-                    lastNightDate.text = ""
+                    // Honest no-data state: date still names last night, body
+                    // is muted, and no score number invented.
+                    lastNightDate.text =
+                        formatDate(LocalDate.now().minusDays(1).toString())
                     lastNightScore.text = getString(R.string.analytics_no_score)
                     lastNightScore.setTextColor(muted)
                     lastNightLabel.text = getString(R.string.analytics_no_sleep_data)
