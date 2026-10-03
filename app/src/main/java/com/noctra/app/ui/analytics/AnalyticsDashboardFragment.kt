@@ -259,7 +259,7 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
             >(R.id.btn_scroll_top) ?: return
 
         val density = root.resources.displayMetrics.density
-        val parkedDy = (56 + 16 + 16) * density // button + margins, fully below edge
+        val parkedDy = (40 + 16 + 16) * density // button + margins, fully below edge
         var shown = false
         scrollView.setOnScrollChangeListener { _, _, scrollY, _, _ ->
             val maxTravel =
