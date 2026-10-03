@@ -94,8 +94,36 @@
                 android:textStyle="bold"
                 tools:text="Good sleep quality" />
 
+            <!-- Empty state: illustration + sync hint, no-data branch only -->
+            <LinearLayout
+                android:id="@+id/last_night_empty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="96dp"
+                    android:layout_height="96dp"
+                    android:contentDescription="@string/analytics_no_sleep_data"
+                    android:src="@drawable/last_night_empty_illustration" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:fontFamily="@font/poppins"
+                    android:gravity="center"
+                    android:text="@string/analytics_last_night_hint"
+                    android:textColor="@color/analytics_muted"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
             <!-- 2x2 stat grid -->
             <LinearLayout
+                android:id="@+id/last_night_stats_top"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
@@ -137,6 +165,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/last_night_stats_bottom"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"

@@ -66,6 +66,7 @@
     <string name="analytics_placeholder_dash">—</string>
     <string name="analytics_no_score">—</string>
     <string name="analytics_no_sleep_data">No sleep data recorded last night</string>
+    <string name="analytics_last_night_hint">Sleep data can arrive later in the day. Make sure your fitness app has synced to Health Connect.</string>
     <string name="analytics_label_duration">Duration</string>
     <string name="analytics_label_onset">Sleep onset time</string>
     <string name="analytics_label_hr">Avg heart rate</string>

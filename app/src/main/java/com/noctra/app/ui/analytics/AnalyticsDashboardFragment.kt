@@ -2,6 +2,7 @@ package com.noctra.app.ui.analytics
 
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
@@ -33,6 +34,9 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         val lastNightDate = view.findViewById<TextView>(R.id.last_night_date)
         val lastNightScore = view.findViewById<TextView>(R.id.last_night_score)
         val lastNightLabel = view.findViewById<TextView>(R.id.last_night_label)
+        val lastNightEmpty = view.findViewById<View>(R.id.last_night_empty)
+        val lastNightStatsTop = view.findViewById<View>(R.id.last_night_stats_top)
+        val lastNightStatsBottom = view.findViewById<View>(R.id.last_night_stats_bottom)
         val statDuration = view.findViewById<TextView>(R.id.stat_duration)
         val statOnset = view.findViewById<TextView>(R.id.stat_sleep_onset)
         val statHr = view.findViewById<TextView>(R.id.stat_avg_hr)
@@ -163,6 +167,15 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
                 // so a low score reads as information rather than as an alarm.
                 val record = state.lastNightRecord
                 if (record != null) {
+                    lastNightScore.visibility = View.VISIBLE
+                    lastNightEmpty.visibility = View.GONE
+                    lastNightStatsTop.visibility = View.VISIBLE
+                    lastNightStatsBottom.visibility = View.VISIBLE
+                    lastNightLabel.textAlignment = View.TEXT_ALIGNMENT_INHERIT
+                    (lastNightLabel.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
+                        it.width = ViewGroup.LayoutParams.WRAP_CONTENT
+                        lastNightLabel.layoutParams = it
+                    }
                     lastNightDate.text = formatDate(record.sessionDate)
                     lastNightScore.text =
                         record.compositeScore?.toString() ?: getString(R.string.analytics_placeholder_dash)
@@ -178,17 +191,22 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
                         ?: getString(R.string.analytics_placeholder_dash)
                     statRestlessness.text = restlessnessLabel(record.movementEventCount)
                 } else {
-                    // Honest no-data state: date still names last night, body
-                    // is muted, and no score number invented.
+                    // Honest no-data state: score and stats hidden (no invented
+                    // numbers, no redundant dashes), message centered to match
+                    // the illustration block below it.
+                    lastNightScore.visibility = View.GONE
+                    lastNightEmpty.visibility = View.VISIBLE
+                    lastNightStatsTop.visibility = View.GONE
+                    lastNightStatsBottom.visibility = View.GONE
+                    (lastNightLabel.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
+                        it.width = ViewGroup.LayoutParams.MATCH_PARENT
+                        lastNightLabel.layoutParams = it
+                    }
+                    lastNightLabel.textAlignment = View.TEXT_ALIGNMENT_CENTER
                     lastNightDate.text =
                         formatDate(LocalDate.now().minusDays(1).toString())
-                    lastNightScore.text = getString(R.string.analytics_no_score)
-                    lastNightScore.setTextColor(muted)
                     lastNightLabel.text = getString(R.string.analytics_no_sleep_data)
-                    lastNightLabel.setTextColor(muted)
-                    listOf(
-                        statDuration, statOnset, statHr, statRestlessness
-                    ).forEach { it.text = getString(R.string.analytics_placeholder_dash) }
+                    lastNightLabel.setTextColor(black)
                 }
 
                 // §2.3 / §7: the use case decides the outcome and the number;
