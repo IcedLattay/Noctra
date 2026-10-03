@@ -256,6 +256,14 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
             ?: return
         val fab = root.findViewById<android.widget.ImageView>(R.id.btn_scroll_top) ?: return
 
+        // Circular shadow: elevation needs an oval outline to follow —
+        // without one the ImageView casts none (or a rectangle).
+        fab.outlineProvider = object : android.view.ViewOutlineProvider() {
+            override fun getOutline(view: View, outline: android.graphics.Outline) {
+                outline.setOval(0, 0, view.width, view.height)
+            }
+        }
+
         val density = root.resources.displayMetrics.density
         val parkedDy = (40 + 16 + 16) * density // button + margins, fully below edge
         var shown = false
