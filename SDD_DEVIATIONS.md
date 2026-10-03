@@ -565,3 +565,11 @@ The analytics requirements live exclusively in ANALYTICS_SPEC.md (authoritative 
 - **Last Night is strictly last night.** Card used `getMostRecentRecord` (any stale date); now queries yesterday's session date, falling into the existing honest no-data branch. No-data state rebuilt per mock: score + stat grid hidden (no redundant dashes), date still names last night, dashed-moon illustration, muted sync hint (`analytics_last_night_hint`). Extra air: 24/28/24dp.
 - **Score chart: 7 slots always, x date labels, no animation.** Axis pinned to the full window (a lone dot sat in its slot instead of stretching full-width); x labels on at 11sp muted with 8dp/6dp breathing room; `animateY` dropped (it replayed visibly on every window shift — the spinner covers first load only by design).
 
+### Routine polish merge (merge/routine-cards)
+
+- **Step-2 cards:** their badge + illustrations + Poppins kept; our info button kept but moved bottom-right (badge owns top-right), now opening their `ActivityInfoDialogFragment` (replacing our plain Material dialog). Ripple-kill on maxed cards kept.
+- **Step-3 rows:** their visuals (thumbnails, handle, rank badge) + our chevrons added back; both drag paths live (handle + long-press — no info dialog on the reorder screen, info lives on selection only); moves commit DiffUtil-only (their manual `notifyItemMoved` dropped — it cancels the animation); clamp, draft-restore, edit-save flow kept.
+- **Companion:** ours wholesale (theirs was whitespace + the old-form guard we already converged).
+- **Took as-is:** step-2 Back button, edit-mode save flow, home single-column list + resume fallback, timer/keyboard/TimesUp polish, all illustration assets.
+- **Side effect noted:** auto-merge took their testing flags — real routine windows and full exercise durations by default now (our force-window/short-duration conveniences live only behind debug toggles).
+
