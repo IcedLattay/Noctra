@@ -88,6 +88,7 @@
                 android:id="@+id/last_night_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
                 android:fontFamily="@font/poppins"
                 android:textColor="@color/black"
                 android:textSize="15sp"
@@ -99,7 +100,7 @@
                 android:id="@+id/last_night_empty"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="20dp"
                 android:gravity="center_horizontal"
                 android:orientation="vertical"
                 android:visibility="gone">
@@ -113,7 +114,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="16dp"
                     android:fontFamily="@font/poppins"
                     android:gravity="center"
                     android:text="@string/analytics_last_night_hint"
