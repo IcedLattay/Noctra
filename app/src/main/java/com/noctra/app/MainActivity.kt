@@ -670,8 +670,17 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         try {
             val navHost =
                 supportFragmentManager.findFragmentById(R.id.nav_host) as androidx.navigation.fragment.NavHostFragment
+            val controller = navHost.navController
             val args = android.os.Bundle().apply { putBoolean("previewMode", true) }
-            navHost.navController.navigate(R.id.action_global_previewSequencing, args)
+            try {
+                controller.navigate(R.id.action_global_previewSequencing, args)
+            } catch (e: Exception) {
+                // Nested-graph scoping can reject the cross-graph hop:
+                // step back to the main graph first, then go direct. Back
+                // from the preview then lands on the pre-debug screen.
+                controller.popBackStack()
+                controller.navigate(R.id.editRoutineSequencingFragment, args)
+            }
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "Preview arrange screen failed", e)
             Toast.makeText(applicationContext, "Preview failed: ${e.message}", Toast.LENGTH_LONG).show()
