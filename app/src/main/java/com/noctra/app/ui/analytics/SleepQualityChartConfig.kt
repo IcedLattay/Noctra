@@ -61,7 +61,11 @@ object SleepQualityChartConfig {
             setDrawAxisLine(true)
             axisLineColor = ContextCompat.getColor(context, R.color.analytics_axis)
             granularity = 1f
-            setDrawLabels(false)               // we draw date labels in setData
+            // Same seven real dates as the bedtime + completion charts below:
+            // 11sp muted, one per slot.
+            setDrawLabels(true)
+            textColor = ContextCompat.getColor(context, R.color.analytics_muted)
+            textSize = 11f
         }
 
         // §3 read-only charts: no taps, no drag, no zoom, no marker.
@@ -87,6 +91,10 @@ object SleepQualityChartConfig {
         }
 
         chart.xAxis.valueFormatter = IndexAxisValueFormatter(labels.toTypedArray())
+        // Pin the window: all 7 slots always occupy the chart, so a lone dot
+        // sits in its own slot instead of stretching across the full width.
+        chart.xAxis.axisMinimum = -0.5f
+        chart.xAxis.axisMaximum = (scores.size - 1) + 0.5f
 
         val lineColor = ContextCompat.getColor(context, R.color.analytics_muted)
         val sets = mutableListOf<com.github.mikephil.charting.interfaces.datasets.ILineDataSet>()
@@ -110,7 +118,6 @@ object SleepQualityChartConfig {
 
         chart.data = LineData(sets)
         chart.invalidate()
-        chart.animateY(400)
     }
 
     private fun List<Entry>.toDataSet(context: Context, lineColor: Int): LineDataSet {
