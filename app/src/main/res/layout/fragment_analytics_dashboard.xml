@@ -617,7 +617,7 @@
     android:contentDescription="@string/analytics_scroll_to_top"
     android:src="@drawable/ic_scroll_to_top"
     android:visibility="gone"
-    app:backgroundTint="@color/noctra_purple"
+    app:backgroundTint="@color/analytics_loading"
     app:elevation="6dp"
     app:tint="@android:color/white" />
 
