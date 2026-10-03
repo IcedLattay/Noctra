@@ -298,6 +298,10 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
                 // to MISSED.
                 date.isAfter(today) ->
                     RoutineCompletionRowView.DayStatus.UPCOMING
+                // Mirror the auditor (ReconciliationAuditUseCase): today with
+                // no row isn't missed yet — tonight hasn't happened.
+                date.isEqual(today) && session == null ->
+                    RoutineCompletionRowView.DayStatus.PENDING
                 session == null ->
                     RoutineCompletionRowView.DayStatus.MISSED
                 session.status.equals("COMPLETED", ignoreCase = true) ->
