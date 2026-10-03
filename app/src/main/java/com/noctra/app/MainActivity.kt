@@ -666,6 +666,18 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         Toast.makeText(applicationContext, "Backfill enqueued — watch logcat", Toast.LENGTH_SHORT).show()
     }
 
+    override fun onPreviewSequencing() {
+        try {
+            val navHost =
+                supportFragmentManager.findFragmentById(R.id.nav_host) as androidx.navigation.fragment.NavHostFragment
+            val args = android.os.Bundle().apply { putBoolean("previewMode", true) }
+            navHost.navController.navigate(R.id.editRoutineSequencingFragment, args)
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Preview arrange screen failed", e)
+            Toast.makeText(applicationContext, "Preview failed: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
     override fun onSeedDemoData() {
         lifecycleScope.launch {
             try {

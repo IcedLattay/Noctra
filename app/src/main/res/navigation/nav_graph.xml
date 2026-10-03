@@ -134,7 +134,12 @@
         <fragment
             android:id="@+id/editRoutineSequencingFragment"
             android:name="com.noctra.app.ui.routine.onboarding.RoutineSequencingFragment"
-            android:label="Edit Order" />
+            android:label="Edit Order">
+            <argument
+                android:name="previewMode"
+                app:argType="boolean"
+                android:defaultValue="false" />
+        </fragment>
 
         <fragment
             android:id="@+id/analyticsDashboardFragment"

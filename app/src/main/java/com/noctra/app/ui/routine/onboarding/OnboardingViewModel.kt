@@ -195,6 +195,26 @@ class OnboardingViewModel : ViewModel() {
         _orderedActivities.value = activities.toList()
     }
 
+    /**
+     * Debug preview only: loads the active routine into memory so the
+     * arrange screen has something to show. Read-only — nothing is
+     * written; callers must keep the confirm button hidden.
+     */
+    suspend fun previewActiveRoutine(userId: String): Boolean {
+        if (_orderedActivities.value.isNotEmpty()) return true
+        return try {
+            val active = routineRepository.getActiveRoutine(userId) ?: return false
+            val entries = routineRepository.parseActivitySequence(active.activitySequence)
+            val activities = routineRepository.hydrateActivitySequence(entries)
+            if (activities.isEmpty()) return false
+            val profile = profileRepository.getOrCreateProfile(userId)
+            loadExistingRoutine(activities, profile.targetBedtime ?: "22:00")
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     fun getTotalDurationMinutes(): Int =
         _orderedActivities.value.sumOf { it.defaultDurationMinutes }
 

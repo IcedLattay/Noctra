@@ -40,10 +40,29 @@ class RoutineSequencingFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         confirmText = binding.btnConfirm.text
 
+        // Debug preview: look freely, save nothing. The active routine is
+        // loaded read-only and the confirm button is gone, so no write
+        // path is reachable. Reorders stay in ViewModel memory only and
+        // are discarded with the preview (see onDestroyView).
+        val previewMode = arguments?.getBoolean("previewMode") ?: false
+        if (previewMode) {
+            binding.btnConfirm.visibility = View.GONE
+        }
+
         setupRecyclerView()
         observeActivities()
         observeSaveState()
         setupButtons()
+
+        if (previewMode) {
+            val userId = com.noctra.app.utils.UserSession.getUserId(requireContext())
+            if (userId != null) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    viewModel.previewActiveRoutine(userId)
+                }
+            }
+            return
+        }
 
         // Fresh-process resume: restore the saved draft unless edit mode
         // preloaded the active routine (or state already exists)
@@ -245,6 +264,11 @@ class RoutineSequencingFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        // Preview mutated only ViewModel memory (reorders); discard it so
+        // the next real flow loads fresh instead of preview leftovers.
+        if (arguments?.getBoolean("previewMode") == true) {
+            viewModel.resetEditSession()
+        }
         super.onDestroyView()
         _binding = null
     }

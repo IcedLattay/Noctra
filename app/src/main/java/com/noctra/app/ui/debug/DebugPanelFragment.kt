@@ -28,6 +28,7 @@ interface DebugPanelListener {
     fun onDumpHeartRate()
     fun onResyncLastNight()
     fun onBackfillNow()
+    fun onPreviewSequencing()
     fun onSeedDemoData()
     fun onClearDemoData()
 }
@@ -120,6 +121,9 @@ class DebugPanelFragment : Fragment() {
         }
         view.findViewById<MaterialButton>(R.id.btn_backfill_now).setOnClickListener {
             listener?.onBackfillNow()
+        }
+        view.findViewById<MaterialButton>(R.id.btn_preview_sequencing).setOnClickListener {
+            listener?.onPreviewSequencing()
         }
 
         // Section 5: Data

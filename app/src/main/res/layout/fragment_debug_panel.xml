@@ -286,6 +286,16 @@
                     <TextView
                         style="@style/DebugDescription"
                         android:text="Runs the audit backfill worker immediately instead of waiting for 22:00. Same code path." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_sequencing"
+                        style="@style/DebugButton"
+                        android:text="Preview Arrange Screen" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Opens step-3 arrange with your active routine, Confirm hidden — look and reorder freely, nothing is saved." />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
