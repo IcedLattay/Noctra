@@ -243,12 +243,13 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
     }
 
     /**
-     * §8: the FAB appears once scrolled deep and hides near the top;
-     * tapping it does a smooth scroll to 0. Single controller using the
-     * FAB's own show()/hide() — never raw visibility, which fights it.
+     * §8: the FAB slides up once scrolled past the middle of the screen's
+     * own scroll travel and slides back down near the top; tapping it does
+     * a smooth scroll to 0. Single controller — show/hide is done with one
+     * translation animator, never raw visibility, which fights it.
      *
-     * Threshold is relative to this screen's own scroll travel: 1.5 full
-     * viewports exceeded the max travel and hid the button forever.
+     * Threshold is travel-relative (middle): fixed viewport multiples can
+     * exceed the max travel and hide the button forever.
      */
     private fun setupScrollToTop(root: View) {
         val scrollView = root.findViewById<androidx.core.widget.NestedScrollView>(R.id.mainContent)
@@ -257,11 +258,24 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
             com.google.android.material.floatingactionbutton.FloatingActionButton
             >(R.id.btn_scroll_top) ?: return
 
+        val density = root.resources.displayMetrics.density
+        val parkedDy = (56 + 16 + 16) * density // button + margins, fully below edge
+        var shown = false
         scrollView.setOnScrollChangeListener { _, _, scrollY, _, _ ->
             val maxTravel =
                 ((scrollView.getChildAt(0)?.height ?: 0) - scrollView.height)
                     .coerceAtLeast(0)
-            if (maxTravel > 0 && scrollY > maxTravel * 3 / 4) fab.show() else fab.hide()
+            val wantShown = maxTravel > 0 && scrollY > maxTravel / 2
+            if (wantShown == shown) return@setOnScrollChangeListener
+            shown = wantShown
+            if (wantShown) {
+                fab.visibility = View.VISIBLE
+                fab.animate().translationY(0f).setDuration(200).start()
+            } else {
+                fab.animate().translationY(parkedDy).setDuration(200).withEndAction {
+                    if (!shown) fab.visibility = View.INVISIBLE
+                }.start()
+            }
         }
 
         fab.setOnClickListener {

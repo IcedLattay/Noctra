@@ -612,7 +612,7 @@
     android:id="@+id/btn_scroll_top"
     android:layout_width="56dp"
     android:layout_height="56dp"
-    android:layout_gravity="bottom|end"
+    android:layout_gravity="bottom|center_horizontal"
     android:layout_margin="16dp"
     android:contentDescription="@string/analytics_scroll_to_top"
     android:src="@drawable/ic_scroll_to_top"
