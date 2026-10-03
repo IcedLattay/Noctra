@@ -75,16 +75,26 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         btnTrendPrev.setOnClickListener { viewModel.shiftTrend(-1) }
         btnTrendNext.setOnClickListener { viewModel.shiftTrend(+1) }
 
-        // §8 scroll-to-top: hidden at the very top, shown on any real
-        // scroll. Fixed dp slop (not travel-relative): proportional
-        // thresholds kept missing on this screen, a hair-trigger can't.
+        // §8 scroll-to-top: parked off-screen (translated down, still
+        // VISIBLE so no show/hide logic can lose it), slides up past a
+        // slight scroll, slides back down near the top.
         val btnScrollTop = view.findViewById<View>(R.id.btn_scroll_top)
         val scroller = mainContent as androidx.core.widget.NestedScrollView
         btnScrollTop.setOnClickListener { scroller.smoothScrollTo(0, 0) }
-        val showSlopPx = (24 * resources.displayMetrics.density).toInt()
+        val density = resources.displayMetrics.density
+        val parkedDy = (56 + 16 + 16) * density // button + margins, fully below edge
+        btnScrollTop.visibility = View.VISIBLE
+        btnScrollTop.translationY = parkedDy
+        var shown = false
+        val showSlopPx = (24 * density).toInt()
         scroller.setOnScrollChangeListener { _, _, scrollY, _, _ ->
-            btnScrollTop.visibility =
-                if (scrollY > showSlopPx) View.VISIBLE else View.GONE
+            val wantShown = scrollY > showSlopPx
+            if (wantShown == shown) return@setOnScrollChangeListener
+            shown = wantShown
+            btnScrollTop.animate()
+                .translationY(if (wantShown) 0f else parkedDy)
+                .setDuration(200)
+                .start()
         }
 
         lifecycleScope.launch {
