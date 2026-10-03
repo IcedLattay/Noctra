@@ -75,21 +75,19 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         btnTrendPrev.setOnClickListener { viewModel.shiftTrend(-1) }
         btnTrendNext.setOnClickListener { viewModel.shiftTrend(+1) }
 
-        // §8 scroll-to-top. Visible by default; the listener hides it near
-        // the top. Threshold is relative to this screen's own scroll travel
-        // (a fixed viewport multiple can exceed the max travel and hide the
-        // button forever). If the listener ever fails to fire, the button
-        // simply stays visible — still fully working.
+        // §8 scroll-to-top: hidden at the top, appears only once deep down
+        // the screen. Threshold is relative to this screen's own scroll
+        // travel (a fixed viewport multiple can exceed the max travel and
+        // hide the button forever).
         val btnScrollTop = view.findViewById<View>(R.id.btn_scroll_top)
         val scroller = mainContent as androidx.core.widget.NestedScrollView
         btnScrollTop.setOnClickListener { scroller.smoothScrollTo(0, 0) }
-        btnScrollTop.visibility = View.VISIBLE
         scroller.setOnScrollChangeListener { _, _, scrollY, _, _ ->
             val maxTravel =
                 ((scroller.getChildAt(0)?.height ?: 0) - scroller.height)
                     .coerceAtLeast(0)
             btnScrollTop.visibility =
-                if (maxTravel > 0 && scrollY > maxTravel / 2) View.VISIBLE else View.GONE
+                if (maxTravel > 0 && scrollY > maxTravel * 3 / 4) View.VISIBLE else View.GONE
         }
 
         lifecycleScope.launch {
