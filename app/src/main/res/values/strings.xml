@@ -96,7 +96,6 @@
     <string name="analytics_variability">Bedtimes varied ±%1$d min this week.</string>
     <string name="analytics_nav_earlier">Earlier</string>
     <string name="analytics_nav_later">Later</string>
-    <string name="analytics_scroll_to_top">Scroll back to top</string>
 
     <!-- Mechanism insight (§2.3). §7 locks these four strings verbatim —
          do not reword. {X} is the absolute point difference. -->

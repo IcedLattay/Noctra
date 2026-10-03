@@ -75,16 +75,6 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         btnTrendPrev.setOnClickListener { viewModel.shiftTrend(-1) }
         btnTrendNext.setOnClickListener { viewModel.shiftTrend(+1) }
 
-        // §8 scroll-to-top. Always visible: this screen's scroll events
-        // provably never reach a scroll listener on-device (three trigger
-        // designs failed identically while the button itself renders fine),
-        // so auto-hide is dropped in favour of a button that always works.
-        val btnScrollTop = view.findViewById<View>(R.id.btn_scroll_top)
-        val scroller = mainContent as androidx.core.widget.NestedScrollView
-        btnScrollTop.setOnClickListener { scroller.smoothScrollTo(0, 0) }
-        btnScrollTop.visibility = View.VISIBLE
-        btnScrollTop.translationY = 0f
-
         lifecycleScope.launch {
             viewModel.state.collect { state ->
                 // §3 batched loading: one spinner for the whole content block,
@@ -98,7 +88,6 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
                 if (state.isOffline) {
                     noInternetView.visibility = View.VISIBLE
                     mainContent.visibility = View.GONE
-                    btnScrollTop.visibility = View.GONE
                     setupRetryButton(view)
                     return@collect
                 } else {
