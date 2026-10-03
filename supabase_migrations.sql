@@ -125,10 +125,20 @@ ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS draft_activity_ids JSONB;
 -- MIGRATION 5: onboarding completion timestamp on user_profiles
 -- ============================================================
 -- What this does:
---   1. Adds onboarding_completed_at for audit eligibility + Week N
---      anchoring. Set once by markOnboardingComplete(); read by the
---      audit backfill worker and analytics. Covered by existing
+--   1. Adds onboarding_completed_at for audit anchoring + Week N.
+--      Set once by markOnboardingComplete(). Covered by existing
 --      own-row RLS policies, no new policies needed.
 -- ============================================================
 
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS onboarding_completed_at TIMESTAMPTZ;
+
+-- ============================================================
+-- MIGRATION 6: created_at fallback on user_profiles
+-- ============================================================
+-- What this does:
+--   1. Adds created_at if absent — fallback anchor for Week N and
+--      window starts when onboarding_completed_at is NULL (legacy
+--      rows). Nullable-safe: no default overridden on insert.
+-- ============================================================
+
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();

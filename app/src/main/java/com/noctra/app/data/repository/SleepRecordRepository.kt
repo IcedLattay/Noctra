@@ -65,6 +65,37 @@ class SleepRecordRepository {
     }
 
     /**
+     * Returns the earliest session_date the user has ever recorded, as an
+     * ISO date string ("YYYY-MM-DD"), or null if they have no rows at all.
+     *
+     * ANALYTICS_SPEC.md §3: the 7-day window, the 30-day window and the
+     * "Week N" counter all anchor to the first recorded night rather than
+     * to profile creation — the journey starts when tracking starts.
+     */
+    suspend fun getEarliestSessionDate(userId: String): String? {
+        return try {
+            client.from("sleep_records")
+                .select {
+                    filter { eq("user_id", userId) }
+                    order("session_date", Order.ASCENDING)
+                    limit(1)
+                }
+                .decodeSingleOrNull<SessionDateOnly>()
+                ?.sessionDate
+        } catch (e: Exception) {
+            // A missing column or table must not take the whole screen down;
+            // callers fall back to user_profiles.created_at.
+            Log.w(tag, "Could not read earliest sleep_records date", e)
+            null
+        }
+    }
+
+    @kotlinx.serialization.Serializable
+    private data class SessionDateOnly(
+        @kotlinx.serialization.SerialName("session_date") val sessionDate: String
+    )
+
+    /**
      * Returns the sleep record for a specific date, or null if none exists.
      */
     suspend fun getSleepRecordForDate(userId: String, date: String): SleepRecord? {

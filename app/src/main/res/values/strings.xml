@@ -61,6 +61,58 @@
     <string name="health_settings_status_unavailable">Health Connect isn\'t available on this device</string>
     <string name="health_settings_manage">Open Health Connect Settings</string>
 
+    <!-- Analytics (ANALYTICS_SPEC.md §2.4, §6, §7) -->
+    <string name="analytics_last_night">LAST NIGHT</string>
+    <string name="analytics_placeholder_dash">—</string>
+    <string name="analytics_no_score">—</string>
+    <string name="analytics_no_sleep_data">No sleep data recorded last night</string>
+    <string name="analytics_label_duration">Duration</string>
+    <string name="analytics_label_onset">Sleep onset time</string>
+    <string name="analytics_label_hr">Avg heart rate</string>
+    <string name="analytics_label_restlessness">Restlessness</string>
+    <string name="analytics_quality_good">Good sleep quality</string>
+    <string name="analytics_quality_moderate">Moderate sleep quality</string>
+    <string name="analytics_quality_poor">Poor sleep quality</string>
+
+    <!-- 7-day detail block (§2.1, §6 items 4-5, §7 locked caption) -->
+    <string name="analytics_section_sleep_score">Sleep Score</string>
+    <string name="analytics_section_bedtime">Bedtime Adherence</string>
+    <string name="analytics_section_completion">Routine Completion</string>
+    <string name="analytics_section_insights">Insights</string>
+    <string name="analytics_insight_icon_desc">Insight</string>
+    <string name="analytics_legend_good">Good (&gt;74)</string>
+    <string name="analytics_legend_moderate">Moderate (50-74)</string>
+    <string name="analytics_legend_poor">Poor (&lt;50)</string>
+    <string name="analytics_legend_target">Target</string>
+    <string name="analytics_legend_ontime">On-time</string>
+    <string name="analytics_legend_slight">Slight delay</string>
+    <string name="analytics_legend_late">Late</string>
+    <string name="analytics_legend_completed">Completed</string>
+    <string name="analytics_legend_pending">Pending</string>
+    <string name="analytics_legend_missed">Missed</string>
+    <string name="analytics_legend_ineligible">Not eligible</string>
+    <string name="analytics_no_bedtime_data">No bedtime data for this week</string>
+    <!-- §7 locked: "Bedtimes varied ±{N} min this week" -->
+    <string name="analytics_variability">Bedtimes varied ±%1$d min this week.</string>
+    <string name="analytics_week_counter">Week %1$d</string>
+    <string name="analytics_nav_earlier">Earlier</string>
+    <string name="analytics_nav_later">Later</string>
+    <string name="analytics_scroll_to_top">Scroll back to top</string>
+
+    <!-- Mechanism insight (§2.3). §7 locks these four strings verbatim —
+         do not reword. {X} is the absolute point difference. -->
+    <string name="analytics_insight_better">Your sleep quality is about %1$d points higher on nights you complete your routine. Try to keep it up for better sleep!</string>
+    <string name="analytics_insight_worse">Your sleep quality has been higher on nights without the routine. One off week doesn\'t mean much — keep building the habit.</string>
+    <string name="analytics_insight_similar">Your sleep quality is similar with and without the routine. More consistency may reveal clearer patterns.</string>
+    <string name="analytics_insight_insufficient">Need more data to generate an insight. Keep logging routines and sleep to unlock comparisons.</string>
+
+    <!-- 30-day trend (§2.2, §6 item 6, §7 locked placeholder) -->
+    <string name="analytics_section_trend">30-Day Sleep Score Trend</string>
+    <string name="analytics_legend_score">Sleep Score</string>
+    <string name="analytics_legend_weekly_avg">Weekly Average</string>
+    <!-- §7 locked: "Your 30-day trend unlocks after ~2 weeks of nights." -->
+    <string name="analytics_trend_placeholder">Your 30-day trend unlocks after ~2 weeks of nights.</string>
+
     <!-- Offline State -->
     <string name="offline_title">No Internet Connection</string>
     <string name="offline_description">Noctra requires an internet connection to sync your sleep data</string>

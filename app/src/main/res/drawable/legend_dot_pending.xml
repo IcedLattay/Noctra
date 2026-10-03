@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Legend dot for a routine-completion cell — tinted at runtime.
+     Sized per ANALYTICS_SPEC.md §6: legend dots are 8dp. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/completion_grey" />
+</shape>

@@ -260,7 +260,186 @@ Each step saves its own draft on advance (`draft_bedtime` + `draft_activity_ids`
 
 ---
 
-## Updates
+## Analytics Redesign — Monthly Approach Superseded
+
+**Prior work:** A Weekly/Monthly toggle analytics screen was built on `feature/monthly-analytics` (adds `MonthlyReportFragment`, `MonthlyReportViewModel`, `MonthlyInsightGenerationUseCase`, four-week adherence bars, a month selector, and JSON report export).
+
+**Superseded by:** `ANALYTICS_SPEC.md` — the agreed analytics redesign. Per its §4 ("Left out on purpose"), the following are **explicitly excluded** and are being removed on `feature/revamped-analytics`:
+
+- Monthly views/tabs — short stub weeks mislead; resets punish
+- Four-week bars — pairs + trend already convey it
+- Standalone progress card — the verdict lives in the trend's average line
+- Percent-framed insights — points read off the same scale as the line
+
+**Also inverted by the spec:** calendar frames (Mon–Sun weeks, month tabs, "Wk 1–4") are banned in favour of plain date ranges; navigation becomes two independent clocks (7-day block moves ±1 day, 30-day trend moves ±7 days) instead of a weekly/monthly mode switch.
+
+**Status:** Monthly implementation reverted. The revamped build is tracked in `feature/revamped-analytics`, documented against `ANALYTICS_SPEC.md` section by section.
+
+---
+
+## Analytics Redesign — Phase 1 Design Tokens
+
+**Spec:** `ANALYTICS_SPEC.md` §6 (UI annex), with the "Overwrite rule" — where a resource already exists for a component, the new value wins; write over, don't duplicate.
+
+**Overwrite blast radius — checked, zero outside analytics.** Before overwriting, every consumer of the six affected colors was traced. `completion_green`, `completion_pink`, `adherence_target`, `adherence_on_time`, `adherence_slight_delay` and `adherence_connector` are referenced only by `BedtimeAdherenceChartView`, `RoutineCompletionRowView`, and the analytics `legend_dot_*` drawables. So the spec's global overwrite is safe here and does not recolour companion, profile, or shop UI.
+
+**Overwritten:** `completion_green` `#7BC97D`→`#00A63E` · `completion_pink` `#F08FA1`→`#D4183D` · `adherence_on_time` `#2E9F66`→`#00A63E` · `adherence_slight_delay` `#E8A33D`→`#F0B100` · `adherence_target` `#A78BFA`→`#444444` (hollow ring) · `adherence_no_data` `#1A1342`→`#83828C` (chart dates are muted) · `adherence_connector` `#A78BFA`→`#83828C`.
+
+**Added:** `analytics_card_bg` `#EEEAF9` · `analytics_score` `#7746FF` · `analytics_muted` `#83828C` · `analytics_trend_dot` `#8457FF` · `analytics_trend_avg` `#D0BEFF` · `analytics_axis` `#C6B8EC` · `analytics_card_outline` `#E2DCF3` (faint card stroke — value not given in spec, inferred).
+
+**Two judgement calls:**
+
+- **Pending yellow not tokenised.** The spec names `analytics_pending` `#FFC90E` but also names "shared yellows" as the example of what *not* to duplicate. `noctra_health_yellow` is already exactly `#FFC90E` (used by one health-status dot), so pending reuses it rather than adding a second name for one value. Phase 4d must tint pending cells with `@color/noctra_health_yellow`.
+- **`adherence_connector` `#83828C` inferred.** The spec gives no connector colour for the bedtime-pairs chart. It previously was lavender `#A78BFA`, which would have clashed against the new `#444444` target ring, so it was moved to the muted neutral.
+
+**Resolved — section headings follow the wireframe:** spec §6 describes section labels as "black, ALL CAPS, 13sp, `letterSpacing 0.05`", but `NEW_ANALYTICS_UI.png` renders them in title case at roughly 18sp ("Sleep Score", "Bedtime Adherence", "Routine Completion", "Insights"). Confirmed with the user: the wireframe wins, per the spec's own "wireframe is visual truth" precedence. `AnalyticsSectionHeading` (18sp black bold, Poppins) is the style the dashboard consumes. `AnalyticsSectionLabel` is retained only as the literal §6 definition; if nothing ends up using it by Phase 8, delete it rather than leave two near-identical heading styles to confuse the next reader.
+
+---
+
+## Analytics Redesign — Phase 2 Data Layer
+
+**Spec:** `ANALYTICS_SPEC.md` §5 (backend per view) and §3 (global rules).
+
+**Migration 5 added.** The spec's Eligibility rule and its window anchoring both needed columns `user_profiles` did not carry:
+- `onboarding_completed_at TIMESTAMPTZ` — stamped by `markOnboardingComplete`. Required to exclude a night whose routine window closed before onboarding finished.
+- `created_at TIMESTAMPTZ DEFAULT now()` (`IF NOT EXISTS`) — the §3 fallback anchor when no `sleep_records`/`routine_sessions` rows exist yet.
+
+Both are nullable, so no insert default is overridden and no backfill is required. The model mirrors them as nullable so rows predating the migration still decode.
+
+**Three judgement calls:**
+
+- **Unknown onboarding timestamp means "everything eligible."** `resolveEligibilityStart()` returns null when neither `onboarding_completed_at` nor `created_at` is readable, and null is read downstream as *treat every night as eligible*. Hiding real historical data is a worse failure than showing a possibly-unfair mark, and the spec itself calls the case "rare by construction."
+- **`DayStatus.INCOMPLETE` and `NO_DATA` were removed, not aliased.** A first attempt kept them as computed properties returning `MISSED`. That would make `when (status) { DayStatus.NO_DATA -> … }` silently match `MISSED` — precisely the confusion the four-state model exists to prevent. `NO_DATA` grey is now free for `INELIGIBLE`, which is the honest use of it: a night the user could not have attempted should not read as a failure.
+- **Variability uses the mean of the displayed onsets**, not the target bedtime as the mean, because the spec defines it as the standard deviation of the displayed onsets. This also means it does not depend on an in-flight target-bedtime read. With a target 20 min from the mean this yields the same number, so the SDD-era intent is preserved.
+
+**Not yet consumed:** `trendPoints`, `trendAverages`, `hasEnoughForTrend` and `weekCounter` are computed and exposed but have no UI until Phases 4–5. The detail block still renders through the legacy `SleepQualityChartConfig` / `BedtimeAdherenceChartView`, which still assume Mon–Sun day labels — Phase 4 replaces their day labelling with real dates.
+
+---
+
+## Analytics Redesign — Phase 4 Seven-Day Detail Block
+
+**Spec:** `ANALYTICS_SPEC.md` §2.1, §3 (read-only charts, unknowns honest, no calendar frames), §6 items 4–5, §7 locked caption.
+
+**A fifth completion state was required.** §2.1 asks for upcoming slots to render as scaffolding — "empty but their date labels show upfront as scaffolding (faint, no slot outlines: clearly 'not yet,' never mistakable for missing data)". That is a fifth visual state, not a data state, so `UPCOMING` joins `COMPLETED` / `MISSED` / `PENDING` / `INELIGIBLE`. `buildCompletionStatuses` tests for it **first**, otherwise a future date falls straight through to `MISSED` and the user sees tomorrow painted pink.
+
+**The sleep-score gap fix is the load-bearing change.** A single MPAndroidChart `LineDataSet` draws a path between its outermost points regardless of how far apart they sit in x — so one dataset silently drew a straight line *through* missing nights, which §2.1 explicitly forbids. `setData` now emits one dataset per **contiguous run** of scored nights, making a gap structurally impossible rather than merely unlikely. `Mode.LINEAR` replaces `CUBIC_BEZIER` so the series also cannot bow into a gap between runs.
+
+**Two visual honesty fixes in the bedtime chart:**
+- The target dot became a hollow **dashed** ring (§6 item 4) and is drawn last, so it stays legible as the anchor even when a connector passes behind it.
+- A night with no data previously drew a *second dot sitting on the target row*. That made "we did not measure this night" render identically to "we measured zero delay". It now draws the ring alone.
+
+**`SleepQualityMarkerView` deleted.** §3 makes the charts read-only, so the tap marker, touch, drag and zoom are all off. The class and `marker_sleep_quality.xml` had no remaining references.
+
+**The completion totals label is gone from the layout**, not just blanked. §2.1: "No totals or percentages — the cells speak."
+
+**`INELIGIBLE` renders hollow rather than grey-filled** (outline only, card-coloured interior) so it cannot be confused with either missed or pending. `completion_grey` still supplies its outline.
+
+**Deferred to Phase 8's `[MEASURE]` pass:** the completion cell height/width ratio and the ring/dot diameters are set from the §6 approximations, not measured off the wireframe.
+
+---
+
+## Analytics Redesign — Phase 5 Thirty-Day Trend
+
+**Spec:** `ANALYTICS_SPEC.md` §2.2, §3 (chart implementation, two clocks, show early/gate late), §6 item 6, §7 locked placeholder.
+
+**New component, hand-rolled as specified.** §3 says "gap-breaking + min-4 averaging + custom legend fight chart libraries; ~200 lines, no new dependency", and that turned out to be accurate on all three counts:
+- MPAndroidChart cannot break a line at a missing point without splitting into multiple datasets, so a genuine gap costs a dataset per run.
+- A trailing average that shrinks its own divisor has no expression in its data model at all.
+- Aligning axis-line ends flush to tick-label edges is not expressible without overriding its axis renderer.
+
+`SleepTrendChartView` is therefore Canvas, ~200 lines, no new dependency.
+
+**Plan correction — the MPAndroidChart dependency stays.** The Phase 4 plan listed "remove BarChart + LineChart deps from this screen" for this phase. That was wrong: only the **30-day trend** is hand-rolled per §3. The 7-day sleep-score line still runs through `SleepQualityChartConfig`, which uses `LineDataSet` and its contiguous-run splitting. The dependency is untouched.
+
+**Axis geometry is deliberately non-standard.** §6 requires axis lines to "span exactly label-edge to label-edge (top of '100' flush with line end, bottom of '0' flush with line start)" and that "tick labels never stick out past the line". This is the opposite of the usual chart convention, where the axis spans the plot rect and tick labels centre on their tick positions. The view measures its own tick text and aligns the line ends to it. Worth remembering before anyone "fixes" it back to the conventional layout.
+
+**The 200dp plot floor needed its container sized to match.** The view floors its plot area at 200dp per §6, but its container was originally 240dp — which clipped the x-axis labels once the floor engaged (12 + 200 + 18 + 12 = 242dp minimum). The FrameLayout is now 260dp so the floor is always satisfiable inside the view rather than being clipped by it.
+
+**Averaging semantics.** `trailingAverages()` treats the window as seven *positions* wide and filters nulls out of it, so a missing night shortens the divisor without shortening the window for its neighbours. That is §2.2's "a missing night hosts no anchor itself but still counts as history for its neighbors", read literally.
+
+**Gate also disables the arrows.** Swapping the chart for the §7 placeholder is not enough on its own — a visible-but-inert range control reads as broken. Both arrows are disabled while gated.
+
+---
+
+## Analytics Redesign — Phase 6 Mechanism Insight
+
+**Spec:** `ANALYTICS_SPEC.md` §2.3, §6 "Insight card", §7 locked copy, §3 fair denominators.
+
+**The Use Case now returns structure, not prose.** It previously built a finished English sentence inside `InsightGenerationUseCase`. Two rules collide there: §7 locks the wording and locked copy belongs in `strings.xml`, while the SDD forbids Android framework dependencies in Use Cases — so a Use Case has no way to read a string resource. It now returns `Result.Available(outcome, points)` or `Result.InsufficientData`, and `AnalyticsDashboardFragment` maps the outcome to its locked string. The ViewModel passes the result through untouched, so this stayed a two-file change.
+
+**Fair-denominator fix — PENDING was counting as a miss.** `withoutRoutine` was built from *all* scored records not in the completed set, so a session still awaiting its grace-period verdict landed in the non-routine group and dragged the comparison downward. §3 says rates and averages skip pending nights everywhere, so pending nights are now excluded outright. Status matching also became case-insensitive, matching Phase 2's `buildCompletionStatuses`.
+
+**Spec defect found — §2.3 contradicts §7 on vocabulary.** §2.3 says "Wording shares the trend's vocabulary ('climbing' / 'steady' / 'slipping')", but none of the four §7 locked strings contain those words. §7 is titled "Final copy (locked strings)" and is the more specific instruction, so the locked strings were implemented verbatim and the vocabulary line was treated as superseded. Worth confirming with whoever wrote the spec — if the intent was for the insight to say "climbing", the §7 strings need rewriting too.
+
+**Card restyled to §6:** fill `noctra_lavender_bg` `#EDE9FB`, bulb icon restroked `#8457FF`, body 14sp black. Both drawables were analytics-only, so they were retuned in place rather than duplicated. The missing **Insights** section heading was added — both §2.3 and the wireframe show it, and it was absent from the layout.
+
+**No bolded metric.** §6 drops the emphasised figure so the points read off the same scale as the trend line above. There was no bold markup to remove, but the stale `tools:text` preview still showed the old percent-framed copy, which would have kept misleading anyone reading the layout.
+
+---
+
+## Analytics Redesign — Phase 7 Scroll-to-Top FAB
+
+**Spec:** `ANALYTICS_SPEC.md` §8, §6 "FAB".
+
+Implemented as specified: a 56dp `FloatingActionButton` in `noctra_purple` `#5C25F0` with a white ↑, bottom-end, 16dp margins, appearing past ~1.5 screens and scrolling smoothly to 0 on tap.
+
+**One margin covers both requirements.** §8 asks for "16dp margins clear of the bottom nav" and §6 for "16dp from bottom nav + screen end". `activity_main.xml` already constrains `nav_host` `bottom_toTopOf="@id/bottom_nav"`, so the fragment's own bottom edge *is* the top of the bottom nav — a single 16dp margin inside the fragment clears both. No offset against the nav height is needed, and none should be added later.
+
+**The threshold is measured, not hard-coded.** `displayMetrics.heightPixels * 1.5` rather than a fixed dp value, so "~1.5 screens" means the same thing on a tall phone and a short one.
+
+**Two things that would have shipped wrong:**
+- `app:fabSize="mini"` overrides explicit `layout_width`/`layout_height` and renders a 40dp FAB. It was dropped; the default normal size gives the required 56dp.
+- The FAB and scroll view are looked up by their concrete types rather than casting from `View`, so `show()`/`hide()` resolve without an unchecked downcast.
+
+---
+
+## Analytics Redesign — Phase 8 Integration and Verification
+
+**Spec:** `ANALYTICS_SPEC.md` §3 (batched loading, read-only charts, two clocks, fair denominators), §5 (loading/refresh), §6 `[MEASURE]` pass.
+
+### Verification results
+
+| Check | Result |
+|---|---|
+| 8.2 Offline placeholder + retry | Confirmed intact — the existing `layout_no_internet` include and its retry handler are untouched and still gate on `isOffline` |
+| 8.3 No swipe-refresh | Confirmed absent — no `SwipeRefreshLayout` in the analytics layout. §5's revisit-only reload covers it |
+| 8.4 Charts read-only | Confirmed — the only click listeners on the screen are the four range arrows, the scroll-to-top FAB, and the offline retry. Exactly the set §3 permits |
+| 8.5 Two clocks never shared | Confirmed — `shiftDetail` reads and writes only `detailStart` (±1 day); `shiftTrend` only `trendStart` (±7 days). Neither reads the other's field |
+| 8.6 Fair denominators | Confirmed — PENDING excluded from the insight comparison (Phase 6); unmeasured nights shrink the trailing-average divisor rather than zero-filling; ineligible nights excluded from the variability SD |
+| 8.7 Clean build | `clean assembleDebug` green. **Zero warnings from analytics code** — the four remaining warnings are pre-existing in `FriendshipRepository` (deprecated `filter`) and `UserProfileViewModel` (annotation target) |
+
+### §6 `[MEASURE]` pass — completed
+
+Done against `NEW_ANALYTICS_UI.png` at its native 400px width, where 1px maps to roughly 1dp.
+
+- **Completion cells** measured ~38 × 50dp (ratio ~0.76). They were rendering 38 × 78 — a row of narrow pillars rather than the wireframe's chunky pills. Cell height is pinned by the container, so the FrameLayout drops 120dp → 92dp.
+- **Completion corner radius** 10dp → 20dp; at 50dp tall the wireframe pills read as near-stadium.
+- **7-day score dots** 10dp → 12dp diameter.
+- **Bedtime ring** 12dp → 14dp, **actual dot** 10dp → 12dp, keeping the ring just proud of the dot it anchors.
+
+Each measured constant now carries a `[MEASURE]` comment naming the wireframe it came from, so it can be re-derived rather than guessed.
+
+### Batched loading — spinner gated on `isLoading && !hasLoaded`
+
+Both conditions are load-bearing. Without the second, every range-arrow tap would flash a spinner over already-rendered content, because `refresh()` re-fetches the batch on each shift.
+
+### The "companion Shleepy loader" does not exist
+
+§3 describes the spinner as "the same component as the companion Shleepy loader". No such shared component exists — the closest is a Lottie lightbulb panel scoped inside `fragment_routine_start.xml`, which is a fixed 2s pre-flight beat rather than a network-state indicator. §3's literal requirement, a centred `#522ABE` spinner, was implemented directly.
+
+### `AnalyticsSectionLabel` deleted
+
+Phase 1 kept both it and `AnalyticsSectionHeading` because §6 and the wireframe disagreed on section-heading format, with a note to delete the literal variant in Phase 8 if nothing referenced it. Nothing did. Two near-identical heading styles is exactly the confusion the next reader should not inherit.
+
+### Known trade-off, not fixed
+
+`refresh()` re-fetches the whole batch — both windows, the insight range, last night and the profile — on *any* arrow tap. Shifting the 7-day clock therefore re-queries 30-day trend data that cannot have changed. §3 is explicit that the batch should be kept ("The existing `loadWeek` batch already does this; keep it"), and §3's two-clocks rule governs range *position*, not network calls, so this is compliant. Splitting the fetch per window would cut the query count but would deviate from an instruction the spec gave on purpose. Flagging it rather than silently optimising.
+
+### Open question for the spec author
+
+§2.3 says insight wording should share the trend's vocabulary — "climbing" / "steady" / "slipping" — but none of the four §7 locked strings contain those words. §7 is titled "Final copy (locked strings)" and is more specific, so the locked strings shipped verbatim. If the vocabulary line is the real intent, §7 needs rewriting too. See Phase 6.
+
+---
 
 *Add new deviations here as they are discovered.*
 
@@ -373,4 +552,10 @@ The analytics requirements live exclusively in ANALYTICS_SPEC.md (authoritative 
 - *Sleep sync per date:* wake-up-anchor window (sessions ending 4 AM–4 PM next day); wide fetch (prior noon → anchor end) with in-code end-inside-anchor filter, because HC matches interval starts; provisional pass ~9 AM (`isPartialData`), finalization ~5 PM overwrites idempotently.
 - *Daily worker (9:30 AM):* yesterday empty → MISSED row + same penalty chain. Check-then-insert on both paths prevents duplicates.
 - *Backfill worker (10 PM, new):* as above — the only writer covering pre-cap history.
+
+---
+
+## Updates
+
+*Add new deviations here as they are discovered.*
 

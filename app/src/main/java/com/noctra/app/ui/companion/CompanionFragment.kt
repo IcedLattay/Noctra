@@ -67,19 +67,17 @@ class CompanionFragment : Fragment() {
 
     private fun processNextDialog() {
         if (isDialogShowing || dialogQueue.isEmpty()) return
-        // The collectors can fire while this fragment is detached
-        // (e.g. mid-navigation) — showing then crashes.
-        if (!isAdded) {
-            dialogQueue.clear()
-            return
-        }
+        // Collectors can fire while detached (mid-navigation) — showing then
+        // crashes. Return WITHOUT clearing: the queue survives for next time.
+        if (!isAdded) return
 
-        isDialogShowing = true
         val next = dialogQueue.removeAt(0)
 
         // NOTE: no .apply{} here — inside apply, bare childFragmentManager
         // resolves to the DIALOG's (unattached) manager instead of ours.
-        when (next) {
+        try {
+            isDialogShowing = true
+            when (next) {
             is PendingDialog.MorningRecap -> {
                 val dialog = MorningSleepPopupDialog.newInstance(next.score, next.xp)
                 dialog.setOnDismissCallback { onDialogClosed() }
@@ -98,13 +96,27 @@ class CompanionFragment : Fragment() {
                 dialog.setOnDismissCallback { onDialogClosed() }
                 dialog.show(childFragmentManager, "EvolutionPopup")
             }
+        } catch (e: Exception) {
+            // Never leave the queue wedged: a dropped dialog must still let the
+            // next one through, otherwise every later dialog is silently lost.
+            android.util.Log.e("CompanionFragment", "Failed to show ${next::class.simpleName}", e)
+            isDialogShowing = false
+            dialogQueue.add(0, next)
         }
     }
 
     private fun onDialogClosed() {
         isDialogShowing = false
-        // Delay slightly to avoid window focus flickers
-        view?.postDelayed({ processNextDialog() }, 300)
+        // Delay slightly to avoid window focus flickers.
+        val v = view
+        if (v != null) {
+            v.postDelayed({ processNextDialog() }, 300)
+        } else {
+            // The view went away between dismiss and this callback, so the
+            // postDelayed anchor is gone. Drop the backlog rather than leave
+            // isDialogShowing latched and every queued dialog stranded.
+            dialogQueue.clear()
+        }
     }
 
     private val shleepyStates = mapOf(
