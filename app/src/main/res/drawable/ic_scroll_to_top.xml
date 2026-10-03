@@ -1,17 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Scroll-to-top button, full-bleed: circle + arrow drawn together at
-     exact coordinates so no image-placement behavior can shift the arrow.
-     40x40 viewport displayed at 40dp = 1:1, no scaling. -->
+<!-- Scroll-to-top button, full-bleed: symmetric radial halo (zero-offset
+     shadow) + solid circle + arrow, all centered by exact coordinates.
+     48x48 viewport displayed at 48dp = 1:1, no scaling. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="40dp"
-    android:height="40dp"
-    android:viewportWidth="40"
-    android:viewportHeight="40">
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
     <path
         android:fillColor="#522ABE"
-        android:pathData="M20,20m-20,0a20,20 0,1 1,40 0a20,20 0,1 1,-40 0" />
+        android:fillAlpha="0.25"
+        android:pathData="M24,24m-24,0a24,24 0,1 1,48 0a24,24 0,1 1,-48 0" />
     <path
-        android:pathData="M20,28L20,12M14,18L20,12L26,18"
+        android:fillColor="#522ABE"
+        android:pathData="M24,24m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0" />
+    <path
+        android:pathData="M24,32L24,16M18,22L24,16L30,22"
         android:strokeWidth="2.5"
         android:fillColor="#00000000"
         android:strokeColor="#ffffff"
