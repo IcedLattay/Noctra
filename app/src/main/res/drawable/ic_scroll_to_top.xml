@@ -1,24 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Scroll-to-top button, full-bleed: symmetric radial halo (zero-offset
-     shadow) + solid circle + arrow, all centered by exact coordinates.
-     48x48 viewport displayed at 48dp = 1:1, no scaling. -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="48dp"
-    android:height="48dp"
-    android:viewportWidth="48"
-    android:viewportHeight="48">
-    <path
-        android:fillColor="#522ABE"
-        android:fillAlpha="0.25"
-        android:pathData="M24,24m-24,0a24,24 0,1 1,48 0a24,24 0,1 1,-48 0" />
-    <path
-        android:fillColor="#522ABE"
-        android:pathData="M24,24m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0" />
-    <path
-        android:pathData="M24,32L24,16M18,22L24,16L30,22"
-        android:strokeWidth="2.5"
-        android:fillColor="#00000000"
-        android:strokeColor="#ffffff"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round" />
-</vector>
+<!-- Scroll-to-top button: soft radial glow (zero-offset shadow) behind a
+     crisp 32dp circle + arrow core. The glow's gradient falloff is what
+     reads as a real shadow; a flat ring never does. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <gradient
+                android:centerColor="#80522ABE"
+                android:edgeColor="#00522ABE"
+                android:gradientRadius="24dp"
+                android:type="radial" />
+            <size
+                android:width="48dp"
+                android:height="48dp" />
+        </shape>
+    </item>
+    <item
+        android:bottom="8dp"
+        android:left="8dp"
+        android:right="8dp"
+        android:top="8dp">
+        <vector
+            android:width="32dp"
+            android:height="32dp"
+            android:viewportWidth="32"
+            android:viewportHeight="32">
+            <path
+                android:fillColor="#522ABE"
+                android:pathData="M16,16m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0" />
+            <path
+                android:fillColor="#00000000"
+                android:pathData="M16,24L16,8M10,14L16,8L22,14"
+                android:strokeColor="#ffffff"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"
+                android:strokeWidth="2.5" />
+        </vector>
+    </item>
+</layer-list>
