@@ -18,7 +18,7 @@
         android:orientation="vertical"
         android:paddingHorizontal="20dp"
         android:paddingTop="20dp"
-        android:paddingBottom="96dp">
+        android:paddingBottom="64dp">
 
         <!-- Screen header -->
         <TextView
