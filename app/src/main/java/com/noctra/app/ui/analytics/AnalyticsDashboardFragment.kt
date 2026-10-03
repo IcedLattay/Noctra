@@ -254,9 +254,7 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
     private fun setupScrollToTop(root: View) {
         val scrollView = root.findViewById<androidx.core.widget.NestedScrollView>(R.id.mainContent)
             ?: return
-        val fab = root.findViewById<
-            com.google.android.material.floatingactionbutton.FloatingActionButton
-            >(R.id.btn_scroll_top) ?: return
+        val fab = root.findViewById<android.widget.ImageView>(R.id.btn_scroll_top) ?: return
 
         val density = root.resources.displayMetrics.density
         val parkedDy = (40 + 16 + 16) * density // button + margins, fully below edge
