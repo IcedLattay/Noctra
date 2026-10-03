@@ -75,27 +75,15 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         btnTrendPrev.setOnClickListener { viewModel.shiftTrend(-1) }
         btnTrendNext.setOnClickListener { viewModel.shiftTrend(+1) }
 
-        // §8 scroll-to-top: parked off-screen (translated down, still
-        // VISIBLE so no show/hide logic can lose it), slides up past a
-        // slight scroll, slides back down near the top.
+        // §8 scroll-to-top. Always visible: this screen's scroll events
+        // provably never reach a scroll listener on-device (three trigger
+        // designs failed identically while the button itself renders fine),
+        // so auto-hide is dropped in favour of a button that always works.
         val btnScrollTop = view.findViewById<View>(R.id.btn_scroll_top)
         val scroller = mainContent as androidx.core.widget.NestedScrollView
         btnScrollTop.setOnClickListener { scroller.smoothScrollTo(0, 0) }
-        val density = resources.displayMetrics.density
-        val parkedDy = (56 + 16 + 16) * density // button + margins, fully below edge
         btnScrollTop.visibility = View.VISIBLE
-        btnScrollTop.translationY = parkedDy
-        var shown = false
-        val showSlopPx = (24 * density).toInt()
-        scroller.setOnScrollChangeListener { _, _, scrollY, _, _ ->
-            val wantShown = scrollY > showSlopPx
-            if (wantShown == shown) return@setOnScrollChangeListener
-            shown = wantShown
-            btnScrollTop.animate()
-                .translationY(if (wantShown) 0f else parkedDy)
-                .setDuration(200)
-                .start()
-        }
+        btnScrollTop.translationY = 0f
 
         lifecycleScope.launch {
             viewModel.state.collect { state ->
