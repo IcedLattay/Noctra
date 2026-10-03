@@ -66,6 +66,8 @@ object SleepQualityChartConfig {
             setDrawLabels(true)
             textColor = ContextCompat.getColor(context, R.color.analytics_muted)
             textSize = 11f
+            // Breathing room above the labels (axis-to-label gap).
+            yOffset = 8f
         }
 
         // §3 read-only charts: no taps, no drag, no zoom, no marker.
@@ -76,7 +78,8 @@ object SleepQualityChartConfig {
         chart.isHighlightPerTapEnabled = false
         chart.isHighlightPerDragEnabled = false
         chart.marker = null
-        chart.setExtraOffsets(0f, 8f, 0f, 0f)
+        // 8dp top so dots never clip; 6dp bottom so date labels never clip.
+        chart.setExtraOffsets(0f, 8f, 0f, 6f)
     }
 
     /**
