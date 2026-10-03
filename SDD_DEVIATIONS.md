@@ -301,7 +301,7 @@ Each step saves its own draft on advance (`draft_bedtime` + `draft_activity_ids`
 **Spec:** `ANALYTICS_SPEC.md` §5 (backend per view) and §3 (global rules).
 
 **Migration 5 added.** The spec's window anchoring needed columns `user_profiles` did not carry:
-- `onboarding_completed_at TIMESTAMPTZ` — stamped by `markOnboardingComplete`. Audit anchor + Week N.
+- `onboarding_completed_at TIMESTAMPTZ` — stamped by `markOnboardingComplete`. Audit anchor.
 - `created_at TIMESTAMPTZ DEFAULT now()` (`IF NOT EXISTS`) — the §3 fallback anchor when no `sleep_records`/`routine_sessions` rows exist yet.
 
 Both are nullable, so no insert default is overridden and no backfill is required. The model mirrors them as nullable so rows predating the migration still decode.
@@ -313,7 +313,7 @@ Both are nullable, so no insert default is overridden and no backfill is require
 
 **Eligibility cut (merge/audit-analytics):** the spec's Eligibility rule — nights before onboarding finished rendering as hollow `INELIGIBLE` cells excluded from every rate — was removed per decision. Every night from onboarding counts, no exemptions: `resolveEligibilityStart` deleted, `INELIGIBLE` removed from `DayStatus`, dead legend string deleted. `onboarding_completed_at`/`created_at` stay as audit + Week N anchors only.
 
-**Week N pill removed (merge/audit-analytics).** The spec's §3 "Week N" journey counter sat beside the 7-day range but stayed frozen while the arrows moved the dates (anchored to today, not the window), with nothing explaining what "Week 3" meant. Removed the pill, its string, and `weekNumber`/`weekCounter` plumbing. `firstDataDate` stays — both windows' back-guards and the trend gate anchor there. The detail block still renders through the legacy `SleepQualityChartConfig` / `BedtimeAdherenceChartView`, which still assume Mon–Sun day labels — Phase 4 replaces their day labelling with real dates.
+**Week N pill removed (merge/audit-analytics).** The spec's §3 "Week N" journey counter sat beside the 7-day range but stayed frozen while the arrows moved the dates (anchored to today, not the window), with nothing explaining what "Week 3" meant. Removed the pill, its string, and `weekNumber`/`weekCounter` plumbing. `firstDataDate` stays — both windows' back-guards and the trend gate anchor there.
 
 ---
 
@@ -376,19 +376,17 @@ Both are nullable, so no insert default is overridden and no backfill is require
 
 ---
 
-## Analytics Redesign — Phase 7 Scroll-to-Top FAB
+## Analytics Redesign — Phase 7 Scroll-to-Top Button
 
-**Spec:** `ANALYTICS_SPEC.md` §8, §6 "FAB".
+**Spec:** `ANALYTICS_SPEC.md` §8, §6 "FAB" — since departed from in four places, all per user direction (see below). The surviving requirements: appears on scroll, smooth-scrolls to 0 on tap.
 
-Implemented as specified: a 56dp `FloatingActionButton` in `noctra_purple` `#5C25F0` with a white ↑, bottom-end, 16dp margins, appearing past ~1.5 screens and scrolling smoothly to 0 on tap.
+**Current form (merge/audit-analytics):** 48dp plain `ImageView`, `bottom|center_horizontal`, 16dp margins, single `setupScrollToTop` controller. Asset is full-bleed (`ic_scroll_to_top`: radial glow + `#522ABE` circle + arrow drawn at exact coordinates, 1:1, no scaling). Show/hide is one translation animator (slides up past half the screen's own scroll travel, parks below the edge near the top); stat grid gets 64dp bottom cushion so the parked position never covers text at rest.
+
+**Departures from spec:** circle is `#522ABE` (not `noctra_purple` `#5C25F0`); centered (not bottom-end); 48dp (not 56dp); travel-relative mid-screen trigger (not ~1.5 viewports, which exceeded this screen's max travel and hid the button forever).
+
+**Why not a FAB:** Material3 FABs default to a squircle (needed a 50% overlay for a true circle), and the arrow glyph rendered persistently off-center through the FAB's image pipeline despite a provably symmetric vector — three assets deep. Full-bleed + `ImageView` removed the pipeline from the equation. A parallel visibility-based controller also briefly fought the original `show()/hide()` implementation; there is exactly one controller now.
 
 **One margin covers both requirements.** §8 asks for "16dp margins clear of the bottom nav" and §6 for "16dp from bottom nav + screen end". `activity_main.xml` already constrains `nav_host` `bottom_toTopOf="@id/bottom_nav"`, so the fragment's own bottom edge *is* the top of the bottom nav — a single 16dp margin inside the fragment clears both. No offset against the nav height is needed, and none should be added later.
-
-**The threshold is measured, not hard-coded.** `displayMetrics.heightPixels * 1.5` rather than a fixed dp value, so "~1.5 screens" means the same thing on a tall phone and a short one.
-
-**Two things that would have shipped wrong:**
-- `app:fabSize="mini"` overrides explicit `layout_width`/`layout_height` and renders a 40dp FAB. It was dropped; the default normal size gives the required 56dp.
-- The FAB and scroll view are looked up by their concrete types rather than casting from `View`, so `show()`/`hide()` resolve without an unchecked downcast.
 
 ---
 
@@ -407,7 +405,7 @@ Implemented as specified: a 56dp `FloatingActionButton` in `noctra_purple` `#5C2
 | 8.6 Fair denominators | Confirmed — PENDING excluded from the insight comparison (Phase 6); unmeasured nights shrink the trailing-average divisor rather than zero-filling (eligibility exclusion removed with the cut — every night counts) |
 | 8.7 Clean build | `clean assembleDebug` green. **Zero warnings from analytics code** — the four remaining warnings are pre-existing in `FriendshipRepository` (deprecated `filter`) and `UserProfileViewModel` (annotation target) |
 
-**Scroll-to-top FAB restored (merge/audit-analytics).** Briefly removed after a parallel visibility-based controller fought the original `show()/hide()` implementation and every threshold misfired; restored as the single `setupScrollToTop` controller with a travel-relative (¾) threshold instead of 1.5 viewports, which exceeded this screen's max travel.
+**Scroll-to-top button rework (merge/audit-analytics).** Briefly removed after a parallel visibility-based controller fought the original `show()/hide()` implementation and every threshold misfired; restored as the single `setupScrollToTop` controller, then reworked per above (ImageView, centered, slide, mid-travel).
 
 ### §6 `[MEASURE]` pass — completed
 
@@ -559,4 +557,11 @@ The analytics requirements live exclusively in ANALYTICS_SPEC.md (authoritative 
 ## Updates
 
 *Add new deviations here as they are discovered.*
+
+### Analytics post-merge fixes (merge/audit-analytics)
+
+- **Windows open latest-first.** Load pinned both windows to `firstDataDate` (oldest week, always) via `minOf` where `maxOf` belonged. Now `maxOf(firstDate, today−6)` / `maxOf(firstDate, today−29)` — latest stretch ending today, clamped to the first night for young accounts (spec §2.1's fixed first week). Guards untouched.
+- **Tonight renders PENDING when rowless.** The chart mapped every null row to MISSED, contradicting the auditor (`determineStatus`: today-no-row = PENDING). One branch mirrors the rule; past rowless nights stay MISSED.
+- **Last Night is strictly last night.** Card used `getMostRecentRecord` (any stale date); now queries yesterday's session date, falling into the existing honest no-data branch. No-data state rebuilt per mock: score + stat grid hidden (no redundant dashes), date still names last night, dashed-moon illustration, muted sync hint (`analytics_last_night_hint`). Extra air: 24/28/24dp.
+- **Score chart: 7 slots always, x date labels, no animation.** Axis pinned to the full window (a lone dot sat in its slot instead of stretching full-width); x labels on at 11sp muted with 8dp/6dp breathing room; `animateY` dropped (it replayed visibly on every window shift — the spinner covers first load only by design).
 

@@ -130,12 +130,6 @@
         <item name="android:textSize">12sp</item>
     </style>
 
-    <!-- Perfect-circle FAB overlay: Material3 FABs default to a squircle. -->
-    <style name="CircleFab" parent="">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">50%</item>
-    </style>
-
     <!-- Stat tile label (above the value) — spec §6 item 3: the four labels are
          analytics_muted, values are black -->
     <style name="StatTileLabel">
