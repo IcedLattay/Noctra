@@ -75,13 +75,19 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         btnTrendPrev.setOnClickListener { viewModel.shiftTrend(-1) }
         btnTrendNext.setOnClickListener { viewModel.shiftTrend(+1) }
 
-        // §8 scroll-to-top: appears past ~1.5 screens, hides near the top.
+        // §8 scroll-to-top: appears past ~1 screen, hides near the top.
+        // (One screen, not 1.5: on tall devices the whole content can be
+        // shorter than 1.5 viewports, which would hide the button forever.)
         val btnScrollTop = view.findViewById<View>(R.id.btn_scroll_top)
         val scroller = mainContent as androidx.core.widget.NestedScrollView
         btnScrollTop.setOnClickListener { scroller.smoothScrollTo(0, 0) }
         scroller.setOnScrollChangeListener { _, _, scrollY, _, _ ->
+            android.util.Log.d(
+                "AnalyticsFAB",
+                "scrollY=$scrollY height=${scroller.height} max=${scroller.getChildAt(0)?.height}"
+            )
             btnScrollTop.visibility =
-                if (scrollY > scroller.height * 3 / 2) View.VISIBLE else View.GONE
+                if (scrollY > scroller.height) View.VISIBLE else View.GONE
         }
 
         lifecycleScope.launch {
