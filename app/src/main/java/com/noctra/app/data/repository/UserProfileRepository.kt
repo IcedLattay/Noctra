@@ -6,6 +6,7 @@ import com.noctra.app.data.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import java.io.IOException
 import java.net.SocketTimeoutException
+import java.time.Instant
 
 class UserProfileRepository {
     private val client = SupabaseClient.client
@@ -18,7 +19,9 @@ class UserProfileRepository {
                 .decodeSingleOrNull<UserProfile>()
             if (existing != null) return existing
 
-            val newProfile = UserProfile(userId = userId)
+            // Pre-fill createdAt: explicitNulls=true would otherwise send
+            // an explicit null and block the DB DEFAULT now().
+            val newProfile = UserProfile(userId = userId, createdAt = Instant.now().toString())
             client.from("user_profiles").insert(newProfile)
 
             client.from("reward_ledger").insert(mapOf(
