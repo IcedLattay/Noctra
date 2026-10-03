@@ -619,6 +619,8 @@
     android:visibility="gone"
     app:backgroundTint="@color/analytics_loading"
     app:elevation="6dp"
+    app:maxImageSize="20dp"
+    app:shapeAppearanceOverlay="@style/CircleFab"
     app:tint="@android:color/white" />
 
 <include
