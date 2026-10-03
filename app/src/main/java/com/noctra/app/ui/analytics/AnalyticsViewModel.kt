@@ -120,9 +120,11 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
             try {
                 val firstDate = resolveFirstDataDate(userId)
                 val today = LocalDate.now()
-                // Default both windows to the most recent complete stretch.
-                val detail = minOf(firstDate, detailEnd(today))
-                val trend = minOf(firstDate, trendEnd(today))
+                // Default both windows to the most recent stretch: latest 7 / 30
+                // ending today, clamped to the first recorded night for young
+                // accounts (which then get the spec's fixed first week).
+                val detail = maxOf(firstDate, today.minusDays((DETAIL_DAYS - 1).toLong()))
+                val trend = maxOf(firstDate, today.minusDays((TREND_DAYS - 1).toLong()))
                 _state.value = _state.value.copy(
                     firstDataDate = firstDate,
                     detailStart = detail,
