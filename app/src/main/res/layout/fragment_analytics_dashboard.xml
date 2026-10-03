@@ -604,6 +604,23 @@
     android:indeterminateTint="@color/analytics_loading"
     android:visibility="gone" />
 
+<!-- SCROLL TO TOP — ANALYTICS_SPEC.md §8: 56dp circle, noctra_purple
+     #5C25F0, white ↑, 16dp from the bottom nav and the screen end.
+     The fragment container already sits above the bottom nav, so 16dp here
+     clears both. -->
+<com.google.android.material.floatingactionbutton.FloatingActionButton
+    android:id="@+id/btn_scroll_top"
+    android:layout_width="56dp"
+    android:layout_height="56dp"
+    android:layout_gravity="bottom|end"
+    android:layout_margin="16dp"
+    android:contentDescription="@string/analytics_scroll_to_top"
+    android:src="@drawable/ic_scroll_to_top"
+    android:visibility="gone"
+    app:backgroundTint="@color/noctra_purple"
+    app:elevation="6dp"
+    app:tint="@android:color/white" />
+
 <include
     android:id="@+id/noInternetView"
     layout="@layout/layout_no_internet"

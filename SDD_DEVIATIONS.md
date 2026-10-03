@@ -402,12 +402,12 @@ Implemented as specified: a 56dp `FloatingActionButton` in `noctra_purple` `#5C2
 |---|---|
 | 8.2 Offline placeholder + retry | Confirmed intact — the existing `layout_no_internet` include and its retry handler are untouched and still gate on `isOffline` |
 | 8.3 No swipe-refresh | Confirmed absent — no `SwipeRefreshLayout` in the analytics layout. §5's revisit-only reload covers it |
-| 8.4 Charts read-only | Confirmed — the only click listeners on the screen are the four range arrows and the offline retry. Exactly the set §3 permits |
-
-**Scroll-to-top FAB removed (merge/audit-analytics).** The §8 button rendered but its show/hide scroll listener never produced a visible button on-device across four trigger designs (viewport multiples, travel-relative, hair-trigger, off-screen park); the always-visible fallback then vanished on first scroll through no code path in the build. With app logs unreachable on the test device the root cause was undebuggable, so the FAB, its string, drawable, and wiring were removed rather than shipped half-working.
+| 8.4 Charts read-only | Confirmed — the only click listeners on the screen are the four range arrows, the scroll-to-top FAB, and the offline retry. Exactly the set §3 permits |
 | 8.5 Two clocks never shared | Confirmed — `shiftDetail` reads and writes only `detailStart` (±1 day); `shiftTrend` only `trendStart` (±7 days). Neither reads the other's field |
 | 8.6 Fair denominators | Confirmed — PENDING excluded from the insight comparison (Phase 6); unmeasured nights shrink the trailing-average divisor rather than zero-filling (eligibility exclusion removed with the cut — every night counts) |
 | 8.7 Clean build | `clean assembleDebug` green. **Zero warnings from analytics code** — the four remaining warnings are pre-existing in `FriendshipRepository` (deprecated `filter`) and `UserProfileViewModel` (annotation target) |
+
+**Scroll-to-top FAB restored (merge/audit-analytics).** Briefly removed after a parallel visibility-based controller fought the original `show()/hide()` implementation and every threshold misfired; restored as the single `setupScrollToTop` controller with a travel-relative (¾) threshold instead of 1.5 viewports, which exceeded this screen's max travel.
 
 ### §6 `[MEASURE]` pass — completed
 
