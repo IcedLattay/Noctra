@@ -190,7 +190,7 @@ The Grant button fires the request popup exactly once; whatever comes back (all,
 
 ## Onboarding — One-Way Flow (UX decision)
 
-No Back buttons anywhere in onboarding (removed from Library, Sequencing, TEMP health backs); no logout button (not standard in setup funnels). System-back gesture left alone. Resume relies on saved step + drafts.
+No Back buttons anywhere in onboarding (removed from Library, Sequencing, TEMP health backs); no logout button (not standard in setup funnels). System-back gesture left alone. Resume relies on saved step + drafts. The merged step-2 Back button is edit-mode-only (GONE in onboarding) to preserve this.
 
 ---
 

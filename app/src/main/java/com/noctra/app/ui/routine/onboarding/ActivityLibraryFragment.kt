@@ -161,6 +161,9 @@ class ActivityLibraryFragment : Fragment() {
                 findNavController().popBackStack()
             }
         }
+        // One-way onboarding: no back button outside edit mode.
+        binding.btnBack.visibility =
+            if (viewModel.isEditMode) View.VISIBLE else View.GONE
 
         // Start disabled
         binding.btnContinue.isEnabled = false
