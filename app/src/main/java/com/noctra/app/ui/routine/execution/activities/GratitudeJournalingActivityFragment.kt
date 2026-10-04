@@ -88,6 +88,19 @@ class GratitudeJournalingActivityFragment : Fragment() {
      * screen, so the keyboard covered the journal. This pushes content up
      * by the covered amount and hides Shleepy while typing.
      */
+    /**
+     * Hides the fixed header (art + titles) while typing so the input card
+     * — the only flexible box — keeps usable height. Title + subtitle go
+     * too: everything fixed must leave or the card absorbs the whole
+     * keyboard squeeze and crops its own text.
+     */
+    private fun applyHeaderVisibility(visibility: Int) {
+        binding.ivShleepyLogo.visibility = visibility
+        binding.ivShleepyBody.visibility = visibility
+        binding.tvTitle.visibility = visibility
+        binding.tvSubtitle.visibility = visibility
+    }
+
     private fun setupKeyboardInsets() {
         val panel = binding.journalPanel
         val baseBottomPadding = panel.paddingBottom
@@ -106,17 +119,18 @@ class GratitudeJournalingActivityFragment : Fragment() {
             v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, baseBottomPadding + extra)
 
             val headerVisibility = if (keyboardOpen) View.GONE else View.VISIBLE
-            binding.ivShleepyLogo.visibility = headerVisibility
-            binding.ivShleepyBody.visibility = headerVisibility
-            // Title + subtitle go too: the input card is the only flexible
-            // box, so everything fixed must leave while typing or the card
-            // absorbs the whole keyboard squeeze and crops its own text.
-            binding.tvTitle.visibility = headerVisibility
-            binding.tvSubtitle.visibility = headerVisibility
+            applyHeaderVisibility(headerVisibility)
 
             insets
         }
         ViewCompat.requestApplyInsets(panel)
+
+        // The inset listener above never fires on some devices (no
+        // re-dispatch on keyboard change) — focus always fires, so it
+        // drives the header too. Same outcome, guaranteed trigger.
+        binding.etJournalEntry.setOnFocusChangeListener { _, hasFocus ->
+            applyHeaderVisibility(if (hasFocus) View.GONE else View.VISIBLE)
+        }
     }
 
     private fun showPreCountdownPanel() {
