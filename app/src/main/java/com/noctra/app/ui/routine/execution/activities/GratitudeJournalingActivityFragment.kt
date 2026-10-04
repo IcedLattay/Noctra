@@ -84,27 +84,6 @@ class GratitudeJournalingActivityFragment : Fragment() {
         }
     }
 
-    /**
-     * This screen pans instead of resizing: the window keeps full height
-     * with the keyboard overlaying the bottom, and the framework shifts
-     * the focused field into view. Resize was crushing the card because
-     * it's the only flexible box; pan leaves every height untouched.
-     * Restored on pause so no other screen is affected.
-     */
-    override fun onResume() {
-        super.onResume()
-        requireActivity().window.setSoftInputMode(
-            android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN
-        )
-    }
-
-    override fun onPause() {
-        super.onPause()
-        requireActivity().window.setSoftInputMode(
-            android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
-        )
-    }
-
     private fun setupListeners() {
         binding.btnCompleteRoutine.setOnClickListener {
             routineViewModel.onCompleteRoutineTapped()
