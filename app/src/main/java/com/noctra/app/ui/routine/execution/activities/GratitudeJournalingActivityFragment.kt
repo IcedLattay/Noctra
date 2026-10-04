@@ -73,6 +73,15 @@ class GratitudeJournalingActivityFragment : Fragment() {
         setupListeners()
         observeVm()
         startPreCountdown()
+
+        // The panel scrolls, so it steals vertical swipes from the textbox.
+        // While touching the textbox, it keeps scroll rights for itself.
+        binding.etJournalEntry.setOnTouchListener { v, event ->
+            if (v.canScrollVertically(1) || v.canScrollVertically(-1)) {
+                v.parent.requestDisallowInterceptTouchEvent(true)
+            }
+            false
+        }
     }
 
     /**
