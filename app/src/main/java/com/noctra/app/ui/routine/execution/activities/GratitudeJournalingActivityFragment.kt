@@ -86,28 +86,17 @@ class GratitudeJournalingActivityFragment : Fragment() {
      * Session 5 (R3): keep the journal box above the keyboard.
      * On Android 15+ (edge-to-edge), adjustResize no longer shrinks the
      * screen, so the keyboard covered the journal. This pushes content up
-     * by the covered amount and hides Shleepy while typing.
+     * by the covered amount.
+     *
+     * No header-hiding: the panel is a scroll container (login pattern),
+     * so the header simply scrolls away instead of being stripped.
      */
-    /**
-     * Hides the fixed header (art + titles) while typing so the input card
-     * — the only flexible box — keeps usable height. Title + subtitle go
-     * too: everything fixed must leave or the card absorbs the whole
-     * keyboard squeeze and crops its own text.
-     */
-    private fun applyHeaderVisibility(visibility: Int) {
-        binding.ivShleepyLogo.visibility = visibility
-        binding.ivShleepyBody.visibility = visibility
-        binding.tvTitle.visibility = visibility
-        binding.tvSubtitle.visibility = visibility
-    }
-
     private fun setupKeyboardInsets() {
         val panel = binding.journalPanel
         val baseBottomPadding = panel.paddingBottom
 
         ViewCompat.setOnApplyWindowInsetsListener(panel) { v, insets ->
             val imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-            val keyboardOpen = insets.isVisible(WindowInsetsCompat.Type.ime())
 
             // If the system already resized the screen, this gap = keyboard
             // height and extra = 0 (no double padding on older Android).
@@ -118,19 +107,9 @@ class GratitudeJournalingActivityFragment : Fragment() {
 
             v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, baseBottomPadding + extra)
 
-            val headerVisibility = if (keyboardOpen) View.GONE else View.VISIBLE
-            applyHeaderVisibility(headerVisibility)
-
             insets
         }
         ViewCompat.requestApplyInsets(panel)
-
-        // The inset listener above never fires on some devices (no
-        // re-dispatch on keyboard change) — focus always fires, so it
-        // drives the header too. Same outcome, guaranteed trigger.
-        binding.etJournalEntry.setOnFocusChangeListener { _, hasFocus ->
-            applyHeaderVisibility(if (hasFocus) View.GONE else View.VISIBLE)
-        }
     }
 
     private fun showPreCountdownPanel() {
