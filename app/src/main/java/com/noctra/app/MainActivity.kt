@@ -727,8 +727,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                     library.firstOrNull { it.label == label }
                 }.ifEmpty { listOfNotNull(library.firstOrNull()) }
                 if (seed.isEmpty()) return@launch
-                vm.setupSession(seed, "", 0)
-                vm.previewMode = true
+                vm.seedPreview(seed)
                 val navHost =
                     supportFragmentManager.findFragmentById(R.id.nav_host) as androidx.navigation.fragment.NavHostFragment
                 try {

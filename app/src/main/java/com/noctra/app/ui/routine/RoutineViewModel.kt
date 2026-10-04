@@ -68,11 +68,26 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /**
+     * Debug preview only: puts activities in memory WITHOUT marking the
+     * session initialized, so later real flows still load fresh instead of
+     * reusing preview data.
+     */
+    fun seedPreview(previewActivities: List<Activity>) {
+        this.activities = previewActivities
+        this.routineConfigId = ""
+        this.currentStreak = 0
+        previewMode = true
+        _currentStepIndex.value = 0
+    }
+
+    /**
      * Called by RoutineStartFragment. If the VM wasn't initialized by the
      * Home screen (e.g. deep link), it fetches the active routine from DB.
      */
     fun initializeIfNecessary() {
-        if (_isInitialized.value) return
+        // A debug preview never counts as initialization — real flows
+        // always reload fresh afterwards.
+        if (_isInitialized.value && !previewMode) return
 
         viewModelScope.launch {
             try {
