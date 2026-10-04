@@ -270,10 +270,12 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
                 val nextIndex = _currentStepIndex.value + 1
                 _currentStepIndex.value = nextIndex
 
-                // Local resume cache — keep step index and last-activity time
-                // current so a mid-routine app kill/reopen can recover here.
-                RoutinePersistenceHelper.setCurrentStepIndex(nextIndex)
-                RoutinePersistenceHelper.setLastActivityTimestamp(System.currentTimeMillis())
+                // Local resume cache — skipped in debug preview so a tour
+                // can never plant a fake resumable session.
+                if (!previewMode) {
+                    RoutinePersistenceHelper.setCurrentStepIndex(nextIndex)
+                    RoutinePersistenceHelper.setLastActivityTimestamp(System.currentTimeMillis())
+                }
 
                 _navigationEvent.emit(NavigationEvent.GoToTransition(nextIndex))
             }

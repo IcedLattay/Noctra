@@ -721,10 +721,13 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                 val vm = androidx.lifecycle.ViewModelProvider(this@MainActivity)
                     .get(com.noctra.app.ui.routine.RoutineViewModel::class.java)
                 val library = com.noctra.app.data.repository.RoutineRepository().getActivityLibrary()
-                val activity = labels.mapNotNull { label ->
+                // Seed EVERY match in library order: the player auto-advances,
+                // so one tap tours the whole shape back to back.
+                val seed = labels.mapNotNull { label ->
                     library.firstOrNull { it.label == label }
-                }.firstOrNull() ?: library.firstOrNull() ?: return@launch
-                vm.setupSession(listOf(activity), "", 0)
+                }.ifEmpty { listOfNotNull(library.firstOrNull()) }
+                if (seed.isEmpty()) return@launch
+                vm.setupSession(seed, "", 0)
                 vm.previewMode = true
                 val navHost =
                     supportFragmentManager.findFragmentById(R.id.nav_host) as androidx.navigation.fragment.NavHostFragment
