@@ -116,14 +116,21 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- ACTIVE JOURNAL PANEL -->
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <!-- ACTIVE JOURNAL PANEL — scrollable like the login screen: when the
+         keyboard shrinks the viewport, content flows instead of compressing.
+         fillViewport stretches short content to fill the screen. -->
+    <androidx.core.widget.NestedScrollView
         android:id="@+id/journalPanel"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#F5F0FF"
+        android:fillViewport="true"
         android:padding="24dp"
         android:visibility="gone">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
         <ImageView
             android:id="@+id/iv_shleepy_logo"
@@ -266,5 +273,6 @@
             app:layout_constraintStart_toStartOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
 
 </FrameLayout>
