@@ -177,6 +177,7 @@
             android:id="@+id/card_input"
             android:layout_width="0dp"
             android:layout_height="0dp"
+            android:minHeight="140dp"
             android:layout_marginTop="20dp"
             app:cardBackgroundColor="#FFFFFF"
             app:cardCornerRadius="20dp"

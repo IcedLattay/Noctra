@@ -108,6 +108,11 @@ class GratitudeJournalingActivityFragment : Fragment() {
             val headerVisibility = if (keyboardOpen) View.GONE else View.VISIBLE
             binding.ivShleepyLogo.visibility = headerVisibility
             binding.ivShleepyBody.visibility = headerVisibility
+            // Title + subtitle go too: the input card is the only flexible
+            // box, so everything fixed must leave while typing or the card
+            // absorbs the whole keyboard squeeze and crops its own text.
+            binding.tvTitle.visibility = headerVisibility
+            binding.tvSubtitle.visibility = headerVisibility
 
             insets
         }
