@@ -6,9 +6,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.noctra.app.R
+import kotlinx.coroutines.launch
 
 interface DebugPanelListener {
     fun onResetOnboarding()
@@ -29,10 +32,7 @@ interface DebugPanelListener {
     fun onResyncLastNight()
     fun onBackfillNow()
     fun onPreviewSequencing()
-    fun onPreviewBreathing()
-    fun onPreviewAudioscape()
-    fun onPreviewGratitude()
-    fun onPreviewTimer()
+    fun onPreviewActivity(label: String)
     fun onSeedDemoData()
     fun onClearDemoData()
 }
@@ -129,17 +129,21 @@ class DebugPanelFragment : Fragment() {
         view.findViewById<MaterialButton>(R.id.btn_preview_sequencing).setOnClickListener {
             listener?.onPreviewSequencing()
         }
-        view.findViewById<MaterialButton>(R.id.btn_preview_breathing).setOnClickListener {
-            listener?.onPreviewBreathing()
-        }
-        view.findViewById<MaterialButton>(R.id.btn_preview_audioscape).setOnClickListener {
-            listener?.onPreviewAudioscape()
-        }
-        view.findViewById<MaterialButton>(R.id.btn_preview_gratitude).setOnClickListener {
-            listener?.onPreviewGratitude()
-        }
-        view.findViewById<MaterialButton>(R.id.btn_preview_timer).setOnClickListener {
-            listener?.onPreviewTimer()
+        // One preview button per library activity, built from the DB so new
+        // activities appear with no code change.
+        val previewList = view.findViewById<LinearLayout>(R.id.preview_activity_list)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val library = try {
+                com.noctra.app.data.repository.RoutineRepository().getActivityLibrary()
+            } catch (e: Exception) {
+                emptyList()
+            }
+            library.forEach { activity ->
+                val button = MaterialButton(requireContext(), null, com.google.android.material.R.attr.materialButtonStyle)
+                button.text = activity.label
+                button.setOnClickListener { listener?.onPreviewActivity(activity.label) }
+                previewList.addView(button)
+            }
         }
 
         // Section 5: Data

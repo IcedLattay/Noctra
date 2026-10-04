@@ -299,25 +299,14 @@
 
                     <View style="@style/DebugDivider" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_preview_breathing"
-                        style="@style/DebugButton"
-                        android:text="Preview Breathing" />
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_preview_audioscape"
-                        style="@style/DebugButton"
-                        android:text="Preview Ambient" />
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_preview_gratitude"
-                        style="@style/DebugButton"
-                        android:text="Preview Journaling" />
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_preview_timer"
-                        style="@style/DebugButton"
-                        android:text="Preview Stretch / PMR" />
                     <TextView
                         style="@style/DebugDescription"
                         android:text="Opens that activity flow standalone with writes disabled — finishing writes nothing, Back returns here." />
+                    <LinearLayout
+                        android:id="@+id/preview_activity_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 

@@ -687,32 +687,32 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         }
     }
 
-    override fun onPreviewBreathing() = previewActivityFlow(
-        labels = setOf("Slow-Paced Breathing"),
-        actionId = R.id.action_global_previewBreathing
+    override fun onPreviewActivity(label: String) = previewActivityFlow(
+        labels = setOf(label),
+        actionId = destinationForLabel(label)
     )
 
-    override fun onPreviewAudioscape() = previewActivityFlow(
-        labels = setOf(
-            "Bedtime To-Do List Writing", "Reading", "White/Pink Noise",
-            "Warm Shower", "Mindfulness", "Low-Stimulus Audio Listening"
-        ),
-        actionId = R.id.action_global_previewAudioscape
-    )
+    private fun destinationForLabel(label: String): Int = when (label) {
+        "Bedtime To-Do List Writing",
+        "Reading",
+        "White/Pink Noise",
+        "Warm Shower",
+        "Mindfulness",
+        "Low-Stimulus Audio Listening"
+            -> R.id.action_global_previewAudioscape
 
-    override fun onPreviewGratitude() = previewActivityFlow(
-        labels = setOf("Gratitude Journaling"),
-        actionId = R.id.action_global_previewGratitude
-    )
+        "Slow-Paced Breathing"
+            -> R.id.action_global_previewBreathing
 
-    override fun onPreviewTimer() = previewActivityFlow(
-        labels = setOf("Progressive Muscle Relaxation", "Bedtime Stretching"),
-        actionId = R.id.action_global_previewTimer
-    )
+        "Gratitude Journaling"
+            -> R.id.action_global_previewGratitude
+
+        else -> R.id.action_global_previewTimer
+    }
 
     /**
-     * Debug preview: seeds the shared RoutineViewModel with one library
-     * activity (memory only, writes disabled via previewMode) and opens
+     * Debug preview: seeds the shared RoutineViewModel with library
+     * activities (memory only, writes disabled via previewMode) and opens
      * that flow's player. Back returns to the debug panel.
      */
     private fun previewActivityFlow(labels: Set<String>, actionId: Int) {
@@ -721,8 +721,8 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                 val vm = androidx.lifecycle.ViewModelProvider(this@MainActivity)
                     .get(com.noctra.app.ui.routine.RoutineViewModel::class.java)
                 val library = com.noctra.app.data.repository.RoutineRepository().getActivityLibrary()
-                // Seed EVERY match in library order: the player auto-advances,
-                // so one tap tours the whole shape back to back.
+                // Seed the one tapped activity: it plays, then offers
+                // Complete (writes disabled, so finishing lands nowhere).
                 val seed = labels.mapNotNull { label ->
                     library.firstOrNull { it.label == label }
                 }.ifEmpty { listOfNotNull(library.firstOrNull()) }
