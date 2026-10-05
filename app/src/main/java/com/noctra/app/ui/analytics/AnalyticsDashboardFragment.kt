@@ -110,16 +110,25 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
 
                 // Bedtime Adherence chart, built from the onsets already resolved
                 // for this window so the pair chart and the completion cells can
-                // never disagree about which nights exist.
-                val targetBedtimeTime = parseTargetBedtime(state.targetBedtime)
+                // never disagree about which nights exist. Each night is judged
+                // against its own stamped bedtime, falling back to live.
+                val globalTargetTime = parseTargetBedtime(state.targetBedtime)
                 val adherence = dateLabels.indices.map { offset ->
+                    val nightTarget = state.detailTargets.getOrNull(offset)
+                        ?.let { parseTargetBedtime(it) } ?: globalTargetTime
                     adherenceCalculator.classify(
                         sessionDate = state.detailStart.plusDays(offset.toLong()),
-                        targetBedtime = targetBedtimeTime,
+                        targetBedtime = nightTarget,
                         sleepOnsetTime = state.detailOnsets.getOrNull(offset)?.toString()
                     )
                 }
-                bedtimeAdherenceChart.setData(adherence, dateLabels)
+                // Hour-only target labels ("10 PM"), one per night.
+                val targetLabels = dateLabels.indices.map { offset ->
+                    formatTargetHour(
+                        state.detailTargets.getOrNull(offset) ?: state.targetBedtime
+                    )
+                }
+                bedtimeAdherenceChart.setData(adherence, dateLabels, targetLabels)
 
                 // Completion cells
                 routineCompletionChart.setData(state.detailCompletion, dateLabels)
@@ -346,6 +355,16 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         } catch (e: Exception) {
             null
         }
+    }
+
+    /** Hour-only target label ("10 PM"); dash when unknown. */
+    private fun formatTargetHour(stored: String?): String {
+        val time = parseTargetBedtime(stored) ?: return "—"
+        val hour12 = when (val h = time.hour % 12) {
+            0 -> 12
+            else -> h
+        }
+        return "$hour12 ${if (time.hour < 12) "AM" else "PM"}"
     }
 
     private fun setupRetryButton(view: View) {

@@ -224,6 +224,7 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
                             s.detailStart, ds
                         ),
                         detailOnsets = buildOnsets(s.detailStart, dr, DETAIL_DAYS),
+                        detailTargets = buildTargets(s.detailStart, dr, DETAIL_DAYS, p.targetBedtime),
                         variabilitySd = standardDeviationMinutes(dr),
                         trendPoints = buildScores(s.trendStart, tr, TREND_DAYS),
                         trendAverages = trailingAverages(buildScores(s.trendStart, tr, TREND_DAYS)),
@@ -286,6 +287,24 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     /**
+     * Per-night bedtime for the window: each night's own stamp, falling
+     * back to the live profile target where the stamp is null. Null here
+     * means "no target known at all" (profile also null).
+     */
+    private fun buildTargets(
+        start: LocalDate,
+        records: List<SleepRecord>,
+        days: Int,
+        globalTarget: String?
+    ): List<String?> {
+        val byDate = records.associateBy { it.sessionDate }
+        return (0 until days).map { offset ->
+            val date = start.plusDays(offset.toLong())
+            byDate[date.toString()]?.targetBedtime ?: globalTarget
+        }
+    }
+
+    /**
      * §2.1: "a night with no record counts as missed"; PENDING stays yellow and
      * is never collapsed to pink. Every night from onboarding counts —
      * no exemptions.
@@ -340,12 +359,13 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
     private fun standardDeviationMinutes(
         records: List<SleepRecord>
     ): Int? {
-        val target = _state.value.targetBedtime?.let { parseTargetBedtime(it) }
+        val globalTarget = _state.value.targetBedtime?.let { parseTargetBedtime(it) }
         val minutes = records.mapNotNull { record ->
             val onset = record.sleepOnsetTime?.let { runCatching { Instant.parse(it) }.getOrNull() }
                 ?: return@mapNotNull null
             val date = runCatching { LocalDate.parse(record.sessionDate) }.getOrNull()
                 ?: return@mapNotNull null
+            val target = record.targetBedtime?.let { parseTargetBedtime(it) } ?: globalTarget
             deviationMinutes(date, target, onset)
         }
         if (minutes.size < 2) return null
@@ -397,6 +417,8 @@ data class AnalyticsUiState(
     val detailCompletion: List<RoutineCompletionRowView.DayStatus> =
         List(7) { RoutineCompletionRowView.DayStatus.MISSED },
     val detailOnsets: List<Instant?> = List(7) { null },
+    /** Per-night bedtime stamp ("HH:mm:ss") or live-target fallback; null = unknown. */
+    val detailTargets: List<String?> = List(7) { null },
     val variabilitySd: Int? = null,
 
     // ── 30-day trend (moves ±7 days) ──

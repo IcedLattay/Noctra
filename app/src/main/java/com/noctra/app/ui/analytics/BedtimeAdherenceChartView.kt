@@ -31,6 +31,12 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
 
     private var data: List<BedtimeAdherenceCalculator.NightAdherence> = emptyList()
     private var labels: List<String> = emptyList()
+    private var targetLabels: List<String> = emptyList()
+    private val targetLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        textSize = dpToPx(11f)
+        color = ContextCompat.getColor(context, R.color.analytics_muted)
+    }
 
     private val ringPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
@@ -59,7 +65,9 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
     private val ringRadiusPx = dpToPx(7f)
     private val dotRadiusPx = dpToPx(6f)
     private val labelHeightPx = dpToPx(20f)
-    private val verticalPadding = dpToPx(10f)
+    // Tall top padding: the per-night hour labels sit above the target
+    // rings and must never clip.
+    private val verticalPadding = dpToPx(24f)
 
     // Vertical bands for the actual dot. Fractions of the drawable area so
     // nothing escapes the bounds at any container height.
@@ -70,13 +78,19 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
     /**
      * @param weekAdherence one entry per night in the window
      * @param dateLabels    one date label per night, already formatted
+     * @param targetLabels  one hour-only target label per night ("10 PM")
      */
-    fun setData(weekAdherence: List<BedtimeAdherenceCalculator.NightAdherence>, dateLabels: List<String>) {
+    fun setData(
+        weekAdherence: List<BedtimeAdherenceCalculator.NightAdherence>,
+        dateLabels: List<String>,
+        targetLabels: List<String> = emptyList()
+    ) {
         require(weekAdherence.size == dateLabels.size) {
             "adherence (${weekAdherence.size}) and labels (${dateLabels.size}) must line up"
         }
         data = weekAdherence
         labels = dateLabels
+        this.targetLabels = targetLabels
         invalidate()
     }
 
@@ -120,6 +134,12 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
             // even when the connector passes behind it.
             ringPaint.color = ringColor
             canvas.drawCircle(centerX, targetY, ringRadiusPx, ringPaint)
+
+            // Hour-only target value for this night ("10 PM").
+            canvas.drawText(
+                targetLabels.getOrElse(i) { "" },
+                centerX, targetY - ringRadiusPx - dpToPx(6f), targetLabelPaint
+            )
 
             val labelY = h - dpToPx(6f)
             canvas.drawText(labels.getOrElse(i) { "" }, centerX, labelY, labelPaint)
