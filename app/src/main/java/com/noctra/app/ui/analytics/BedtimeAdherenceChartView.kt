@@ -36,7 +36,7 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
     private val bracketPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = dpToPx(1.5f)
-        color = ContextCompat.getColor(context, R.color.analytics_muted)
+        color = ContextCompat.getColor(context, R.color.adherence_bracket)
     }
     private val targetLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER

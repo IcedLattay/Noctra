@@ -50,6 +50,7 @@
     <color name="adherence_late">#D4183D</color>
     <color name="adherence_no_data">#83828C</color>
     <color name="adherence_connector">#83828C</color>
+    <color name="adherence_bracket">#CBC7D4</color>
     <color name="noctra_purple_soft">#B097FF</color>
     <color name="noctra_lavender_start">#F4F2FF</color>
     <color name="noctra_lavender_end">#E4DFFF</color>
