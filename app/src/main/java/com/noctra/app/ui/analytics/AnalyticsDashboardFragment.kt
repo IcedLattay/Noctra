@@ -122,11 +122,11 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
                         sleepOnsetTime = state.detailOnsets.getOrNull(offset)?.toString()
                     )
                 }
-                // Hour-only target labels ("10 PM"), one per night.
+                // Hour-only target labels ("10 PM"), one per night with a row.
+                // Stamp only — rowless nights stay blank (rule 4). Judging
+                // above keeps the live fallback; labels don't.
                 val targetLabels = dateLabels.indices.map { offset ->
-                    formatTargetHour(
-                        state.detailTargets.getOrNull(offset) ?: state.targetBedtime
-                    )
+                    formatTargetHour(state.detailTargets.getOrNull(offset))
                 }
                 bedtimeAdherenceChart.setData(adherence, dateLabels, targetLabels)
 
