@@ -208,7 +208,7 @@
         <ImageView
             android:layout_width="64dp"
             android:layout_height="64dp"
-            android:src="@drawable/ic_alarm_clock"
+            android:src="@drawable/ic_routine_complete"
             android:contentDescription="Completed" />
 
         <TextView
