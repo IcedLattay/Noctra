@@ -134,6 +134,21 @@ class SleepRecordRepository {
     }
 
     /**
+     * All rows still missing a bedtime stamp. Used by the one-time debug
+     * sweep — the audit never re-walks already-audited dates, so history
+     * outside the trailing window would otherwise stay null forever.
+     */
+    suspend fun getUnstampedRecords(userId: String): List<SleepRecord> {
+        return try {
+            getRecordsInRange(userId, "2000-01-01", java.time.LocalDate.now().toString())
+                .filter { it.targetBedtime == null }
+        } catch (e: Exception) {
+            Log.w(tag, "Unstamped fetch failed", e)
+            emptyList()
+        }
+    }
+
+    /**
      * Fills only the bedtime stamp on one night's row. Used by the sync's
      * NoData path to converge pre-feature rows — never overwrites, never
      * touches scores or times.

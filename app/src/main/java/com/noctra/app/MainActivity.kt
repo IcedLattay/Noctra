@@ -666,6 +666,31 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         Toast.makeText(applicationContext, "Backfill enqueued — watch logcat", Toast.LENGTH_SHORT).show()
     }
 
+    override fun onStampMissingBedtimes() {
+        lifecycleScope.launch {
+            try {
+                val userId = UserSession.getUserId(applicationContext) ?: return@launch
+                val sleepRepo = com.noctra.app.data.repository.SleepRecordRepository()
+                val unstamped = sleepRepo.getUnstampedRecords(userId)
+                if (unstamped.isEmpty()) {
+                    Toast.makeText(applicationContext, "No unstamped nights", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val bedtime = com.noctra.app.data.repository.UserProfileRepository()
+                    .getOrCreateProfile(userId).targetBedtime
+                    ?: return@launch
+                var done = 0
+                for (record in unstamped) {
+                    sleepRepo.stampTargetBedtime(userId, record.sessionDate, bedtime)
+                    done++
+                }
+                Toast.makeText(applicationContext, "Stamped $done night(s)", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Toast.makeText(applicationContext, "Sweep failed: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     override fun onPreviewSequencing() {
         try {
             val navHost =

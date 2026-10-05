@@ -307,6 +307,16 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical" />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_stamp_bedtimes"
+                        style="@style/DebugButton"
+                        android:text="Stamp Missing Bedtimes" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="One-time sweep: fills the bedtime stamp on old rows the audit never revisits. Stamped rows untouched." />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 

@@ -31,6 +31,7 @@ interface DebugPanelListener {
     fun onDumpHeartRate()
     fun onResyncLastNight()
     fun onBackfillNow()
+    fun onStampMissingBedtimes()
     fun onPreviewSequencing()
     fun onPreviewActivity(label: String)
     fun onSeedDemoData()
@@ -125,6 +126,9 @@ class DebugPanelFragment : Fragment() {
         }
         view.findViewById<MaterialButton>(R.id.btn_backfill_now).setOnClickListener {
             listener?.onBackfillNow()
+        }
+        view.findViewById<MaterialButton>(R.id.btn_stamp_bedtimes).setOnClickListener {
+            listener?.onStampMissingBedtimes()
         }
         view.findViewById<MaterialButton>(R.id.btn_preview_sequencing).setOnClickListener {
             listener?.onPreviewSequencing()
