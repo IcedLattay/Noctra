@@ -217,10 +217,20 @@ class SleepSyncManager {
 
             val isPartial = !isAnchorWindowClosed(sessionDate)
 
+            // Per-night bedtime snapshot, first-write-wins: keep the stamp
+            // from the provisional pass; only unstamped rows take now.
+            val profileBedtime = try {
+                UserProfileRepository().getOrCreateProfile(userId).targetBedtime
+            } catch (e: Exception) {
+                Log.w(TAG, "Profile read failed, stamp falls back to null", e)
+                null
+            }
+
             val record = SleepRecord(
                 id = existing?.id ?: UUID.randomUUID().toString(),
                 userId = userId,
                 sessionDate = dateStr,
+                targetBedtime = existing?.targetBedtime ?: profileBedtime,
                 sleepOnsetTime = aggregated.onset.toString(),
                 wakeTime = aggregated.wake.toString(),
                 sleepDurationMinutes = aggregated.durationMinutes,

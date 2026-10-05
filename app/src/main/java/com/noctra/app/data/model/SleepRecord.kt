@@ -19,5 +19,8 @@ data class SleepRecord(
     @SerialName("movement_score") val movementScore: Int? = null,
     @SerialName("composite_score") val compositeScore: Int? = null,
     @SerialName("is_partial_data") val isPartialData: Boolean = false,
-    @SerialName("data_capture_success") val dataCaptureSuccess: Boolean = true
+    @SerialName("data_capture_success") val dataCaptureSuccess: Boolean = true,
+    // Bedtime live when the night synced ("HH:mm:ss"). Null on pre-feature
+    // rows = fall back to the current profile target when judging.
+    @SerialName("target_bedtime") val targetBedtime: String? = null
 )

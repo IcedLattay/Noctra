@@ -142,3 +142,17 @@ ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS onboarding_completed_at TIMES
 -- ============================================================
 
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
+
+-- ============================================================
+-- MIGRATION 7: per-night bedtime snapshot on sleep_records
+-- ============================================================
+-- What this does:
+--   1. Adds target_bedtime TEXT ("HH:mm:ss") — the profile bedtime live
+--      when the night synced, stamped first-write-wins by the sync.
+--      Lets adherence judge each night against its own target instead of
+--      the current one. Nullable: old rows read NULL = fall back to the
+--      current target, no backfill required. Covered by existing own-row
+--      RLS policies, no new policies needed.
+-- ============================================================
+
+ALTER TABLE sleep_records ADD COLUMN IF NOT EXISTS target_bedtime TEXT;
