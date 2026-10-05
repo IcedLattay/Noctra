@@ -140,6 +140,16 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
         val ringColor = ContextCompat.getColor(context, R.color.adherence_target)
         val connectorColor = ContextCompat.getColor(context, R.color.adherence_connector)
 
+        if (data.all { it.adherence == Adherence.NO_DATA }) {
+            // Wholly rowless window: caption only — rings and dates with
+            // nothing behind them read as data.
+            canvas.drawText(
+                context.getString(R.string.analytics_no_bedtime_data),
+                w / 2f, h / 2f, captionPaint
+            )
+            return
+        }
+
         for (i in data.indices) {
             val centerX = (i + 0.5f) * columnWidth
             val night = data[i]
@@ -176,13 +186,6 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
 
             val labelY = h - dpToPx(6f)
             canvas.drawText(labels.getOrElse(i) { "" }, centerX, labelY, labelPaint)
-        }
-
-        if (data.all { it.adherence == Adherence.NO_DATA }) {
-            canvas.drawText(
-                context.getString(R.string.analytics_no_bedtime_data),
-                w / 2f, h / 2f, captionPaint
-            )
         }
 
         // Regime brackets: one line in the gap between the endpoint labels
