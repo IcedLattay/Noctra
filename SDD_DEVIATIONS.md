@@ -565,6 +565,11 @@ The analytics requirements live exclusively in ANALYTICS_SPEC.md (authoritative 
 - **Last Night is strictly last night.** Card used `getMostRecentRecord` (any stale date); now queries yesterday's session date, falling into the existing honest no-data branch. No-data state rebuilt per mock: score + stat grid hidden (no redundant dashes), date still names last night, dashed-moon illustration, muted sync hint (`analytics_last_night_hint`). Extra air: 24/28/24dp.
 - **Score chart: 7 slots always, x date labels, no animation.** Axis pinned to the full window (a lone dot sat in its slot instead of stretching full-width); x labels on at 11sp muted with 8dp/6dp breathing room; `animateY` dropped (it replayed visibly on every window shift — the spinner covers first load only by design).
 
+### Nightly bedtime (feature/nightly-bedtime)
+
+- **Snapshot column** (`Migration 7`): `sleep_records.target_bedtime` TEXT, stamped first-write-wins at sync; stamp-only NoData pass converges pre-feature rows (scores/times untouched, never overwrites).
+- **Stamp-first reads:** adherence, variability, and per-day hour labels all use each night's stamp with live-target fallback; null renders normally. No history table by decision.
+
 ### Routine polish merge (merge/routine-cards)
 
 - **Step-2 cards:** their badge + illustrations + Poppins kept; our info button kept but moved bottom-right (badge owns top-right), now opening their `ActivityInfoDialogFragment` (replacing our plain Material dialog). Ripple-kill on maxed cards kept.
