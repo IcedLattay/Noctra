@@ -8,6 +8,7 @@ object NotificationPreferences {
     private const val KEY_MORNING_SCORE = "morning_sleep_score_enabled"
     private const val KEY_CACHED_BEDTIME = "cached_target_bedtime"
     private const val KEY_CACHED_DURATION = "cached_routine_duration"
+    private const val KEY_LAST_WIND_DOWN_FIRE = "last_wind_down_fire_app_day"
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -44,4 +45,20 @@ object NotificationPreferences {
         durationMinutes?.let { editor.putInt(KEY_CACHED_DURATION, it) }
         editor.apply()
     }
+
+    // ─── Wind-down fire guard ───────────────────────────────────────────────
+    // App-day runs 2 AM → 2 AM: a 1:30 AM pop belongs to yesterday's cycle,
+    // which already popped — never a fresh day.
+
+    fun appDayFor(now: java.time.LocalDateTime = java.time.LocalDateTime.now()): String {
+        val date = if (now.hour < 2) now.toLocalDate().minusDays(1) else now.toLocalDate()
+        return date.toString()
+    }
+
+    fun setLastWindDownFireDay(context: Context, appDay: String) {
+        prefs(context).edit().putString(KEY_LAST_WIND_DOWN_FIRE, appDay).apply()
+    }
+
+    fun getLastWindDownFireDay(context: Context): String? =
+        prefs(context).getString(KEY_LAST_WIND_DOWN_FIRE, null)
 }

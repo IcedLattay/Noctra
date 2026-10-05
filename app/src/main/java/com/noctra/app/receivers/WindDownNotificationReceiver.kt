@@ -28,6 +28,12 @@ class WindDownNotificationReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                // Stamp this app-day as popped BEFORE scheduling: the guard
+                // in scheduleNext then rolls any same-day recompute forward.
+                com.noctra.app.utils.NotificationPreferences.setLastWindDownFireDay(
+                    context,
+                    com.noctra.app.utils.NotificationPreferences.appDayFor()
+                )
                 com.noctra.app.workers.WindDownNotificationScheduler.scheduleNext(context)
             } finally {
                 pendingResult.finish()

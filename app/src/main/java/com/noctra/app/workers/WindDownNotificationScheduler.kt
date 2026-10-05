@@ -75,7 +75,18 @@ object WindDownNotificationScheduler {
         val triggerAt = computeNextTrigger(
             bedtimeString = bedtimeString,
             routineDurationMinutes = routineDuration
-        )
+        ).let { candidate ->
+            // One pop per app-day: if this app-day already popped (e.g. the
+            // bedtime moved later today), roll to the next cycle instead.
+            val firedDay = com.noctra.app.utils.NotificationPreferences.getLastWindDownFireDay(context)
+            if (firedDay != null &&
+                com.noctra.app.utils.NotificationPreferences.appDayFor(candidate) == firedDay
+            ) {
+                candidate.plusDays(1)
+            } else {
+                candidate
+            }
+        }
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(context, WindDownNotificationReceiver::class.java)
