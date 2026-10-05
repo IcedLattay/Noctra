@@ -357,9 +357,9 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
         }
     }
 
-    /** Hour-only target label ("10 PM"); dash when unknown. */
+    /** Hour-only target label ("10 PM"); blank when the night has no row. */
     private fun formatTargetHour(stored: String?): String {
-        val time = parseTargetBedtime(stored) ?: return "—"
+        val time = parseTargetBedtime(stored) ?: return ""
         val hour12 = when (val h = time.hour % 12) {
             0 -> 12
             else -> h

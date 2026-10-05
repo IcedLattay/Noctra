@@ -102,18 +102,23 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
     }
 
     /**
-     * Maximal runs of equal targets clipped to the visible window: each
-     * run of 2+ nights gets one overline bracket ("this whole stretch ran
-     * one target"). Runs continuing past the window edge bracket to the
-     * edge. Single nights carry just their label.
+     * Bracket runs clipped to the visible window: a line joins the endpoint
+     * labels of a run of equal targets ONLY when at least one day sits in
+     * between (3+ nights) — adjacent pairs need no line. Blank (rowless)
+     * nights break runs.
      */
     private fun computeBrackets(targets: List<String>): List<Pair<Int, Int>> {
         val out = mutableListOf<Pair<Int, Int>>()
         var i = 0
         while (i < targets.size) {
+            val label = targets[i]
+            if (label.isEmpty()) {
+                i++
+                continue
+            }
             var j = i
-            while (j + 1 < targets.size && targets[j + 1] == targets[i]) j++
-            if (j > i) out += i to j
+            while (j + 1 < targets.size && targets[j + 1] == label) j++
+            if (j - i >= 2) out += i to j
             i = j + 1
         }
         return out
@@ -178,10 +183,10 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
             )
         }
 
-        // Regime brackets: one overline per run of equal targets.
+        // Regime brackets: one line joining the endpoint labels of each run.
         for ((from, to) in brackets) {
-            val startX = from * columnWidth + dpToPx(4f)
-            val endX = (to + 1) * columnWidth - dpToPx(4f)
+            val startX = (from + 0.5f) * columnWidth
+            val endX = (to + 0.5f) * columnWidth
             val y = targetLabelY - dpToPx(12f)
             canvas.drawLine(startX, y, endX, y, bracketPaint)
         }

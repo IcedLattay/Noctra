@@ -288,8 +288,8 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
 
     /**
      * Per-night bedtime for the window: each night's own stamp, falling
-     * back to the live profile target where the stamp is null. Null here
-     * means "no target known at all" (profile also null).
+     * back to the live profile target for stamped-less rows. Null only
+     * when the night has no row at all (no label rendered).
      */
     private fun buildTargets(
         start: LocalDate,
@@ -300,7 +300,8 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
         val byDate = records.associateBy { it.sessionDate }
         return (0 until days).map { offset ->
             val date = start.plusDays(offset.toLong())
-            byDate[date.toString()]?.targetBedtime ?: globalTarget
+            val record = byDate[date.toString()] ?: return@map null
+            record.targetBedtime ?: globalTarget
         }
     }
 
