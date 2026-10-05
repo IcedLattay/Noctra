@@ -15,21 +15,41 @@
     <color name="noctra_label_grey">#9E9E9E</color>
     <color name="noctra_health_yellow">#FFC90E</color>
 
-    <color name="completion_green">#7BC97D</color>
-    <color name="completion_pink">#F08FA1</color>
+    <!-- ══ ANALYTICS DESIGN TOKENS (ANALYTICS_SPEC.md §6) ══
+         Per spec "Overwrite rule": where a resource already exists for a
+         component, the new value wins — written over, never duplicated. -->
+
+    <!-- Analytics-specific tokens -->
+    <color name="analytics_card_bg">#EEEAF9</color>
+    <color name="analytics_score">#7746FF</color>
+    <color name="analytics_muted">#83828C</color>
+    <color name="analytics_trend_dot">#8457FF</color>
+    <color name="analytics_trend_avg">#D0BEFF</color>
+    <color name="analytics_axis">#C6B8EC</color>
+    <color name="analytics_card_outline">#E2DCF3</color>
+    <!-- §3 batched loading spinner -->
+    <color name="analytics_loading">#522ABE</color>
+
+    <!-- Routine completion cells (§6 item 5): completed / pending / missed.
+         "pending" reuses the shared yellow `noctra_health_yellow` (#FFC90E)
+         per the spec's overwrite rule — no duplicate token. -->
+    <color name="completion_green">#00A63E</color>
+    <color name="completion_pink">#D4183D</color>
     <color name="completion_grey">#E0E0E0</color>
 
+    <!-- Quality bands — spec: unchanged -->
     <color name="quality_good">#2E9F66</color>
     <color name="quality_moderate">#E8A33D</color>
     <color name="quality_poor">#D4183D</color>
     <color name="quality_reference_line">#9E9E9E</color>
 
-    <color name="adherence_target">#A78BFA</color>
-    <color name="adherence_on_time">#2E9F66</color>
-    <color name="adherence_slight_delay">#E8A33D</color>
+    <!-- Bedtime adherence (§6 item 4): hollow target ring + status dots -->
+    <color name="adherence_target">#444444</color>
+    <color name="adherence_on_time">#00A63E</color>
+    <color name="adherence_slight_delay">#F0B100</color>
     <color name="adherence_late">#D4183D</color>
-    <color name="adherence_no_data">#1A1342</color>
-    <color name="adherence_connector">#A78BFA</color>
+    <color name="adherence_no_data">#83828C</color>
+    <color name="adherence_connector">#83828C</color>
     <color name="noctra_purple_soft">#B097FF</color>
     <color name="noctra_lavender_start">#F4F2FF</color>
     <color name="noctra_lavender_end">#E4DFFF</color>
@@ -40,6 +60,7 @@
     <color name="timer_green">#038745</color>
     <color name="timer_red">#E53935</color>
     <color name="timer_default">#1A1560</color>
+    <color name="pill_text_grey">#5B5B5B</color>
     <color name="noctra_lavender_bg">#EDE9FB</color>
     <color name="noctra_purple">#5C25F0</color>
     <color name="noctra_lavender_border">#D9D4F0</color>

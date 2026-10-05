@@ -10,14 +10,23 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:paddingHorizontal="24dp"
         android:paddingTop="32dp"
-        android:clipToPadding="false">
+        android:paddingBottom="32dp"
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:scrollbars="none">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:orientation="vertical">
+
+            <!-- Padded container: header, duration card, instruction -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="24dp">
 
             <!-- Header -->
             <LinearLayout
@@ -51,14 +60,14 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Step 3 of 4"
+                        android:text="Step 3 of 5"
                         android:textSize="13sp"
                         android:textColor="#7B6FA0" />
 
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Total duration card (purple-yellow gradient) -->
+            <!-- Total duration card (same purple as step 1 hint card) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -71,14 +80,14 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="20dp"
-                    android:background="@drawable/bg_duration_card">
+                    android:background="#EAE6FF">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Total Routine Duration"
                         android:textSize="13sp"
-                        android:textColor="#16056E" />
+                        android:textColor="@android:color/black" />
 
                     <TextView
                         android:id="@+id/tvTotalDuration"
@@ -96,7 +105,7 @@
                         android:layout_height="wrap_content"
                         android:text="Your routine will start 0 minutes before your target bedtime"
                         android:textSize="13sp"
-                        android:textColor="#16056E" />
+                        android:textColor="@android:color/black" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -105,52 +114,48 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Drag activities to reorder, adjust durations, or remove items you don't need."
+                android:text="Long-press and drag a card, or tap the arrows, to reorder."
                 android:textSize="14sp"
-                android:textColor="#16056E"
+                android:textColor="@android:color/black"
                 android:layout_marginBottom="16dp" />
 
-            <!-- Sequencing list -->
+            </LinearLayout><!-- /padded container -->
+
+            <!-- Sequencing list (full-bleed so badges can overhang;
+                 top/bottom breathing room so dragged cards don't clip) -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvSequence"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false"
-                android:layout_marginBottom="24dp" />
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingStart="2dp"
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp"
+                android:layout_marginBottom="0dp" />
+
+            <!-- Spacer: pins the button to the bottom on short content,
+                 collapses away when scrolling is needed -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:minHeight="12dp" />
+
+            <!-- Confirm button (scrolls with content) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnConfirm"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginHorizontal="24dp"
+                android:layout_marginBottom="8dp"
+                android:text="Complete Routine Setup"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                app:backgroundTint="#5C25F0"
+                app:cornerRadius="28dp" />
 
         </LinearLayout>
     </ScrollView>
-
-    <!-- Bottom buttons -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingHorizontal="24dp"
-        android:paddingTop="12dp"
-        android:paddingBottom="32dp"
-        android:background="#F5F4FF">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnConfirm"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="Confirm Routine"
-            android:textSize="16sp"
-            android:textColor="#FFFFFF"
-            android:layout_marginBottom="10dp"
-            app:backgroundTint="#5C25F0"
-            app:cornerRadius="28dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnBack"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="Back"
-            android:textSize="15sp"
-            android:textColor="#7B6FA0"
-            app:backgroundTint="#E0DCF0"
-            app:cornerRadius="24dp" />
-
-    </LinearLayout>
 </LinearLayout>

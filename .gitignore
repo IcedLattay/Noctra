@@ -33,3 +33,20 @@ google-services.json
 # Mac/Windows junk
 .DS_Store
 Thumbs.db
+
+# Supabase
+supabase_migrations.sql
+
+# Temp/revision docs
+*revisions*
+~$*
+
+# Noctra logs
+NoctraLogs.bat
+
+# Noctra graphic assets (large binaries - don't commit)
+noctra graphic assets/
+noctra graphics assets/
+
+# Analytics spec (local working doc, not versioned)
+ANALYTICS_SPEC.md

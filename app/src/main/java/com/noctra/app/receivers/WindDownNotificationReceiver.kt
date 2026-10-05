@@ -48,7 +48,8 @@ class WindDownNotificationReceiver : BroadcastReceiver() {
             context,
             NoctraApplication.CHANNEL_WIND_DOWN
         )
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_summary_moon)
+            .setColor(androidx.core.content.ContextCompat.getColor(context, R.color.noctra_purple))
             .setContentTitle("Time to wind down 🌙")
             .setContentText("Your routine starts now. Tap to begin.")
             .setPriority(NotificationCompat.PRIORITY_HIGH)

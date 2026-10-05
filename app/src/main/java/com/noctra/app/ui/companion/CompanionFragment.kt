@@ -1,7 +1,5 @@
 package com.noctra.app.ui.companion
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
@@ -11,7 +9,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
-import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -26,9 +23,6 @@ import androidx.transition.Slide
 import androidx.transition.TransitionManager
 import androidx.transition.TransitionSet
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
-import com.airbnb.lottie.LottieProperty
-import com.airbnb.lottie.model.KeyPath
-import com.airbnb.lottie.value.LottieValueCallback
 import com.noctra.app.R
 import com.noctra.app.databinding.FragmentCompanionBinding
 import com.noctra.app.ui.companion.adapters.ShopItemAdapter
@@ -45,15 +39,14 @@ class CompanionFragment : Fragment() {
     private lateinit var shopAdapter: ShopItemAdapter
 
     private var currentStageLevel: Int = -1
-    private var isPlayingTappedAnimation = false
+    private var previousOutfitAsset: String? = null
     private var isCustomizeMode = false
-    private var currentCategory = "Hats"
-
+    
     // Dialog Queue Logic
     private sealed class PendingDialog {
         data class MorningRecap(val score: Int, val xp: Int) : PendingDialog()
         data class StreakNotice(val type: CompanionViewModel.CompanionNotice) : PendingDialog()
-        data class Evolution(val stageName: String) : PendingDialog()
+        data class Evolution(val oldLevel: Int, val newLevel: Int) : PendingDialog()
     }
 
     private val dialogQueue = mutableListOf<PendingDialog>()
@@ -62,7 +55,7 @@ class CompanionFragment : Fragment() {
     private fun enqueueDialog(dialog: PendingDialog) {
         dialogQueue.add(dialog)
         // Sort by Priority: Recap(0) > Notice(1) > Evolution(2)
-        dialogQueue.sortWith(compareBy {
+        dialogQueue.sortWith(compareBy { 
             when(it) {
                 is PendingDialog.MorningRecap -> 0
                 is PendingDialog.StreakNotice -> 1
@@ -74,57 +67,68 @@ class CompanionFragment : Fragment() {
 
     private fun processNextDialog() {
         if (isDialogShowing || dialogQueue.isEmpty()) return
-        // Screen not ready (e.g. app still loading) — try again on the next enqueue/close.
-        if (!isAdded || isStateSaved) return
+        // Collectors can fire while detached (mid-navigation) — showing then
+        // crashes. Return WITHOUT clearing: the queue survives for next time.
+        if (!isAdded) return
 
-        // FIX (Flag 32): grab the COMPANION screen's manager here. Inside
-        // `.apply { }` below, `childFragmentManager` would mean the DIALOG's
-        // own manager, which doesn't exist yet -> crash.
-        val fm = childFragmentManager
-
-        isDialogShowing = true
         val next = dialogQueue.removeAt(0)
 
-        when (next) {
+        // NOTE: no .apply{} here — inside apply, bare childFragmentManager
+        // resolves to the DIALOG's (unattached) manager instead of ours.
+        try {
+            isDialogShowing = true
+            when (next) {
             is PendingDialog.MorningRecap -> {
-                MorningSleepPopupDialog.newInstance(next.score, next.xp).apply {
-                    setOnDismissCallback { onDialogClosed() }
-                    show(fm, "MorningSleepPopup")
+                val dialog = MorningSleepPopupDialog.newInstance(next.score, next.xp)
+                dialog.setOnDismissCallback { onDialogClosed() }
+                dialog.setOnViewDetailsCallback {
+                    findNavController().navigate(R.id.action_companion_to_analytics)
                 }
+                dialog.show(childFragmentManager, "MorningSleepPopup")
             }
             is PendingDialog.StreakNotice -> {
-                StreakNoticeDialogFragment.newInstance(next.type).apply {
-                    setOnDismissCallback { onDialogClosed() }
-                    show(fm, "StreakNoticePopup")
-                }
+                val dialog = StreakNoticeDialogFragment.newInstance(next.type)
+                dialog.setOnDismissCallback { onDialogClosed() }
+                dialog.show(childFragmentManager, "StreakNoticePopup")
             }
             is PendingDialog.Evolution -> {
-                EvolutionDialogFragment.newInstance(next.stageName).apply {
-                    setOnDismissCallback { onDialogClosed() }
-                    show(fm, "EvolutionPopup")
-                }
+                val dialog = EvolutionDialogFragment.newInstance(next.oldLevel, next.newLevel)
+                dialog.setOnDismissCallback { onDialogClosed() }
+                dialog.show(childFragmentManager, "EvolutionPopup")
             }
+            }
+        } catch (e: Exception) {
+            // Never leave the queue wedged: a dropped dialog must still let the
+            // next one through, otherwise every later dialog is silently lost.
+            android.util.Log.e("CompanionFragment", "Failed to show ${next::class.simpleName}", e)
+            isDialogShowing = false
+            dialogQueue.add(0, next)
         }
     }
 
     private fun onDialogClosed() {
         isDialogShowing = false
-        // Delay slightly to avoid window focus flickers
-        view?.postDelayed({ processNextDialog() }, 300)
+        // Delay slightly to avoid window focus flickers.
+        val v = view
+        if (v != null) {
+            v.postDelayed({ processNextDialog() }, 300)
+        } else {
+            // The view went away between dismiss and this callback, so the
+            // postDelayed anchor is gone. Drop the backlog rather than leave
+            // isDialogShowing latched and every queued dialog stranded.
+            dialogQueue.clear()
+        }
     }
 
-    // Store latest equipped items to apply when animations change
-    private var currentEquippedItems: Map<String, com.noctra.app.data.model.ShopItem> = emptyMap()
-
     private val shleepyStates = mapOf(
-        1 to ShleepyState("DEPRIVED", R.raw.deprived_idle, R.raw.deprived_tapped),
-        2 to ShleepyState("AWAKENING", R.raw.awakening_idle, R.raw.awakening_tapped),
-        3 to ShleepyState("CHARGED", R.raw.charged_idle, R.raw.charged_tapped),
-        4 to ShleepyState("OVERDRIVE", R.raw.overdrive_idle, R.raw.overdrive_tapped),
-        5 to ShleepyState("ZEN", R.raw.zen_idle, R.raw.zen_tapped)
+        1 to ShleepyState("DEPRIVED"),
+        2 to ShleepyState("AWAKENING"),
+        3 to ShleepyState("CHARGED"),
+        4 to ShleepyState("OVERDRIVE"),
+        5 to ShleepyState("ZEN")
     )
 
-    data class ShleepyState(val name: String, val idleRes: Int, val tappedRes: Int)
+    data class ShleepyState(val name: String)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -139,24 +143,21 @@ class CompanionFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupRecyclerView()
-        setupCategoryTabs()
         setupListeners()
         setupBackNavigation()
-        setupLottieListeners()
         observeUiState()
 
-        val userId = UserSession.getUserId(requireContext()) ?: return
-        val lastShownSleepDate = requireContext().getSharedPreferences("noctra_prefs", Context.MODE_PRIVATE)
-            .getString("last_shown_sleep_date", null)
+        // Start skeleton animations: spinner spins natively, placeholders pulse
+        binding.skeletonSpinner.visibility = View.VISIBLE
+        val pulseAnim = android.view.animation.AnimationUtils.loadAnimation(requireContext(), R.anim.pulse_skeleton)
+        binding.skeletonTokenPill.startAnimation(pulseAnim)
+        binding.skeletonStageLabel.startAnimation(pulseAnim)
+        binding.skeletonXpCard.startAnimation(pulseAnim)
+        binding.skeletonCustomize.startAnimation(pulseAnim)
 
-        viewModel.loadData(userId, lastShownSleepDate)
-    }
-
-    private fun setupLottieListeners() {
-        // Single permanent listener to apply accessories whenever a new animation file is loaded
-        binding.petAnimationView.addLottieOnCompositionLoadedListener {
-            refreshAccessoriesVisibility()
-        }
+        // NOTE: no loadData here — onResume() always follows onViewCreated()
+        // and loads. Calling both double-fires loadData on cold open, which
+        // used to emit the morning popup twice (dismiss → pops again).
     }
 
     private fun setupBackNavigation() {
@@ -202,48 +203,11 @@ class CompanionFragment : Fragment() {
             .show()
     }
 
-    private fun setupCategoryTabs() {
-        val tabs = mapOf(
-            "Hats" to binding.tabHats,
-            "Outfits" to binding.tabOutfits,
-            "Accessories" to binding.tabAccessories,
-            "Footwear" to binding.tabFootwear
-        )
-
-        tabs.forEach { (category, textView) ->
-            textView.setOnClickListener {
-                updateTabs(category, tabs)
-            }
-        }
-    }
-
-    private fun updateTabs(selectedCategory: String, tabs: Map<String, TextView>) {
-        currentCategory = selectedCategory
-        tabs.forEach { (category, textView) ->
-            if (category == selectedCategory) {
-                textView.setBackgroundResource(R.drawable.bg_category_pill_active)
-                textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
-            } else {
-                textView.setBackgroundResource(R.drawable.bg_category_pill_inactive)
-                textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.noctra_purple_light))
-            }
-        }
-        filterItems()
-    }
-
-    private fun filterItems() {
+    private fun showAllItems() {
         val allItems = viewModel.uiState.value.shopItems
-        val dbCategory = when (currentCategory) {
-            "Hats" -> "HAT"
-            "Outfits" -> "OUTFIT"
-            "Accessories" -> "ACCESSORY"
-            "Footwear" -> "FOOTWEAR"
-            else -> "HAT"
-        }
-        val filtered = allItems.filter { it.item.category == dbCategory }
-        shopAdapter.submitList(filtered)
+        shopAdapter.submitList(allItems)
 
-        if (filtered.isEmpty()) {
+        if (allItems.isEmpty()) {
             binding.rvShopItems.visibility = View.GONE
             binding.tvComingSoon.visibility = View.VISIBLE
         } else {
@@ -287,8 +251,8 @@ class CompanionFragment : Fragment() {
                     }
                 }
                 launch {
-                    viewModel.showEvolutionPopup.collectLatest { evolution ->
-                        enqueueDialog(PendingDialog.Evolution(evolution.stageName))
+                    viewModel.showEvolutionPopup.collectLatest { event ->
+                        enqueueDialog(PendingDialog.Evolution(event.oldLevel, event.newStage.stageLevel))
                     }
                 }
             }
@@ -296,111 +260,115 @@ class CompanionFragment : Fragment() {
     }
 
     private fun updateUi(state: CompanionViewModel.CompanionUiState) {
+        val noInternetView = view?.findViewById<View>(R.id.noInternetView)
+        val companionRoot = view?.findViewById<View>(R.id.companionRoot)
+
+        if (state.isOffline) {
+            noInternetView?.visibility = View.VISIBLE
+            companionRoot?.visibility = View.GONE
+            setupRetryButton()
+            return
+        } else {
+            noInternetView?.visibility = View.GONE
+            companionRoot?.visibility = View.VISIBLE
+        }
+
         with(binding) {
             tvTokenBalance.text = state.tokenBalance.toString()
+            // Only swap token skeleton once data has actually loaded
+            if (state.evolutionState != null) {
+                tokenContainer.visibility = View.VISIBLE
+                skeletonTokenPill.clearAnimation()
+                skeletonTokenPill.visibility = View.GONE
+            } else {
+                tokenContainer.visibility = View.GONE
+                skeletonTokenPill.visibility = View.VISIBLE
+            }
 
             state.evolutionState?.let { evolution ->
                 tvStageLabel.text = evolution.stageName
                 tvXpValue.text = getString(R.string.companion_xp_unit, evolution.totalXp)
                 pbXpProgress.progress = (evolution.progressPercent * 100).toInt()
 
+                // Show data components and hide their skeletons
+                tvStageLabel.visibility = View.VISIBLE
+                cvXpCard.visibility = View.VISIBLE
+                btnCustomize.visibility = View.VISIBLE
+                skeletonStageLabel.clearAnimation()
+                skeletonXpCard.clearAnimation()
+                skeletonCustomize.clearAnimation()
+                skeletonStageLabel.visibility = View.GONE
+                skeletonXpCard.visibility = View.GONE
+                skeletonCustomize.visibility = View.GONE
+
                 // 1. Update Shleepy Animation if stage changed
                 if (currentStageLevel != evolution.stageLevel) {
                     currentStageLevel = evolution.stageLevel
-                    if (!isPlayingTappedAnimation) {
-                        applyIdleAnimation()
-                    }
+                    applyIdleAnimation(playSmoke = false)
                 }
 
-                // 2. Update Accessories State
-                currentEquippedItems = state.equippedItems
-                refreshAccessoriesVisibility()
-
+                // 2. Update outfit animation if equipped outfit changed
+                val currentOutfitAsset = viewModel.uiState.value.equippedOutfit?.itemAsset
+                val outfitChanged = previousOutfitAsset != null && previousOutfitAsset != currentOutfitAsset
+                applyIdleAnimation(playSmoke = outfitChanged)
+                previousOutfitAsset = currentOutfitAsset
+                
                 // 3. Update Shop Items if in customize mode
                 if (isCustomizeMode) {
-                    filterItems()
+                    showAllItems()
                 }
             }
-
+            
             if (state.error != null) {
                 android.widget.Toast.makeText(requireContext(), state.error, android.widget.Toast.LENGTH_LONG).show()
             }
         }
     }
 
-    private fun applyIdleAnimation() {
-        val state = shleepyStates[currentStageLevel] ?: shleepyStates[1]!!
-        binding.petAnimationView.apply {
-            setAnimation(state.idleRes)
-            repeatCount = -1
-            playAnimation()
+    private fun setupRetryButton() {
+        val noInternetView = view?.findViewById<View>(R.id.noInternetView) ?: return
+        val btnRetry = noInternetView.findViewById<android.widget.ImageButton>(R.id.btnRetry)
+        val progressRetry = noInternetView.findViewById<android.widget.ProgressBar>(R.id.progressRetry)
+        val tvRetry = noInternetView.findViewById<TextView>(R.id.tvRetry)
+
+        btnRetry.setOnClickListener {
+            btnRetry.visibility = View.GONE
+            progressRetry.visibility = View.VISIBLE
+            tvRetry.text = "retrying..."
+
+            val userId = UserSession.getUserId(requireContext()) ?: return@setOnClickListener
+            viewModel.retry(userId)
         }
     }
 
-    private fun triggerTappedAnimation() {
-        if (isPlayingTappedAnimation || isCustomizeMode) return
-
+    private fun applyIdleAnimation(playSmoke: Boolean = false) {
         val state = shleepyStates[currentStageLevel] ?: shleepyStates[1]!!
-        isPlayingTappedAnimation = true
+        val stageName = state.name.lowercase()
+        val outfitAsset = viewModel.uiState.value.equippedOutfit?.itemAsset ?: "default"
 
-        binding.petAnimationView.apply {
-            removeAllAnimatorListeners()
-            setAnimation(state.tappedRes)
-            repeatCount = 0
-            playAnimation()
-
-            addAnimatorListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator) {
-                    isPlayingTappedAnimation = false
-                    removeAnimatorListener(this)
-                    applyIdleAnimation()
-                }
-            })
-        }
-    }
-
-    private fun refreshAccessoriesVisibility() {
-        val petView = binding.petAnimationView
-        val equippedItems = currentEquippedItems
-
-        val allHatLayers = listOf("hat_sleeping_hat", "hat_propeller_hat", "hat_floral_crown")
-        val otherCategoryToLayer = mapOf(
-            "OUTFIT" to "outfit_layer",
-            "ACCESSORY" to "accessory_layer"
+        val resId = resources.getIdentifier(
+            "shleepy_${stageName}_${outfitAsset}", "raw", requireContext().packageName
         )
 
-        val activeHatLayer = equippedItems["HAT"]?.let { item ->
-            when (item.itemAsset) {
-                "hat_propeller_hat" -> "hat_propeller_hat"
-                "hat_sleeping_hat" -> "hat_sleeping_hat"
-                "hat_floral_crown" -> "hat_floral_crown"
-                else -> null
+        if (resId != 0) {
+            binding.petAnimationView.apply {
+                setAnimation(resId)
+                repeatCount = -1
+                playAnimation()
             }
+            // Hide skeleton spinner once pet animation is ready
+            binding.skeletonSpinner.visibility = View.GONE
+        } else {
+            binding.petAnimationView.cancelAnimation()
+            binding.petAnimationView.progress = 0f
         }
 
-        // Apply mutual exclusivity for hats
-        allHatLayers.forEach { layerName ->
-            val opacity = if (layerName == activeHatLayer) 100 else 0
-            try {
-                petView.addValueCallback(
-                    KeyPath("**", layerName, "**"),
-                    LottieProperty.TRANSFORM_OPACITY,
-                    LottieValueCallback(opacity)
-                )
-            } catch (e: Exception) {}
-        }
-
-        // Apply visibility for other categories
-        otherCategoryToLayer.forEach { (category, layerName) ->
-            val isEquipped = equippedItems.containsKey(category)
-            val opacity = if (isEquipped) 100 else 0
-            try {
-                petView.addValueCallback(
-                    KeyPath("**", layerName, "**"),
-                    LottieProperty.TRANSFORM_OPACITY,
-                    LottieValueCallback(opacity)
-                )
-            } catch (e: Exception) {}
+        if (playSmoke) {
+            val smokeResId = resources.getIdentifier("smoke", "raw", requireContext().packageName)
+            if (smokeResId != 0) {
+                binding.smokeOverlay.setAnimation(smokeResId)
+                binding.smokeOverlay.playAnimation()
+            }
         }
     }
 
@@ -412,15 +380,11 @@ class CompanionFragment : Fragment() {
         binding.btnBack.setOnClickListener {
             toggleCustomizeMode(false)
         }
-
-        binding.petAnimationView.setOnClickListener {
-            triggerTappedAnimation()
-        }
     }
 
     private fun toggleCustomizeMode(enabled: Boolean) {
         isCustomizeMode = enabled
-
+        
         val activityRoot = requireActivity().findViewById<ViewGroup>(R.id.mainActivityRoot) ?: return
         val bottomNav = requireActivity().findViewById<View>(R.id.bottom_nav)
 
@@ -429,53 +393,65 @@ class CompanionFragment : Fragment() {
             // Handle Bottom Nav: Slide + Fade to prevent "white bar"
             addTransition(Slide(Gravity.BOTTOM).addTarget(bottomNav))
             addTransition(Fade().addTarget(bottomNav))
-
+            
             // Handle Fragment internal UI: Panels
             addTransition(Slide(Gravity.BOTTOM).addTarget(binding.shopPanel))
             addTransition(Fade(Fade.IN).addTarget(binding.shopPanel))
             addTransition(Fade(Fade.OUT).addTarget(binding.shopPanel))
             addTransition(Fade(Fade.OUT).addTarget(binding.companionPanel))
             addTransition(Fade(Fade.IN).addTarget(binding.companionPanel))
-
+            
             // Smoothly animate the expansion/movement of everything else
             addTransition(ChangeBounds())
-
+            
             ordering = TransitionSet.ORDERING_TOGETHER
             duration = 450 // Slightly longer to let the curve feel smooth
             interpolator = FastOutSlowInInterpolator()
         }
-
+        
         TransitionManager.beginDelayedTransition(activityRoot, consolidatedTransition)
-
+        
         // Update Bottom Nav Visibility
         bottomNav?.visibility = if (enabled) View.GONE else View.VISIBLE
 
         if (enabled) {
             // Hide companion elements
             binding.companionPanel.visibility = View.GONE
-
+            
             // Show shop elements
             binding.shopPanel.visibility = View.VISIBLE
             binding.btnBack.visibility = View.VISIBLE
-
-            // Move Shleepy up
-            val params = binding.shleepyFrame.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
-            params.verticalBias = 0.02f
-            binding.shleepyFrame.layoutParams = params
-
-            filterItems()
+            
+            // Re-constrain shleepyFrame bottom to shopPanel (companionPanel is GONE)
+            val shleepyParams = binding.shleepyFrame.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            shleepyParams.bottomToTop = R.id.shopPanel
+            shleepyParams.topMargin = (16 * resources.displayMetrics.density).toInt()
+            binding.shleepyFrame.layoutParams = shleepyParams
+            
+            // Extend floor upward
+            val floorParams = binding.companionFloor.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            floorParams.height = (510 * resources.displayMetrics.density).toInt()
+            binding.companionFloor.layoutParams = floorParams
+            
+            showAllItems()
         } else {
             // Show companion elements
             binding.companionPanel.visibility = View.VISIBLE
-
+            
             // Hide shop elements
             binding.shopPanel.visibility = View.GONE
             binding.btnBack.visibility = View.GONE
-
-            // Move Shleepy back to center
-            val params = binding.shleepyFrame.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
-            params.verticalBias = 0.4f
-            binding.shleepyFrame.layoutParams = params
+            
+            // Restore shleepyFrame bottom to companionPanel
+            val shleepyParams = binding.shleepyFrame.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            shleepyParams.bottomToTop = R.id.companionPanel
+            shleepyParams.topMargin = (100 * resources.displayMetrics.density).toInt()
+            binding.shleepyFrame.layoutParams = shleepyParams
+            
+            // Shrink floor back
+            val floorParams = binding.companionFloor.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            floorParams.height = (340 * resources.displayMetrics.density).toInt()
+            binding.companionFloor.layoutParams = floorParams
         }
     }
 
@@ -486,7 +462,7 @@ class CompanionFragment : Fragment() {
             requireActivity().findViewById<View>(R.id.bottom_nav)?.visibility = View.VISIBLE
         }
         currentStageLevel = -1
-        isPlayingTappedAnimation = false
+        previousOutfitAsset = null
         _binding = null
     }
 }

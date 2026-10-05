@@ -141,6 +141,26 @@
                     <TextView
                         style="@style/DebugDescription"
                         android:text="Temporarily pushes XP over the next evolution milestone to demonstrate the Shleepy evolution animation." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_evolution"
+                        style="@style/DebugButton"
+                        android:text="Preview Evolution Screen" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Opens the evolution dialog for the next stage directly. No XP is written — purely a visual preview." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_stages"
+                        style="@style/DebugButton"
+                        android:text="Preview Stage Animations" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Plays the default-outfit animation for each of the 5 stages. No data is touched." />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
@@ -149,7 +169,6 @@
                 style="@style/DebugSectionHeader"
                 android:layout_marginTop="24dp"
                 android:text="Section 5 — Data" />
-
             <androidx.cardview.widget.CardView style="@style/DebugCard">
                 <LinearLayout style="@style/DebugCardContent">
                     <com.google.android.material.button.MaterialButton
@@ -169,6 +188,125 @@
                     <TextView
                         style="@style/DebugDescription"
                         android:text="Deletes all seeded mock data from Supabase for the current anonymous user ID so the demo can be restarted cleanly." />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Section 6: Dialog Previews -->
+            <TextView
+                style="@style/DebugSectionHeader"
+                android:layout_marginTop="24dp"
+                android:text="Section 6 — Dialog Previews" />
+
+            <androidx.cardview.widget.CardView style="@style/DebugCard">
+                <LinearLayout style="@style/DebugCardContent">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_morning"
+                        style="@style/DebugButton"
+                        android:text="Preview Morning Recap" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Opens the morning report popup with sample data (score 82, +7 XP). Nothing is written." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_streak_restored"
+                        style="@style/DebugButton"
+                        android:text="Preview Streak Restored" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Opens the streak-restored notice. Nothing is written." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_streak_lost"
+                        style="@style/DebugButton"
+                        android:text="Preview Streak Lost" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Opens the streak-broken notice. Nothing is written." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_streak_warning"
+                        style="@style/DebugButton"
+                        android:text="Preview Streak Warning" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Opens the streak-safe notice. Nothing is written." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_resume"
+                        style="@style/DebugButton"
+                        android:text="Preview Resume Dialog" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Opens the resume-routine dialog (step 2 of 3, away 25 min). Its buttons dismiss without effect." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_dump_sleep"
+                        style="@style/DebugButton"
+                        android:text="Dump Latest Sleep Session" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Logs the latest sleep session window plus one line per stage. Read-only — use NoctraLogs or logcat." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_dump_heartrate"
+                        style="@style/DebugButton"
+                        android:text="Dump Sleep Heart Rate" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Logs HR samples inside the latest sleep window, plus count and average. Read-only." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_resync_night"
+                        style="@style/DebugButton"
+                        android:text="Resync Last Night" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Forces a full sync of yesterday's session (idempotent upsert). Use for late-arriving data." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_backfill_now"
+                        style="@style/DebugButton"
+                        android:text="Run Backfill Now" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Runs the audit backfill worker immediately instead of waiting for 22:00. Same code path." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_sequencing"
+                        style="@style/DebugButton"
+                        android:text="Preview Arrange Screen" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Opens step-3 arrange with your active routine, Confirm hidden — look and reorder freely, nothing is saved." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Opens that activity flow standalone with writes disabled — finishing writes nothing, Back returns here." />
+                    <LinearLayout
+                        android:id="@+id/preview_activity_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 

@@ -25,7 +25,6 @@ class RoutineSequencingFragment : Fragment() {
 
     private val viewModel: OnboardingViewModel by navGraphViewModels(R.id.nav_graph)
     private lateinit var adapter: RoutineSequencingAdapter
-    private lateinit var touchHelper: ItemTouchHelper
     private var confirmText: CharSequence = "Confirm" // original button text from the layout
 
     override fun onCreateView(
@@ -40,19 +39,55 @@ class RoutineSequencingFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         confirmText = binding.btnConfirm.text
 
+        // Debug preview: look freely, save nothing. The active routine is
+        // loaded read-only and the confirm button is gone, so no write
+        // path is reachable. Reorders stay in ViewModel memory only and
+        // are discarded with the preview (see onDestroyView).
+        val previewMode = arguments?.getBoolean("previewMode") ?: false
+        if (previewMode) {
+            binding.btnConfirm.visibility = View.GONE
+        }
+
         setupRecyclerView()
         observeActivities()
         observeSaveState()
         setupButtons()
+
+        if (previewMode) {
+            val userId = com.noctra.app.utils.UserSession.getUserId(requireContext())
+            if (userId != null) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    viewModel.previewActiveRoutine(userId)
+                }
+            }
+            return
+        }
+
+        // Fresh-process resume: restore the saved draft unless edit mode
+        // preloaded the active routine (or state already exists)
+        if (!viewModel.isEditMode) {
+            val userId = com.noctra.app.utils.UserSession.getUserId(requireContext())
+            if (userId != null) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    viewModel.restoreDraftIfEmpty(userId)
+                }
+            }
+        }
+    }
+    // Single move path: the ViewModel emission re-submits the list and
+    // DiffUtil animates the move. Never notifyItemMoved manually here —
+    // double-handling (manual + diff) cancels the move out.
+    private fun moveItem(from: Int, to: Int) {
+        viewModel.reorderActivities(from, to)
     }
 
     private fun setupRecyclerView() {
-        // Session 5 (R1): long-press a row -> info dialog.
-        adapter = RoutineSequencingAdapter { activity, stepNumber ->
-            ActivityInfoDialogFragment.show(childFragmentManager, activity, stepNumber)
-        }
+        adapter = RoutineSequencingAdapter(
+            onMove = ::moveItem
+        )
 
-        // ItemTouchHelper for drag-to-reorder
+        // ItemTouchHelper for drag-to-reorder. Long-press anywhere on a
+        // card starts the drag; details open via the info button.
         val callback = object : ItemTouchHelper.SimpleCallback(
             ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0
         ) {
@@ -61,10 +96,7 @@ class RoutineSequencingFragment : Fragment() {
                 viewHolder: RecyclerView.ViewHolder,
                 target: RecyclerView.ViewHolder
             ): Boolean {
-                val from = viewHolder.adapterPosition
-                val to = target.adapterPosition
-                viewModel.reorderActivities(from, to)
-                adapter.notifyItemMoved(from, to)
+                moveItem(viewHolder.adapterPosition, target.adapterPosition)
                 return true
             }
 
@@ -72,9 +104,37 @@ class RoutineSequencingFragment : Fragment() {
                 // No swipe action
             }
 
-            // Session 5 (R1): drag ONLY from the drag handle. Long-press on
-            // the row is now reserved for the info dialog.
-            override fun isLongPressDragEnabled(): Boolean = false
+            // Clamp the drag so the card stays fully inside the list —
+            // it can never be dragged out and cropped by the edges
+            override fun onChildDraw(
+                c: android.graphics.Canvas,
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                dX: Float,
+                dY: Float,
+                actionState: Int,
+                isCurrentlyActive: Boolean
+            ) {
+                var finalDx = dX
+                var finalDy = dY
+                if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
+                    val itemView = viewHolder.itemView
+                    val marginPx = 8f * recyclerView.resources.displayMetrics.density
+                    finalDx = 0f
+                    finalDy = dY.coerceIn(
+                        -itemView.top.toFloat() + marginPx,
+                        (recyclerView.height - itemView.bottom).toFloat() - marginPx
+                    )
+                }
+                super.onChildDraw(
+                    c, recyclerView, viewHolder,
+                    finalDx, finalDy, actionState, isCurrentlyActive
+                )
+            }
+
+            // Both drag paths live: handle touch-down AND row long-press
+            // (no info dialog on this screen to compete with) — so the
+            // default long-press-drag stays enabled: no override.
 
             // Visual feedback while dragging
             override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
@@ -97,11 +157,7 @@ class RoutineSequencingFragment : Fragment() {
             }
         }
 
-        touchHelper = ItemTouchHelper(callback)
-        touchHelper.attachToRecyclerView(binding.rvSequence)
-
-        // Give adapter a reference so drag handle works
-        adapter.touchHelper = touchHelper
+        ItemTouchHelper(callback).attachToRecyclerView(binding.rvSequence)
 
         binding.rvSequence.layoutManager = LinearLayoutManager(requireContext())
         binding.rvSequence.adapter = adapter
@@ -110,8 +166,17 @@ class RoutineSequencingFragment : Fragment() {
     private fun observeActivities() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.orderedActivities.collect { activities ->
-                // submitList needs a new list instance to detect changes
-                adapter.submitList(activities.toList())
+                // submitList needs a new list instance to detect changes.
+                // DiffUtil moves don't rebind holders, so patch just the
+                // rank numbers on commit — a full rebind would kill an
+                // in-progress drag and force-release the card.
+                adapter.submitList(activities.toList()) {
+                    for (i in 0 until adapter.itemCount) {
+                        val holder = binding.rvSequence
+                            .findViewHolderForAdapterPosition(i) as? RoutineSequencingAdapter.ViewHolder
+                        holder?.binding?.tvStepNumber?.text = "${i + 1}"
+                    }
+                }
 
                 val total = viewModel.getTotalDurationMinutes()
                 binding.tvTotalDuration.text = "$total minutes"
@@ -164,8 +229,8 @@ class RoutineSequencingFragment : Fragment() {
             val userId = UserSession.getUserId(requireContext())
 
             if (viewModel.isEditMode) {
-                // FIX: edit mode used to skip saving and continue into the
-                // Health Connect onboarding screens. Now it saves and returns.
+                // Edit mode saves and returns (never continues into the
+                // Health Connect onboarding screens).
                 if (userId == null) {
                     Toast.makeText(requireContext(), "Please log in again.", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
@@ -174,14 +239,12 @@ class RoutineSequencingFragment : Fragment() {
             } else {
                 if (userId != null) {
                     viewModel.updateStep(userId, 3)
+                    viewModel.saveDraft(userId)
                 }
                 findNavController().navigate(R.id.action_routineSequencing_to_healthEducation)
             }
         }
 
-        binding.btnBack.setOnClickListener {
-            findNavController().popBackStack()
-        }
     }
 
     /**
@@ -198,6 +261,11 @@ class RoutineSequencingFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        // Preview mutated only ViewModel memory (reorders); discard it so
+        // the next real flow loads fresh instead of preview leftovers.
+        if (arguments?.getBoolean("previewMode") == true) {
+            viewModel.resetEditSession()
+        }
         super.onDestroyView()
         _binding = null
     }

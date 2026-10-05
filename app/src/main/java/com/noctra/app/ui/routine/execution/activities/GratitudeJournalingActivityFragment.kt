@@ -70,10 +70,18 @@ class GratitudeJournalingActivityFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         showPreCountdownPanel()
-        setupKeyboardInsets()
         setupListeners()
         observeVm()
         startPreCountdown()
+
+        // The panel scrolls, so it steals vertical swipes from the textbox.
+        // While touching the textbox, it keeps scroll rights for itself.
+        binding.etJournalEntry.setOnTouchListener { v, event ->
+            if (v.canScrollVertically(1) || v.canScrollVertically(-1)) {
+                v.parent.requestDisallowInterceptTouchEvent(true)
+            }
+            false
+        }
     }
 
     private fun setupListeners() {
@@ -82,37 +90,9 @@ class GratitudeJournalingActivityFragment : Fragment() {
         }
     }
 
-    /**
-     * Session 5 (R3): keep the journal box above the keyboard.
-     * On Android 15+ (edge-to-edge), adjustResize no longer shrinks the
-     * screen, so the keyboard covered the journal. This pushes content up
-     * by the covered amount and hides Shleepy while typing.
-     */
-    private fun setupKeyboardInsets() {
-        val panel = binding.journalPanel
-        val baseBottomPadding = panel.paddingBottom
-
-        ViewCompat.setOnApplyWindowInsetsListener(panel) { v, insets ->
-            val imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-            val keyboardOpen = insets.isVisible(WindowInsetsCompat.Type.ime())
-
-            // If the system already resized the screen, this gap = keyboard
-            // height and extra = 0 (no double padding on older Android).
-            val location = IntArray(2)
-            v.getLocationInWindow(location)
-            val gapBelowPanel = (v.rootView.height - (location[1] + v.height)).coerceAtLeast(0)
-            val extra = (imeBottom - gapBelowPanel).coerceAtLeast(0)
-
-            v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, baseBottomPadding + extra)
-
-            val headerVisibility = if (keyboardOpen) View.GONE else View.VISIBLE
-            binding.ivShleepyLogo.visibility = headerVisibility
-            binding.ivShleepyBody.visibility = headerVisibility
-
-            insets
-        }
-        ViewCompat.requestApplyInsets(panel)
-    }
+    // No manual inset padding: pan + the scroll container is the whole
+    // strategy (login pattern). Extra padding would lift content over
+    // nothing and fight the pan.
 
     private fun showPreCountdownPanel() {
         binding.preCountdownPanel.visibility = View.VISIBLE

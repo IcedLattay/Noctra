@@ -1,6 +1,8 @@
 package com.noctra.app.ui.companion
 
+import android.app.Application
 import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.noctra.app.data.model.ShopItem
@@ -14,6 +16,7 @@ import com.noctra.app.domain.usecase.CompanionEvolutionUseCase
 import com.noctra.app.domain.usecase.DataSeedingUseCase
 import com.noctra.app.domain.usecase.ReconciliationAuditUseCase
 import com.noctra.app.data.model.RewardLedger
+import com.noctra.app.utils.NetworkObserver
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -25,20 +28,23 @@ import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 
 class CompanionViewModel(
-    private val userProfileRepository: UserProfileRepository = UserProfileRepository(),
-    private val rewardRepository: RewardLedgerRepository = RewardLedgerRepository(),
-    private val sleepRecordRepository: SleepRecordRepository = SleepRecordRepository(),
-    private val shopRepository: ShopRepository = ShopRepository(),
-    private val inventoryRepository: InventoryRepository = InventoryRepository(),
-    private val evolutionUseCase: CompanionEvolutionUseCase = CompanionEvolutionUseCase(),
-    private val seedingUseCase: DataSeedingUseCase = DataSeedingUseCase(),
-    private val auditUseCase: ReconciliationAuditUseCase = ReconciliationAuditUseCase(),
-    private val sleepSyncManager: SleepSyncManager = SleepSyncManager()
-) : ViewModel() {
+    application: Application
+) : AndroidViewModel(application) {
 
     companion object {
         private const val TAG = "CompanionVM"
     }
+
+    private val networkObserver = NetworkObserver(application)
+    private val userProfileRepository = UserProfileRepository()
+    private val rewardRepository = RewardLedgerRepository()
+    private val sleepRecordRepository = SleepRecordRepository()
+    private val shopRepository = ShopRepository()
+    private val inventoryRepository = InventoryRepository()
+    private val evolutionUseCase = CompanionEvolutionUseCase()
+    private val seedingUseCase = DataSeedingUseCase()
+    private val auditUseCase = ReconciliationAuditUseCase()
+    private val sleepSyncManager = SleepSyncManager()
 
     data class ShopItemUiModel(
         val item: ShopItem,
@@ -49,11 +55,13 @@ class CompanionViewModel(
 
     data class CompanionUiState(
         val isLoading: Boolean = false,
+        val isOffline: Boolean = false,
+        val isAnimationLoaded: Boolean = false,
         val displayName: String = "User",
         val evolutionState: CompanionEvolutionUseCase.EvolutionState? = null,
         val tokenBalance: Int = 0,
         val lastSleepScore: Int? = null,
-        val equippedItems: Map<String, ShopItem> = emptyMap(),
+        val equippedOutfit: ShopItem? = null,
         val shopItems: List<ShopItemUiModel> = emptyList(),
         val error: String? = null
     )
@@ -64,22 +72,51 @@ class CompanionViewModel(
     private val _showMorningPopup = MutableSharedFlow<Pair<Int, Int>>()
     val showMorningPopup: SharedFlow<Pair<Int, Int>> = _showMorningPopup.asSharedFlow()
 
-    private val _showEvolutionPopup = MutableSharedFlow<CompanionEvolutionUseCase.EvolutionState>()
-    val showEvolutionPopup: SharedFlow<CompanionEvolutionUseCase.EvolutionState> = _showEvolutionPopup.asSharedFlow()
+    private val _showEvolutionPopup = MutableSharedFlow<EvolutionEvent>()
+    val showEvolutionPopup: SharedFlow<EvolutionEvent> = _showEvolutionPopup.asSharedFlow()
 
     private val _showNoticePopup = MutableSharedFlow<CompanionNotice>()
     val showNoticePopup: SharedFlow<CompanionNotice> = _showNoticePopup.asSharedFlow()
 
     enum class CompanionNotice { RESTORED, LOST, WARNING }
 
+    data class EvolutionEvent(
+        val newStage: CompanionEvolutionUseCase.EvolutionState,
+        val oldLevel: Int
+    )
+
     private var previousStageLevel: Int? = null
-    
+
     // session flag to prevent dialog loop
     private var noticeHandledThisSession = false
 
+    // Once-per-process guard: onViewCreated + onResume both trigger
+    // loadData on cold open, and the prefs flag is only written by the
+    // fragment collector AFTER emission — so both calls pass the gate
+    // and the morning popup fires twice. This kills the duplicate.
+    private var morningPopupEmittedForDate: String? = null
+
+    fun retry(userId: String) {
+        _uiState.update { it.copy(isOffline = false, isLoading = true) }
+        loadData(userId, null)
+    }
+
+    // Clears per-user UI state so the next login never flashes the
+    // previous account's data while fresh data loads
+    fun onLogout() {
+        _uiState.value = CompanionUiState()
+        previousStageLevel = null
+        noticeHandledThisSession = false
+        morningPopupEmittedForDate = null
+    }
+
     fun loadData(userId: String, lastShownSleepDate: String?) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            if (!networkObserver.checkNow()) {
+                _uiState.update { it.copy(isLoading = false, isOffline = true) }
+                return@launch
+            }
+            _uiState.update { it.copy(isLoading = true, isOffline = false) }
             try {
                 // 0. Inline provisional sync of last night (first-open-of-the-day
                 //    trigger). Gated on the recap flag so later resumes don't
@@ -116,8 +153,9 @@ class CompanionViewModel(
                 userProfileRepository.getOrCreateProfile(userId)
                 refreshData(userId, lastShownSleepDate, triggerMorningPopup = true)
             } catch (e: Exception) {
-                Log.e("CompanionVM", "Load failed", e)
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                Log.e(TAG, "Load failed", e)
+                val isOffline = !networkObserver.checkNow()
+                _uiState.update { it.copy(isLoading = false, isOffline = isOffline, error = if (!isOffline) e.message else null) }
             }
         }
     }
@@ -146,7 +184,7 @@ class CompanionViewModel(
             
             // 1. Get equipment & Shop items
             val inventory = inventoryRepository.getUserInventory(userId)
-            val equippedItemIds = inventory.filter { it.isEquipped }.map { it.itemId }.toSet()
+            val equippedItemId = profile.outfitEquipped
             val allShopItems = shopRepository.getAllShopItems()
             val balance = ledger?.tokenBalance ?: 0
 
@@ -156,22 +194,21 @@ class CompanionViewModel(
                 ShopItemUiModel(
                     item = item,
                     isOwned = inventoryItemIds.contains(item.itemId),
-                    isEquipped = equippedItemIds.contains(item.itemId),
+                    isEquipped = item.itemId == equippedItemId,
                     canAfford = balance >= item.tokenCost
                 )
             }
 
-            val equippedMap = allShopItems.filter { equippedItemIds.contains(it.itemId) }
-                .associateBy { it.category }
-            
-            Log.d("CompanionVM", "Equipped Items: ${equippedMap.keys}")
+            val equippedOutfit = allShopItems.find { it.itemId == equippedItemId }
+
+            Log.d("CompanionVM", "Equipped outfit: ${equippedOutfit?.label}")
 
             if (ledger != null) {
                 val evolution = evolutionUseCase.execute(ledger.totalXp)
                 
                 // 2. Milestone check
                 if (previousStageLevel != null && evolution.stageLevel > previousStageLevel!!) {
-                    _showEvolutionPopup.emit(evolution)
+                    _showEvolutionPopup.emit(EvolutionEvent(evolution, previousStageLevel!!))
                 }
                 previousStageLevel = evolution.stageLevel
 
@@ -183,7 +220,7 @@ class CompanionViewModel(
                         evolutionState = evolution,
                         tokenBalance = ledger.tokenBalance,
                         lastSleepScore = latestSleep?.compositeScore,
-                        equippedItems = equippedMap,
+                        equippedOutfit = equippedOutfit,
                         shopItems = uiModels,
                         error = null
                     )
@@ -197,15 +234,18 @@ class CompanionViewModel(
                     val recapSessionDate = java.time.LocalDate.now().minusDays(1).toString()
                     if (latestSleep != null &&
                         latestSleep.sessionDate == recapSessionDate &&
-                        lastShownSleepDate != recapSessionDate
+                        lastShownSleepDate != recapSessionDate &&
+                        morningPopupEmittedForDate != recapSessionDate
                     ) {
+                        morningPopupEmittedForDate = recapSessionDate
                         _showMorningPopup.emit(Pair(latestSleep.compositeScore ?: 0, 7))
                     }
                 }
             }
         } catch (e: Exception) {
-            Log.e("CompanionVM", "Refresh failed", e)
-            _uiState.update { it.copy(isLoading = false, error = e.message) }
+            Log.e(TAG, "Refresh failed", e)
+            val isOffline = !networkObserver.checkNow()
+            _uiState.update { it.copy(isLoading = false, isOffline = isOffline, error = if (!isOffline) e.message else null) }
         }
     }
 
@@ -221,18 +261,14 @@ class CompanionViewModel(
                         val updatedItems = currentState.shopItems.map { model ->
                             if (model.item.itemId == item.itemId) {
                                 model.copy(isOwned = true, isEquipped = true)
-                            } else if (model.item.category == item.category) {
-                                model.copy(isEquipped = false)
                             } else {
-                                model
+                                model.copy(isEquipped = false)
                             }
                         }
                         currentState.copy(
                             tokenBalance = newBalance,
                             shopItems = updatedItems,
-                            equippedItems = currentState.equippedItems.toMutableMap().apply {
-                                put(item.category, item)
-                            }
+                            equippedOutfit = item
                         )
                     }
 
@@ -243,7 +279,7 @@ class CompanionViewModel(
                     )
                     rewardRepository.updateRewardLedger(updatedLedger)
                     inventoryRepository.purchaseItem(userId, item.itemId)
-                    performEquip(userId, item)
+                    inventoryRepository.setEquippedOutfit(userId, item.itemId)
                     
                     // Final background refresh
                     refreshData(userId, null, triggerMorningPopup = false)
@@ -260,48 +296,29 @@ class CompanionViewModel(
         
         viewModelScope.launch {
             try {
-                // Optimistic UI update (Toggle)
+                // Optimistic UI update
                 _uiState.update { currentState ->
                     val updatedItems = currentState.shopItems.map { model ->
                         if (model.item.itemId == item.itemId) {
-                            model.copy(isEquipped = !isCurrentlyEquipped)
-                        } else if (model.item.category == item.category) {
-                            model.copy(isEquipped = false)
+                            model.copy(isEquipped = true)
                         } else {
-                            model
+                            model.copy(isEquipped = false)
                         }
-                    }
-                    
-                    val newEquippedMap = currentState.equippedItems.toMutableMap()
-                    if (isCurrentlyEquipped) {
-                        newEquippedMap.remove(item.category)
-                    } else {
-                        newEquippedMap[item.category] = item
                     }
 
                     currentState.copy(
                         shopItems = updatedItems,
-                        equippedItems = newEquippedMap
+                        equippedOutfit = item
                     )
                 }
                 
-                if (isCurrentlyEquipped) {
-                    inventoryRepository.unequipItem(userId, item.itemId)
-                } else {
-                    performEquip(userId, item)
-                }
+                inventoryRepository.setEquippedOutfit(userId, item.itemId)
                 refreshData(userId, null, triggerMorningPopup = false)
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = "Equip failed: ${e.message}") }
                 refreshData(userId, null, triggerMorningPopup = false)
             }
         }
-    }
-
-    private suspend fun performEquip(userId: String, item: ShopItem) {
-        val allItems = shopRepository.getAllShopItems()
-        val itemIdsInCategory = allItems.filter { it.category == item.category }.map { it.itemId }
-        inventoryRepository.equipItem(userId, item.itemId, itemIdsInCategory)
     }
 
     fun seedDemoData(userId: String) {

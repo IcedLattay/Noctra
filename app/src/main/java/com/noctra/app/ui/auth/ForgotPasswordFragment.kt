@@ -53,7 +53,8 @@ class ForgotPasswordFragment : Fragment(R.layout.fragment_forgot_password) {
             viewModel.authState.collect { state ->
                 when (state) {
                     is AuthViewModel.AuthState.Loading -> {
-                        binding.btnSendReset.text = "Sending..."
+                        binding.btnSendReset.text = ""
+                        binding.pbSendReset.visibility = View.VISIBLE
                         binding.btnSendReset.isEnabled = false
                     }
                     is AuthViewModel.AuthState.PasswordResetSent -> {
@@ -61,6 +62,7 @@ class ForgotPasswordFragment : Fragment(R.layout.fragment_forgot_password) {
                     }
                     is AuthViewModel.AuthState.Error -> {
                         binding.btnSendReset.text = "Send Reset Link"
+                        binding.pbSendReset.visibility = View.GONE
                         binding.btnSendReset.isEnabled = true
                         Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
                         viewModel.resetState()

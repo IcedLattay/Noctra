@@ -127,6 +127,28 @@ class RoutineHomeFragment : Fragment() {
     }
 
     private fun renderState(state: RoutineHomeViewModel.RoutineHomeState) {
+        val noInternetView = view?.findViewById<View>(R.id.noInternetView)
+
+        if (state is RoutineHomeViewModel.RoutineHomeState.Offline) {
+            noInternetView?.visibility = View.VISIBLE
+            tvTitle.visibility = View.GONE
+            tvSubtitle.visibility = View.GONE
+            view?.findViewById<View>(R.id.ll_streak_badge)?.visibility = View.GONE
+            layoutCompleted.visibility = View.GONE
+            layoutNoRoutine.visibility = View.GONE
+            btnBeginRoutine.visibility = View.GONE
+            btnEditRoutine.visibility = View.GONE
+            rvActivityCards.visibility = View.GONE
+            tvWindowHint.visibility = View.GONE
+            setupRetryButton()
+            return
+        } else {
+            noInternetView?.visibility = View.GONE
+            tvTitle.visibility = View.VISIBLE
+            tvSubtitle.visibility = View.VISIBLE
+            view?.findViewById<View>(R.id.ll_streak_badge)?.visibility = View.VISIBLE
+        }
+
         // Reset all conditional UI first.
         layoutCompleted.visibility = View.GONE
         layoutNoRoutine.visibility = View.GONE
@@ -220,10 +242,28 @@ class RoutineHomeFragment : Fragment() {
             is RoutineHomeViewModel.RoutineHomeState.Error -> {
                 tvSubtitle.text = state.message
             }
+
+            is RoutineHomeViewModel.RoutineHomeState.Offline -> {
+                // Already handled above
+            }
         }
     }
 
     // ─── Navigation ──────────────────────────────────────────────────────────
+
+    private fun setupRetryButton() {
+        val noInternetView = view?.findViewById<View>(R.id.noInternetView) ?: return
+        val btnRetry = noInternetView.findViewById<android.widget.ImageButton>(R.id.btnRetry)
+        val progressRetry = noInternetView.findViewById<android.widget.ProgressBar>(R.id.progressRetry)
+        val tvRetry = noInternetView.findViewById<TextView>(R.id.tvRetry)
+
+        btnRetry.setOnClickListener {
+            btnRetry.visibility = View.GONE
+            progressRetry.visibility = View.VISIBLE
+            tvRetry.text = "retrying..."
+            homeViewModel.retry()
+        }
+    }
 
     /**
      * Navigates into the edit flow. Reuses ActivityLibraryFragment +

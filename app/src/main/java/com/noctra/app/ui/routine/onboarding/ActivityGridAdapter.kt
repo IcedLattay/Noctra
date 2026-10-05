@@ -21,7 +21,7 @@ import com.noctra.app.utils.ActivityIllustrations
  */
 class ActivityGridAdapter(
     private val onActivityClick: (Activity) -> Unit,
-    private val onActivityLongPress: ((Activity) -> Unit)? = null
+    private val onInfoClick: (Activity) -> Unit = {}
 ) : ListAdapter<Activity, ActivityGridAdapter.ViewHolder>(DIFF) {
 
     private var selectedIds: Set<String> = emptySet()
@@ -51,15 +51,15 @@ class ActivityGridAdapter(
 
             binding.ivCheckSelected.visibility = if (isSelected) View.VISIBLE else View.GONE
 
-            // Dim unselectable cards when 3 already chosen
+            // Dim unselectable cards when 3 already chosen, and kill the
+            // ripple so they don't look pressable
             val maxReached = selectedIds.size >= 3
-            binding.root.alpha = if (maxReached && !isSelected) 0.5f else 1.0f
+            val enabled = !maxReached || isSelected
+            binding.root.alpha = if (enabled) 1.0f else 0.5f
+            binding.root.isClickable = enabled
 
             binding.root.setOnClickListener { onActivityClick(activity) }
-            binding.root.setOnLongClickListener {
-                onActivityLongPress?.invoke(activity)
-                onActivityLongPress != null
-            }
+            binding.btnInfo.setOnClickListener { onInfoClick(activity) }
         }
     }
 

@@ -45,6 +45,13 @@ class EditDisplayNameDialog : DialogFragment() {
             .create()
 
         dialog.setOnShowListener {
+            // Rounded like the other popups + grey Cancel text
+            dialog.window?.setBackgroundDrawableResource(R.drawable.bg_dialog_rounded)
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(
+                androidx.core.content.ContextCompat.getColor(
+                    requireContext(), R.color.noctra_text_muted
+                )
+            )
             val saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
 
             // Initially disable Save (current name = pre-filled value, so no change yet)

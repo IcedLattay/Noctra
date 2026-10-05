@@ -1,9 +1,12 @@
 package com.noctra.app.ui.profile
 
+import android.app.Application
 import android.content.Context
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.noctra.app.data.repository.UserProfileRepository
+import com.noctra.app.utils.NetworkObserver
 import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,20 +16,28 @@ import com.noctra.app.R
 
 import com.noctra.app.data.repository.RewardLedgerRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
+import com.noctra.app.data.repository.ShopRepository
 import com.noctra.app.domain.usecase.CompanionEvolutionUseCase
 
-class UserProfileViewModel : ViewModel() {
+class UserProfileViewModel(application: Application) : AndroidViewModel(application) {
 
     private val userProfileRepository = UserProfileRepository()
     private val rewardLedgerRepository = RewardLedgerRepository()
     private val routineSessionRepository = RoutineSessionRepository()
+    private val shopRepository = ShopRepository()
     private val evolutionUseCase = CompanionEvolutionUseCase()
+    private val networkObserver = NetworkObserver(application)
 
     private val _profileData = MutableStateFlow(ProfileUiState())
     val profileData = _profileData.asStateFlow()
 
     fun loadProfile(context: Context) {
         viewModelScope.launch {
+            _profileData.value = _profileData.value.copy(isLoading = true, isOffline = false)
+            if (!networkObserver.checkNow()) {
+                _profileData.value = _profileData.value.copy(isOffline = true, isLoading = false)
+                return@launch
+            }
             try {
                 val userId = UserSession.getUserId(context) ?: return@launch
                 val profile = userProfileRepository.getOrCreateProfile(userId)
@@ -39,6 +50,16 @@ class UserProfileViewModel : ViewModel() {
 
                 val evolution = evolutionUseCase.execute(totalXp)
                 val stageAvatarRes = getAvatarResForStage(evolution.stageLevel)
+
+                // Resolve the equipped outfit asset for the profile avatar
+                // (always rendered with the charged-stage animation, frozen).
+                val outfitAsset = try {
+                    shopRepository.getAllShopItems()
+                        .find { it.itemId == profile.outfitEquipped }
+                        ?.itemAsset ?: "default"
+                } catch (e: Exception) {
+                    "default"
+                }
                 
                 val nextStageXp = when (evolution.stageLevel) {
                     1 -> 1500
@@ -64,11 +85,17 @@ class UserProfileViewModel : ViewModel() {
                     stageName = evolution.stageName,
                     xpToNextStageMessage = xpMessage,
                     stageAvatarRes = stageAvatarRes,
-                    mainAvatarRes = R.drawable.ic_shleepy_avatar // Detailed artwork
+                    outfitAsset = outfitAsset,
+                    isLoading = false,
+                    hasLoaded = true
                 )
             } catch (e: Exception) {
-                // Log and keep default empty state
-                e.printStackTrace()
+                if (!networkObserver.checkNow()) {
+                    _profileData.value = _profileData.value.copy(isOffline = true, isLoading = false)
+                } else {
+                    e.printStackTrace()
+                    _profileData.value = _profileData.value.copy(isLoading = false)
+                }
             }
         }
     }
@@ -97,6 +124,11 @@ class UserProfileViewModel : ViewModel() {
             }
         }
     }
+
+    fun retry(context: Context) {
+        _profileData.value = _profileData.value.copy(isOffline = false)
+        loadProfile(context)
+    }
 }
 
 data class ProfileUiState(
@@ -109,5 +141,8 @@ data class ProfileUiState(
     val stageName: String = "The Depleted",
     val xpToNextStageMessage: String = "",
     @DrawableRes val stageAvatarRes: Int = R.drawable.ic_shleepy_stage_1,
-    @DrawableRes val mainAvatarRes: Int = R.drawable.ic_shleepy_avatar
+    val outfitAsset: String = "default",
+    val isOffline: Boolean = false,
+    val isLoading: Boolean = true,
+    val hasLoaded: Boolean = false
 )

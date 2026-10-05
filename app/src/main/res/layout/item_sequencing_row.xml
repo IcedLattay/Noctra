@@ -1,100 +1,132 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    "Arrange Your Routine" row — Session 5 (R1).
-    [number] [illustration] name/duration ........ [drag handle]
-    Long-press row = info dialog. Drag ONLY from the handle.
+    "Arrange Your Routine" row — hybrid (merge/routine-cards).
+    [number] [illustration] name/duration ... [chevrons].
+    Long-press row = drag. Tap chevrons = exact move.
 -->
-<androidx.cardview.widget.CardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="10dp"
-    android:clickable="true"
-    android:focusable="true"
-    android:foreground="?attr/selectableItemBackground"
-    app:cardBackgroundColor="@color/white"
-    app:cardCornerRadius="18dp"
-    app:cardElevation="1dp">
+    android:clipChildren="false"
+    android:clipToPadding="false">
 
-    <LinearLayout
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingVertical="10dp"
-        android:paddingStart="14dp"
-        android:paddingEnd="8dp">
+        android:layout_marginTop="12dp"
+        android:layout_marginStart="22dp"
+        android:layout_marginEnd="24dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="0dp">
 
-        <!-- Step number badge -->
-        <TextView
-            android:id="@+id/tv_step_number"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:background="@drawable/bg_step_number_circle_2"
-            android:fontFamily="@font/poppinsbold"
-            android:gravity="center"
-            android:textColor="@color/noctra_purple_light"
-            android:textSize="12sp"
-            tools:text="1" />
-
-        <!-- Illustration thumbnail -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:layout_marginStart="12dp"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="0dp">
-
-            <ImageView
-                android:id="@+id/iv_activity_illustration"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@drawable/bg_illus_placeholder"
-                android:contentDescription="@null"
-                android:scaleType="centerCrop"
-                tools:src="@drawable/illus_breathing" />
-        </androidx.cardview.widget.CardView>
-
-        <!-- Name + duration -->
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingVertical="10dp"
+            android:paddingStart="14dp"
+            android:paddingEnd="8dp">
 
-            <TextView
-                android:id="@+id/tv_activity_label"
+            <!-- Illustration thumbnail -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp">
+
+                <ImageView
+                    android:id="@+id/iv_activity_illustration"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_illus_placeholder"
+                    android:contentDescription="@null"
+                    android:scaleType="centerCrop"
+                    tools:src="@drawable/illus_breathing" />
+            </androidx.cardview.widget.CardView>
+
+            <!-- Name + duration -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_activity_label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/poppinsbold"
+                    android:maxLines="2"
+                    android:textColor="@color/noctra_purple_dark"
+                    android:textSize="14sp"
+                    tools:text="Slow-Paced Breathing" />
+
+                <TextView
+                    android:id="@+id/tv_activity_duration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:fontFamily="@font/poppinsregular"
+                    android:textColor="#7B6FA0"
+                    android:textSize="12sp"
+                    tools:text="5 minutes" />
+            </LinearLayout>
+
+            <!-- Chevron steppers — tap to move one slot (exact moves) -->
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/poppinsbold"
-                android:maxLines="2"
-                android:ellipsize="end"
-                android:textColor="@color/noctra_purple_dark"
-                android:textSize="14sp"
-                tools:text="Slow-Paced Breathing" />
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tv_activity_duration"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:fontFamily="@font/poppinsregular"
-                android:textColor="#7B6FA0"
-                android:textSize="12sp"
-                tools:text="5 minutes" />
+                <ImageView
+                    android:id="@+id/btn_move_up"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Move up"
+                    android:padding="6dp"
+                    android:rotation="270"
+                    android:src="@drawable/ic_chevron_right" />
+
+                <ImageView
+                    android:id="@+id/btn_move_down"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Move down"
+                    android:padding="6dp"
+                    android:rotation="90"
+                    android:src="@drawable/ic_chevron_right" />
+
+            </LinearLayout>
         </LinearLayout>
 
-        <!-- Drag handle (bigger touch target: 48dp) -->
-        <ImageView
-            android:id="@+id/iv_drag_handle"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:contentDescription="Drag to reorder"
-            android:padding="12dp"
-            android:src="@drawable/ic_drag_handle" />
-    </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
-</androidx.cardview.widget.CardView>
+    <!-- Rank badge — plain circle + number, floating above the card corner.
+         Inset from the left so the card stays flush with other elements. -->
+    <TextView
+        android:id="@+id/tv_step_number"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="10dp"
+        android:background="@drawable/bg_rank_circle"
+        android:fontFamily="@font/poppinsbold"
+        android:gravity="center"
+        android:textColor="@color/white"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        tools:text="1" />
+
+</FrameLayout>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Legend swatch for the nightly score dot — ANALYTICS_SPEC.md §6 item 6. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/analytics_trend_dot" />
+</shape>

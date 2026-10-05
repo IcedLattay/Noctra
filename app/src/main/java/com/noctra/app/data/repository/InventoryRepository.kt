@@ -9,16 +9,25 @@ class InventoryRepository {
     private val client = SupabaseClient.client
 
     companion object {
+        private var cachedUserId: String? = null
         private var cachedInventory: List<UserInventoryItem>? = null
+
+        fun clearCache() {
+            cachedUserId = null
+            cachedInventory = null
+        }
     }
 
     suspend fun getUserInventory(userId: String): List<UserInventoryItem> {
-        cachedInventory?.let { return it }
+        if (cachedUserId == userId) {
+            cachedInventory?.let { return it }
+        }
 
         return try {
             val inventory = client.from("user_inventory")
                 .select { filter { eq("user_id", userId) } }
                 .decodeList<UserInventoryItem>()
+            cachedUserId = userId
             cachedInventory = inventory
             inventory
         } catch (e: Exception) {
@@ -31,45 +40,20 @@ class InventoryRepository {
             id = java.util.UUID.randomUUID().toString(),
             userId = userId,
             itemId = itemId,
-            purchasedAt = OffsetDateTime.now().toString(),
-            isEquipped = false
+            purchasedAt = OffsetDateTime.now().toString()
         )
         client.from("user_inventory").insert(newItem)
-        cachedInventory = null // Invalidate cache
+        cachedInventory = null
     }
 
-    suspend fun equipItem(userId: String, itemId: String, itemIdsInCategory: List<String>) {
-        // 1. Unequip all items in this category for this user
-        client.from("user_inventory").update({
-            set("is_equipped", false)
+    /**
+     * Set the equipped outfit on user_profiles.outfit_equipped.
+     */
+    suspend fun setEquippedOutfit(userId: String, itemId: String) {
+        client.from("user_profiles").update({
+            set("outfit_equipped", itemId)
         }) {
-            filter {
-                eq("user_id", userId)
-                isIn("item_id", itemIdsInCategory)
-            }
+            filter { eq("user_id", userId) }
         }
-
-        // 2. Equip the target item
-        client.from("user_inventory").update({
-            set("is_equipped", true)
-        }) {
-            filter {
-                eq("user_id", userId)
-                eq("item_id", itemId)
-            }
-        }
-        cachedInventory = null // Invalidate cache
-    }
-
-    suspend fun unequipItem(userId: String, itemId: String) {
-        client.from("user_inventory").update({
-            set("is_equipped", false)
-        }) {
-            filter {
-                eq("user_id", userId)
-                eq("item_id", itemId)
-            }
-        }
-        cachedInventory = null // Invalidate cache
     }
 }

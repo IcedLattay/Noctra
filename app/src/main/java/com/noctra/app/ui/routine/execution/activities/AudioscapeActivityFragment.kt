@@ -46,8 +46,8 @@ class AudioscapeActivityFragment : Fragment() {
     private var mediaPlayer: MediaPlayer? = null
     private var preCountdownTimer: CountDownTimer? = null
 
-    /** Resolved drawable IDs for the nature slideshow; empty for non-Mindfulness. */
-    private var natureSceneryResIds: List<Int> = emptyList()
+    /** Preloaded downscaled scenery bitmaps; empty for non-Mindfulness. */
+    private var natureSceneryBitmaps: List<android.graphics.Bitmap> = emptyList()
     private var slideshowJob: Job? = null
 
     companion object {
@@ -116,9 +116,9 @@ class AudioscapeActivityFragment : Fragment() {
         val showWaveform = WAVEFORM_LABELS.contains(label)
 
         if (isMindfulness) {
-            natureSceneryResIds = resolveNatureSceneryResIds()
-            if (natureSceneryResIds.isNotEmpty()) {
-                binding.imgNatureScenery.setImageResource(natureSceneryResIds.first())
+            natureSceneryBitmaps = loadSceneryBitmaps()
+            if (natureSceneryBitmaps.isNotEmpty()) {
+                binding.imgNatureScenery.setImageBitmap(natureSceneryBitmaps.first())
                 binding.imgNatureScenery.visibility = View.VISIBLE
                 binding.imgShleepyBodyActive.visibility = View.GONE
             } else {
@@ -135,41 +135,63 @@ class AudioscapeActivityFragment : Fragment() {
         binding.waveformView.visibility = if (showWaveform) View.VISIBLE else View.GONE
     }
 
-    /** Collects bg_nature_scenery_1..8, skipping any that don't exist. */
-    private fun resolveNatureSceneryResIds(): List<Int> {
+    /**
+     * Decodes bg_nature_scenery_1..8 once, downscaled to the display size.
+     * Full-res files (2.5–6MB) decoded on every switch blew the heap after
+     * a few pictures (blank frame, then OOM) — this keeps one small set.
+     */
+    private fun loadSceneryBitmaps(maxSidePx: Int = 1024): List<android.graphics.Bitmap> {
         val pkg = requireContext().packageName
         return (1..NATURE_SCENERY_COUNT).mapNotNull { i ->
             val id = resources.getIdentifier("$NATURE_SCENERY_PREFIX$i", "drawable", pkg)
-            if (id != 0) id else null
+            if (id == 0) return@mapNotNull null
+            decodeSampled(id, maxSidePx)
+        }
+    }
+
+    private fun decodeSampled(resId: Int, maxSidePx: Int): android.graphics.Bitmap? {
+        return try {
+            val bounds = android.graphics.BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            android.graphics.BitmapFactory.decodeResource(resources, resId, bounds)
+            var sample = 1
+            while (bounds.outWidth / sample > maxSidePx || bounds.outHeight / sample > maxSidePx) {
+                sample *= 2
+            }
+            val opts = android.graphics.BitmapFactory.Options().apply { inSampleSize = sample }
+            android.graphics.BitmapFactory.decodeResource(resources, resId, opts)
+        } catch (e: Exception) {
+            null
         }
     }
 
     /**
-     * Crossfades to the next scenery image every SLIDESHOW_INTERVAL_MS.
+     * Crossfades to the next scenery bitmap every SLIDESHOW_INTERVAL_MS.
      * No-op unless there are at least 2 images to cycle between.
      */
     private fun startNatureSlideshow() {
-        if (natureSceneryResIds.size < 2) return
+        if (natureSceneryBitmaps.size < 2) return
         slideshowJob?.cancel()
         slideshowJob = viewLifecycleOwner.lifecycleScope.launch {
             var index = 0
             while (true) {
                 delay(SLIDESHOW_INTERVAL_MS)
                 if (_binding == null) return@launch
-                index = (index + 1) % natureSceneryResIds.size
-                crossfadeSceneryTo(natureSceneryResIds[index])
+                index = (index + 1) % natureSceneryBitmaps.size
+                crossfadeSceneryTo(natureSceneryBitmaps[index])
             }
         }
     }
 
-    private fun crossfadeSceneryTo(resId: Int) {
+    private fun crossfadeSceneryTo(bitmap: android.graphics.Bitmap) {
         val image = _binding?.imgNatureScenery ?: return
         image.animate()
             .alpha(0f)
             .setDuration(SLIDESHOW_FADE_MS / 2)
             .withEndAction {
                 if (_binding == null) return@withEndAction
-                image.setImageResource(resId)
+                image.setImageBitmap(bitmap)
                 image.animate()
                     .alpha(1f)
                     .setDuration(SLIDESHOW_FADE_MS / 2)
@@ -329,6 +351,8 @@ class AudioscapeActivityFragment : Fragment() {
         preCountdownTimer = null
         stopAudio()
         stopNatureSlideshow()
+        natureSceneryBitmaps.forEach { if (!it.isRecycled) it.recycle() }
+        natureSceneryBitmaps = emptyList()
         _binding = null
     }
 }

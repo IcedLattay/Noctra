@@ -31,7 +31,7 @@
             android:fontFamily="@font/poppinsregular"
             android:gravity="center"
             android:text="Message goes here"
-            android:textColor="@color/noctra_purple_dark"
+            android:textColor="@color/noctra_text_muted"
             android:textSize="16sp"
             android:lineSpacingExtra="4sp" />
 
@@ -57,7 +57,7 @@
             android:fontFamily="@font/poppinsbold"
             android:text="Cancel"
             android:textAllCaps="false"
-            android:textColor="@color/noctra_purple_dark"
+            android:textColor="@color/black"
             android:textSize="16sp"
             app:cornerRadius="28dp"
             style="@style/Widget.MaterialComponents.Button.UnelevatedButton" />

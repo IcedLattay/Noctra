@@ -6,16 +6,21 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.health.connect.client.PermissionController
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.launch
+import androidx.navigation.navGraphViewModels
 import com.noctra.app.R
 import com.noctra.app.databinding.FragmentHealthGrantBinding
+import com.noctra.app.ui.routine.onboarding.OnboardingViewModel
 import com.noctra.app.utils.HealthConnectPermissionHelper
+import com.noctra.app.utils.UserSession
 
 class HealthGrantFragment : Fragment() {
 
     private var _binding: FragmentHealthGrantBinding? = null
     private val binding get() = _binding!!
+    private val onboardingViewModel: OnboardingViewModel by navGraphViewModels(R.id.nav_graph)
 
     /**
      * Launches Health Connect's system permission screen. The result is the set
@@ -41,8 +46,10 @@ class HealthGrantFragment : Fragment() {
 
         binding.btnGrant.setOnClickListener {
             when {
-                HealthConnectPermissionHelper.isAvailable(requireContext()) ->
+                HealthConnectPermissionHelper.isAvailable(requireContext()) -> {
+                    setGrantLoading(true)
                     launchPermissionRequest()
+                }
 
                 // Android < 14 without the Health Connect module:
                 // the button becomes the install action until HC is present
@@ -51,11 +58,27 @@ class HealthGrantFragment : Fragment() {
             }
         }
 
-        binding.btnContinue.setOnClickListener {
-            advanceAfterHealthFlow()
-        }
-
         binding.btnSkip.setOnClickListener { showSkipConfirmation() }
+
+        // If everything is already granted, this screen has no purpose —
+        // skip straight to Summary (once, on creation only)
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val context = requireContext()
+                if (!HealthConnectPermissionHelper.isAvailable(context)) return@launch
+                val client = androidx.health.connect.client.HealthConnectClient
+                    .getOrCreate(context)
+                val granted = HealthConnectPermissionHelper.getGrantedPermissions(client)
+                if (HealthConnectPermissionHelper.hasSleepPermission(granted) &&
+                    HealthConnectPermissionHelper.hasHeartRatePermission(granted) &&
+                    isAdded
+                ) {
+                    advanceAfterHealthFlow()
+                }
+            } catch (e: Exception) {
+                // Stay put on failure — user can Grant or Skip manually
+            }
+        }
     }
 
     override fun onResume() {
@@ -63,87 +86,42 @@ class HealthGrantFragment : Fragment() {
         refreshUiState()
     }
 
+    // Loading state: dimmed + "Opening…" text + trailing spinner. The
+    // button deliberately stays enabled — re-tapping a stalled Health
+    // Connect request just re-opens it, so it can never wedge disabled.
+    private fun setGrantLoading(loading: Boolean) {
+        binding.btnGrant.alpha = if (loading) 0.6f else 1f
+        binding.progressGrant.visibility = if (loading) View.VISIBLE else View.GONE
+        if (loading) {
+            binding.btnGrant.text = getString(R.string.health_grant_opening)
+        }
+    }
+
+    // One-shot grant flow: the single popup result (all, partial, or
+    // denied) is final for onboarding — advance immediately. No status
+    // tracking, no re-requests, so the re-prompt suppression quirk can't
+    // bite. Post-onboarding changes go through Health Settings.
     private fun refreshUiState() {
         val context = requireContext()
+        setGrantLoading(false)
 
         when {
             HealthConnectPermissionHelper.isAvailable(context) -> {
                 binding.btnGrant.isEnabled = true
                 binding.btnGrant.text = getString(R.string.health_grant_button)
-                checkPermissionStatus()
             }
 
             HealthConnectPermissionHelper.needsInstall(context) -> {
                 binding.btnGrant.isEnabled = true
                 binding.btnGrant.text = getString(R.string.health_grant_install)
-                showNotAllGranted()
             }
 
             else -> {
                 // SDK_UNAVAILABLE: device can't run Health Connect at all
                 binding.btnGrant.isEnabled = false
                 binding.btnGrant.text = getString(R.string.health_grant_unsupported)
-                showNotAllGranted()
             }
         }
-    }
-
-    private fun checkPermissionStatus() {
-        // Check current permission status and update UI accordingly
-        // Note: We can't read actual permissions without launching a request,
-        // but we can track state from previous requests or initial load
-        val hasAllPermissions = checkIfAllPermissionsGranted()
-
-        if (hasAllPermissions) {
-            showAllGranted()
-        } else {
-            showNotAllGranted()
-        }
-    }
-
-    private fun checkIfAllPermissionsGranted(): Boolean {
-        // This is a simplified check - in practice you'd need to use
-        // Health Connect's API to check granted permissions
-        // For now, we'll track state via the permission request result
-        return arguments?.getBoolean(ARG_ALL_GRANTED, false) ?: false
-    }
-
-    private fun showAllGranted() {
-        // Update badges to "Granted"
-        binding.badgeSleep.text = getString(R.string.badge_granted)
-        binding.badgeSleep.setBackgroundResource(R.drawable.badge_granted)
-        binding.badgeSleep.setTextColor(resources.getColor(R.color.granted_green, null))
-
-        binding.badgeHeartRate.text = getString(R.string.badge_granted)
-        binding.badgeHeartRate.setBackgroundResource(R.drawable.badge_granted)
-        binding.badgeHeartRate.setTextColor(resources.getColor(R.color.granted_green, null))
-
-        // Show success card
-        binding.cardSuccess.visibility = View.VISIBLE
-
-        // Show Continue button, hide Grant + Skip
-        binding.btnGrant.visibility = View.GONE
-        binding.btnSkip.visibility = View.GONE
-        binding.btnContinue.visibility = View.VISIBLE
-    }
-
-    private fun showNotAllGranted() {
-        // Update badges to "Required"
-        binding.badgeSleep.text = getString(R.string.badge_required)
-        binding.badgeSleep.setBackgroundResource(R.drawable.badge_required)
-        binding.badgeSleep.setTextColor(resources.getColor(R.color.required_red, null))
-
-        binding.badgeHeartRate.text = getString(R.string.badge_required)
-        binding.badgeHeartRate.setBackgroundResource(R.drawable.badge_required)
-        binding.badgeHeartRate.setTextColor(resources.getColor(R.color.required_red, null))
-
-        // Hide success card
-        binding.cardSuccess.visibility = View.GONE
-
-        // Show Grant + Skip buttons, hide Continue
-        binding.btnGrant.visibility = View.VISIBLE
-        binding.btnSkip.visibility = View.VISIBLE
-        binding.btnContinue.visibility = View.GONE
     }
 
     private fun launchPermissionRequest() {
@@ -156,27 +134,19 @@ class HealthGrantFragment : Fragment() {
     }
 
     /**
-     * After permission request, update UI based on what was granted.
-     * Don't auto-advance - stay on screen and show the updated state.
+     * The single popup result — all, partial, or denied — is final for
+     * onboarding. Advance immediately; the sync pipeline redistributes
+     * scoring around whatever is actually granted.
      */
     private fun handlePermissionResult(granted: Set<String>) {
-        if (granted.isNotEmpty()) {
-            // Store that we have all permissions and refresh UI
-            arguments?.putBoolean(ARG_ALL_GRANTED, true)
-            refreshUiState()
-        }
-        // If empty (Don't allow), user is back on this screen - can retry or skip
+        android.util.Log.d("HealthGrant", "HC result, granted=$granted")
+        advanceAfterHealthFlow()
     }
 
     private fun showSkipConfirmation() {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.health_grant_skip_dialog_title)
-            .setMessage(R.string.health_grant_skip_dialog_message)
-            .setNegativeButton(R.string.health_grant_skip_dialog_go_back, null)
-            .setPositiveButton(R.string.health_grant_skip_dialog_continue) { _, _ ->
-                advanceAfterHealthFlow()
-            }
-            .show()
+        SkipHealthBottomSheet().apply {
+            onContinue = { advanceAfterHealthFlow() }
+        }.show(parentFragmentManager, "skip_health")
     }
 
     /**
@@ -185,15 +155,14 @@ class HealthGrantFragment : Fragment() {
      * management happens via Health Settings' deep link into Health Connect.)
      */
     private fun advanceAfterHealthFlow() {
+        UserSession.getUserId(requireContext())?.let { userId ->
+            onboardingViewModel.updateStep(userId, 5)
+        }
         findNavController().navigate(R.id.action_healthGrant_to_onboardingSummary)
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-
-    companion object {
-        private const val ARG_ALL_GRANTED = "all_granted"
     }
 }

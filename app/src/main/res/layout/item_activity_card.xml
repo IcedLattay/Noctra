@@ -10,7 +10,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="170dp"
     android:layout_margin="6dp"
     android:clickable="true"
     android:focusable="true"
@@ -24,6 +24,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
+        <!-- Card content -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -73,6 +74,19 @@
                 android:textSize="12sp"
                 tools:text="5 min" />
         </LinearLayout>
+
+        <!-- Info button (bottom-right): badge owns top-right when selected -->
+        <ImageView
+            android:id="@+id/btnInfo"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="4dp"
+            android:src="@drawable/ic_info_circle"
+            android:contentDescription="Activity details" />
 
         <!-- Selected check badge -->
         <ImageView

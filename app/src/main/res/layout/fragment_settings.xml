@@ -69,11 +69,11 @@
                         android:layout_weight="1"
                         android:orientation="vertical">
                         <TextView
-                            style="@style/SettingsRowTitle"
+                            style="@style/SettingsFieldLabel"
                             android:text="Display Name" />
                         <TextView
                             android:id="@+id/value_display_name"
-                            style="@style/SettingsRowSubtitle"
+                            style="@style/SettingsFieldValue"
                             tools:text="mesha" />
                     </LinearLayout>
                 </LinearLayout>
@@ -88,11 +88,11 @@
                         android:layout_weight="1"
                         android:orientation="vertical">
                         <TextView
-                            style="@style/SettingsRowTitle"
+                            style="@style/SettingsFieldLabel"
                             android:text="Email" />
                         <TextView
                             android:id="@+id/value_email"
-                            style="@style/SettingsRowSubtitle"
+                            style="@style/SettingsFieldValue"
                             tools:text="me@example.com" />
                     </LinearLayout>
                 </LinearLayout>
@@ -109,13 +109,15 @@
 
                     <ImageView
                         style="@style/SettingsRowIcon"
-                        android:src="@drawable/ic_settings_key" />
+                        android:src="@drawable/ic_settings_key"
+                        android:tint="@color/black" />
 
                     <TextView
                         style="@style/SettingsRowTitle"
                         android:layout_width="0dp"
                         android:layout_weight="1"
-                        android:text="Change Password" />
+                        android:text="Change Password"
+                        android:textColor="@color/black" />
 
                     <ImageView
                         android:layout_width="20dp"
@@ -164,7 +166,8 @@
                 <LinearLayout style="@style/SettingsRow">
                     <ImageView
                         style="@style/SettingsRowIcon"
-                        android:src="@drawable/ic_clock" />
+                        android:src="@drawable/ic_summary_clock"
+                        android:tint="@color/black" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -173,7 +176,8 @@
                         android:orientation="vertical">
                         <TextView
                             style="@style/SettingsRowTitle"
-                            android:text="Target Bedtime" />
+                            android:text="Target Bedtime"
+                            android:textColor="@color/black" />
                         <TextView
                             style="@style/SettingsRowSubtitle"
                             android:text="Time you want to be asleep by" />
@@ -182,18 +186,18 @@
 
                 <TextView
                     android:id="@+id/btn_bedtime_pill"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="start"
                     android:layout_marginStart="16dp"
                     android:layout_marginEnd="16dp"
                     android:layout_marginBottom="16dp"
-                    android:background="@drawable/bedtime_pill_background"
-                    android:paddingHorizontal="20dp"
-                    android:paddingVertical="10dp"
-                    android:textColor="@color/noctra_purple_light"
-                    android:textSize="16sp"
+                    android:background="@drawable/bedtime_pill_background_settings"
+                    android:paddingHorizontal="30dp"
+                    android:paddingVertical="12dp"
+                    android:textColor="@color/black"
+                    android:textSize="18sp"
                     android:textStyle="bold"
+                    android:gravity="left"
                     tools:text="10:00 PM" />
             </LinearLayout>
 
@@ -215,7 +219,8 @@
                     android:background="?attr/selectableItemBackground">
                     <ImageView
                         style="@style/SettingsRowIcon"
-                        android:src="@drawable/ic_health_pulse" />
+                        android:src="@drawable/ic_health_pulse"
+                        android:tint="@color/black" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -224,38 +229,26 @@
                         android:orientation="vertical">
                         <TextView
                             style="@style/SettingsRowTitle"
-                            android:text="Health Connect Permissions" />
+                            android:text="Health Connect"
+                            android:textColor="@color/black" />
                         <TextView
                             android:id="@+id/tv_health_status_subtitle"
                             style="@style/SettingsRowSubtitle"
-                            android:text="Demo Mode" />
+                            android:text="Not connected" />
                     </LinearLayout>
+
+                    <View
+                        android:id="@+id/health_status_dot"
+                        android:layout_width="10dp"
+                        android:layout_height="10dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_status_green_dot"
+                        android:visibility="gone" />
 
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:src="@drawable/ic_chevron_right" />
-                </LinearLayout>
-
-                <View style="@style/SettingsDivider" />
-
-                <LinearLayout style="@style/SettingsRow">
-                    <ImageView
-                        style="@style/SettingsRowIcon"
-                        android:src="@drawable/ic_watch" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-                        <TextView
-                            style="@style/SettingsRowTitle"
-                            android:text="Connected Device" />
-                        <TextView
-                            style="@style/SettingsRowSubtitle"
-                            android:text="No device connected" />
-                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
 
@@ -272,7 +265,8 @@
                 <LinearLayout style="@style/SettingsRow">
                     <ImageView
                         style="@style/SettingsRowIcon"
-                        android:src="@drawable/ic_bell" />
+                        android:src="@drawable/ic_bell"
+                        android:tint="@color/black" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -281,7 +275,8 @@
                         android:orientation="vertical">
                         <TextView
                             style="@style/SettingsRowTitle"
-                            android:text="Wind-Down Reminders" />
+                            android:text="Wind-Down Reminders"
+                            android:textColor="@color/black" />
                         <TextView
                             style="@style/SettingsRowSubtitle"
                             android:text="Notify me to start my routine" />
@@ -300,7 +295,8 @@
                 <LinearLayout style="@style/SettingsRow">
                     <ImageView
                         style="@style/SettingsRowIcon"
-                        android:src="@drawable/ic_bell" />
+                        android:src="@drawable/ic_bell"
+                        android:tint="@color/black" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -309,7 +305,8 @@
                         android:orientation="vertical">
                         <TextView
                             style="@style/SettingsRowTitle"
-                            android:text="Morning Sleep Score" />
+                            android:text="Morning Sleep Score"
+                            android:textColor="@color/black" />
                         <TextView
                             style="@style/SettingsRowSubtitle"
                             android:text="Get my sleep score notification" />
@@ -334,7 +331,8 @@
 
                     <ImageView
                         style="@style/SettingsRowIcon"
-                        android:src="@drawable/ic_bell" />
+                        android:src="@drawable/ic_bell"
+                        android:tint="@color/black" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -343,7 +341,8 @@
                         android:orientation="vertical">
                         <TextView
                             style="@style/SettingsRowTitle"
-                            android:text="Notification Permissions" />
+                            android:text="Notification Permissions"
+                            android:textColor="@color/black" />
                         <TextView
                             style="@style/SettingsRowSubtitle"
                             android:text="Manage system notification settings" />
@@ -366,7 +365,8 @@
 
                     <ImageView
                         style="@style/SettingsRowIcon"
-                        android:src="@drawable/ic_clock" />
+                        android:src="@drawable/ic_summary_clock"
+                        android:tint="@color/black" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -375,7 +375,8 @@
                         android:orientation="vertical">
                         <TextView
                             style="@style/SettingsRowTitle"
-                            android:text="Exact Alarm Permissions" />
+                            android:text="Exact Alarm Permissions"
+                            android:textColor="@color/black" />
                         <TextView
                             style="@style/SettingsRowSubtitle"
                             android:text="Required for precise wind-down timing" />
@@ -401,7 +402,8 @@
                 <LinearLayout style="@style/SettingsRow">
                     <ImageView
                         style="@style/SettingsRowIcon"
-                        android:src="@drawable/ic_info_circle" />
+                        android:src="@drawable/ic_info_circle"
+                        android:tint="@color/black" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -410,7 +412,8 @@
                         android:orientation="vertical">
                         <TextView
                             style="@style/SettingsRowTitle"
-                            android:text="App Version" />
+                            android:text="App Version"
+                            android:textColor="@color/black" />
                         <TextView
                             android:id="@+id/value_app_version"
                             style="@style/SettingsRowSubtitle"
@@ -429,16 +432,16 @@
 
                     <ImageView
                         style="@style/SettingsRowIcon"
-                        android:src="@drawable/ic_document" />
+                        android:src="@drawable/ic_document"
+                        android:tint="@color/black" />
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Privacy Policy"
-                        android:textColor="@color/noctra_purple_dark"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
+                        android:textColor="@color/black"
+                        android:textSize="15sp" />
 
                     <ImageView
                         android:layout_width="20dp"
@@ -457,16 +460,16 @@
 
                     <ImageView
                         style="@style/SettingsRowIcon"
-                        android:src="@drawable/ic_document" />
+                        android:src="@drawable/ic_document"
+                        android:tint="@color/black" />
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Terms of Use"
-                        android:textColor="@color/noctra_purple_dark"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
+                        android:textColor="@color/black"
+                        android:textSize="15sp" />
 
                     <ImageView
                         android:layout_width="20dp"
@@ -482,8 +485,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:text="Sign Out"
+                android:textSize="15sp"
                 android:textColor="@color/noctra_destructive_red"
                 android:textAllCaps="false"
+                android:letterSpacing="0"
                 android:fontFamily="@font/poppinsbold" />
 
         </LinearLayout>

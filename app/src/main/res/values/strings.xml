@@ -20,30 +20,32 @@
     <string name="back">Back</string>
 
     <!-- Health Connect Flow -->
-    <string name="health_edu_title">Sync Your Sleep</string>
-    <string name="health_edu_description">Noctra reads your sleep through Health Connect. Two quick things before we start:</string>
-    <string name="health_edu_step_1">1.  Wear your watch to bed and make sure it\'s paired via Bluetooth.</string>
-    <string name="health_edu_step_2">2.  In your watch\'s companion app (Mi Fitness, Zepp, realme Link, or Nothing X), turn on \"Sync with Health Connect\".</string>
     <string name="health_edu_button">I\'ve linked my watch</string>
-    <string name="health_edu_skip">Skip for now</string>
+    <string name="health_edu_skip">Skip this step</string>
 
     <!-- Health Grant Screen (Onboarding) -->
-    <string name="health_grant_header">Health Connect Setup</string>
-    <string name="health_grant_step_indicator">Step 4 of 4</string>
+    <string name="health_grant_header">Grant Access</string>
+    <string name="health_grant_permission_stages">Sleep Stages</string>
+    <string name="health_grant_permission_stages_desc">Used to detect movement and restlessness during sleep for your quality score.</string>
+    <string name="health_grant_privacy_note">Data is processed locally on your device using Android Health Connect. Noctra never uploads your health data to external servers.</string>
+    <string name="health_grant_step_indicator">Step 5 of 5</string>
     <string name="health_grant_why_title">Why Health Connect?</string>
     <string name="health_grant_why_description">Noctra uses Health Connect to passively monitor your sleep quality each night. This helps us understand if your routine is working and provide personalized insights — all without you having to do anything extra.</string>
-    <string name="health_grant_permission_sleep">Sleep Sessions</string>
-    <string name="health_grant_permission_sleep_desc">To track your sleep quality and duration each night</string>
+    <string name="health_grant_permission_sleep">Sleep Segments</string>
+    <string name="health_grant_permission_sleep_desc">Detects when you fell asleep and woke up so Noctra can tell if your routine is working.</string>
     <string name="health_grant_permission_heartrate">Heart Rate</string>
-    <string name="health_grant_permission_heartrate_desc">To measure how relaxed you are during sleep</string>
+    <string name="health_grant_permission_heartrate_desc">Measures how calm and relaxed your body is during sleep — a sign of a successful routine.</string>
     <string name="badge_required">Required</string>
     <string name="badge_granted">Granted</string>
-    <string name="health_grant_button">Grant Permissions</string>
-    <string name="health_grant_continue">Continue</string>
+    <string name="health_grant_button">Grant Permission</string>
+    <string name="health_grant_opening">Opening Health Connect…</string>
+    <string name="health_grant_continue">Continue to Summary</string>
     <string name="health_grant_install">Install Health Connect</string>
-    <string name="health_grant_skip">Skip for Now</string>
+    <string name="health_grant_skip">Skip this step</string>
     <string name="health_grant_success_title">All Permissions Granted</string>
     <string name="health_grant_success_description">You\'re ready to track your sleep quality!</string>
+    <string name="health_grant_access_granted_title">Access Granted!</string>
+    <string name="health_grant_access_granted_desc">Noctra can now read your sleep and heart rate data from Health Connect. Your data stays private on your device.</string>
     <string name="health_grant_skip_dialog_title">Continue without Health Connect?</string>
     <string name="health_grant_skip_dialog_message">Noctra won\'t be able to track your sleep — no sleep scores, morning recaps, or insights. You can connect anytime later in Settings.</string>
     <string name="health_grant_skip_dialog_continue">Continue</string>
@@ -58,4 +60,110 @@
     <string name="health_settings_status_disconnected">Permissions are managed in Health Connect — tap the button below to grant or revoke access.</string>
     <string name="health_settings_status_unavailable">Health Connect isn\'t available on this device</string>
     <string name="health_settings_manage">Open Health Connect Settings</string>
+
+    <!-- Analytics (ANALYTICS_SPEC.md §2.4, §6, §7) -->
+    <string name="analytics_last_night">LAST NIGHT</string>
+    <string name="analytics_placeholder_dash">—</string>
+    <string name="analytics_no_score">—</string>
+    <string name="analytics_no_sleep_data">No sleep data recorded last night</string>
+    <string name="analytics_last_night_hint">Sleep data can arrive later in the day. Make sure your fitness app has synced to Health Connect.</string>
+    <string name="analytics_label_duration">Duration</string>
+    <string name="analytics_label_onset">Sleep onset time</string>
+    <string name="analytics_label_hr">Avg heart rate</string>
+    <string name="analytics_label_restlessness">Restlessness</string>
+    <string name="analytics_quality_good">Good sleep quality</string>
+    <string name="analytics_quality_moderate">Moderate sleep quality</string>
+    <string name="analytics_quality_poor">Poor sleep quality</string>
+
+    <!-- 7-day detail block (§2.1, §6 items 4-5, §7 locked caption) -->
+    <string name="analytics_section_sleep_score">Sleep Score</string>
+    <string name="analytics_section_bedtime">Bedtime Adherence</string>
+    <string name="analytics_section_completion">Routine Completion</string>
+    <string name="analytics_section_insights">Insights</string>
+    <string name="analytics_insight_icon_desc">Insight</string>
+    <string name="analytics_legend_good">Good (&gt;74)</string>
+    <string name="analytics_legend_moderate">Moderate (50-74)</string>
+    <string name="analytics_legend_poor">Poor (&lt;50)</string>
+    <string name="analytics_legend_target">Target</string>
+    <string name="analytics_legend_ontime">On-time</string>
+    <string name="analytics_legend_slight">Slight delay</string>
+    <string name="analytics_legend_late">Late</string>
+    <string name="analytics_legend_completed">Completed</string>
+    <string name="analytics_legend_pending">Pending</string>
+    <string name="analytics_legend_missed">Missed</string>
+    <string name="analytics_no_bedtime_data">No bedtime data for this week</string>
+    <!-- §7 locked: "Bedtimes varied ±{N} min this week" -->
+    <string name="analytics_variability">Bedtimes varied ±%1$d min this week.</string>
+    <string name="analytics_nav_earlier">Earlier</string>
+    <string name="analytics_nav_later">Later</string>
+    <string name="analytics_scroll_to_top">Scroll back to top</string>
+
+    <!-- Mechanism insight (§2.3). §7 locks these four strings verbatim —
+         do not reword. {X} is the absolute point difference. -->
+    <string name="analytics_insight_better">Your sleep quality is about %1$d points higher on nights you complete your routine. Try to keep it up for better sleep!</string>
+    <string name="analytics_insight_worse">Your sleep quality has been higher on nights without the routine. One off week doesn\'t mean much — keep building the habit.</string>
+    <string name="analytics_insight_similar">Your sleep quality is similar with and without the routine. More consistency may reveal clearer patterns.</string>
+    <string name="analytics_insight_insufficient">Need more data to generate an insight. Keep logging routines and sleep to unlock comparisons.</string>
+
+    <!-- 30-day trend (§2.2, §6 item 6, §7 locked placeholder) -->
+    <string name="analytics_section_trend">30-Day Sleep Score Trend</string>
+    <string name="analytics_legend_score">Sleep Score</string>
+    <string name="analytics_legend_weekly_avg">Weekly Average</string>
+    <!-- §7 locked: "Your 30-day trend unlocks after ~2 weeks of nights." -->
+    <string name="analytics_trend_placeholder">Your 30-day trend unlocks after ~2 weeks of nights.</string>
+
+    <!-- Offline State -->
+    <string name="offline_title">No Internet Connection</string>
+    <string name="offline_description">Noctra requires an internet connection to sync your sleep data</string>
+    <string name="offline_retry">Retry</string>
+    <string name="offline_hint">Check your Wi-Fi or mobile data and try again</string>
+
+    <!-- No Internet (per-tab) -->
+    <string name="no_internet_connection">No internet connection</string>
+    <string name="retry">retry</string>
+
+    <!-- Social / Friends / Leaderboard -->
+    <string name="social_leaderboard_title">Friends Leaderboard</string>
+    <string name="social_compete_with_friends">Compete with Friends</string>
+    <string name="social_compete_subtitle">Build the longest streak and support each other!</string>
+    <string name="social_add_by_email">Add by Email</string>
+    <string name="social_friend_requests">Friend Requests</string>
+    <string name="social_no_friends">No friends yet</string>
+    <string name="social_no_friends_hint">Add friends by email to see your leaderboard</string>
+    <string name="social_no_pending_requests">No pending requests</string>
+    <string name="social_received">Received</string>
+    <string name="social_sent">Sent</string>
+    <string name="social_day_streak">%1$d day streak</string>
+    <string name="social_your_rank">Your Rank</string>
+
+    <!-- Add Friend Bottom Sheet -->
+    <string name="add_friend_title">Add Friend</string>
+    <string name="add_friend_instruction">Who would you like to add as a friend?</string>
+    <string name="add_friend_subtitle">Enter their email address to send a friend request</string>
+    <string name="add_friend_email_hint">friend@email.com</string>
+    <string name="add_friend_send">Send Friend Request</string>
+    <string name="add_friend_success">Request Sent!</string>
+    <string name="add_friend_success_subtitle">They\'ll be notified to accept your request</string>
+    <string name="add_friend_error_not_found">No user found with that email address</string>
+    <string name="add_friend_error_self">You cannot add yourself as a friend</string>
+    <string name="add_friend_error_duplicate">A friend request already exists with this user</string>
+
+    <!-- Friend Requests -->
+    <string name="friend_request_accept">Accept</string>
+    <string name="friend_request_decline">Decline</string>
+    <string name="friend_request_cancel">Cancel</string>
+    <string name="friend_request_accepted">Friend request accepted!</string>
+    <string name="friend_request_declined">Request declined</string>
+    <string name="friend_request_cancelled">Request cancelled</string>
+
+    <!-- Remove Friend -->
+    <string name="remove_friend_title">Remove %1$s?</string>
+    <string name="remove_friend_message">Are you sure you want to remove %1$s from your friends?</string>
+    <string name="remove_friend_confirm">Remove Friend</string>
+    <string name="remove_friend_cancel">Never Mind</string>
+    <string name="remove_friend_success">Friend removed</string>
+
+    <!-- Encouragement -->
+    <string name="encouragement_sent">Encouragement sent!</string>
+    <string name="encouragement_already_sent">You\'ve already sent encouragement today</string>
 </resources>

@@ -25,8 +25,7 @@ object RoutineWindowProvider {
         now: LocalTime,
         targetBedtime: String,
         routineDurationMinutes: Int
-    ): Boolean {
-        val bedtime = parseTime(targetBedtime)
+    ): Boolean {        val bedtime = parseTime(targetBedtime)
         val windowOpen = bedtime.minusMinutes(routineDurationMinutes.toLong())
         val windowClose = bedtime.plusMinutes(WINDOW_CLOSE_BUFFER_MINUTES)
 
@@ -45,5 +44,20 @@ object RoutineWindowProvider {
         } catch (e: Exception) {
             LocalTime.parse(raw, DateTimeFormatter.ofPattern("HH:mm"))
         }
+    }
+
+    /**
+     * Resolves which calendar date a routine session belongs to.
+     *
+     * Sessions starting before 4 AM attribute to the previous calendar
+     * day — mirroring the sleep pipeline's wake-up-anchor boundary so
+     * both pipelines agree on what "last night" means (a 1 AM routine
+     * and its sleep both land on the same session_date, keeping streaks
+     * and insight joins aligned). Given the bedtime picker caps at
+     * 2 AM (latest start ~3 AM), every post-midnight start falls on the
+     * correct side of this line — no ambiguity remains.
+     */
+    fun resolveRoutineSessionDate(now: java.time.LocalDateTime): java.time.LocalDate {
+        return if (now.hour < 4) now.toLocalDate().minusDays(1) else now.toLocalDate()
     }
 }

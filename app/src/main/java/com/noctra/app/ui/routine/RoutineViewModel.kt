@@ -51,12 +51,33 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
     var routineConfigId: String = ""; private set
     var currentStreak: Int = 0; private set
 
+    /**
+     * Debug preview only: when true, session completion skips every write
+     * (ledger, XP, session row) — look freely, finish freely, nothing lands
+     * in the DB. Cleared by the next real setupSession().
+     */
+    var previewMode: Boolean = false
+
     fun setupSession(activities: List<Activity>, routineConfigId: String, currentStreak: Int) {
         this.activities = activities
         this.routineConfigId = routineConfigId
         this.currentStreak = currentStreak
+        previewMode = false
         _isInitialized.value = true
         _sessionState.value = SessionState.Ready
+    }
+
+    /**
+     * Debug preview only: puts activities in memory WITHOUT marking the
+     * session initialized, so later real flows still load fresh instead of
+     * reusing preview data.
+     */
+    fun seedPreview(previewActivities: List<Activity>) {
+        this.activities = previewActivities
+        this.routineConfigId = ""
+        this.currentStreak = 0
+        previewMode = true
+        _currentStepIndex.value = 0
     }
 
     /**
@@ -64,7 +85,9 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
      * Home screen (e.g. deep link), it fetches the active routine from DB.
      */
     fun initializeIfNecessary() {
-        if (_isInitialized.value) return
+        // A debug preview never counts as initialization — real flows
+        // always reload fresh afterwards.
+        if (_isInitialized.value && !previewMode) return
 
         viewModelScope.launch {
             try {
@@ -153,6 +176,27 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
 
     // ─── Public Lifecycle ─────────────────────────────────────────────────────
 
+    // Clears per-user session state so the next login never flashes the
+    // previous account's routine while fresh data loads
+    fun onLogout() {
+        sessionTimerJob?.cancel()
+        activityTimerJob?.cancel()
+        sessionTimerJob = null
+        activityTimerJob = null
+        _isInitialized.value = false
+        _isWindowExpired.value = false
+        activities = emptyList()
+        routineConfigId = ""
+        currentStreak = 0
+        _sessionState.value = SessionState.Ready
+        _currentStepIndex.value = 0
+        _sessionSecondsRemaining.value = SESSION_DURATION_SECONDS
+        _activitySecondsRemaining.value = 0
+        _rewardResult.value = null
+        activeSessionId = null
+        sessionStartTimestamp = ""
+    }
+
     fun startSession() {
         if (_isWindowExpired.value) {
             android.util.Log.e("RoutineViewModel", "Attempted to start session outside of window.")
@@ -165,7 +209,10 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
 
             val now = LocalDateTime.now()
             sessionStartTimestamp = now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-            val todayDate = LocalDate.now().toString()
+            // Attribute post-midnight sessions to the night they serve
+            // (see RoutineWindowProvider.resolveRoutineSessionDate)
+            val todayDate = com.noctra.app.utils.RoutineWindowProvider
+                .resolveRoutineSessionDate(now).toString()
 
             try {
                 val session = routineSessionRepository.startSession(
@@ -238,10 +285,12 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
                 val nextIndex = _currentStepIndex.value + 1
                 _currentStepIndex.value = nextIndex
 
-                // Local resume cache — keep step index and last-activity time
-                // current so a mid-routine app kill/reopen can recover here.
-                RoutinePersistenceHelper.setCurrentStepIndex(nextIndex)
-                RoutinePersistenceHelper.setLastActivityTimestamp(System.currentTimeMillis())
+                // Local resume cache — skipped in debug preview so a tour
+                // can never plant a fake resumable session.
+                if (!previewMode) {
+                    RoutinePersistenceHelper.setCurrentStepIndex(nextIndex)
+                    RoutinePersistenceHelper.setLastActivityTimestamp(System.currentTimeMillis())
+                }
 
                 _navigationEvent.emit(NavigationEvent.GoToTransition(nextIndex))
             }
@@ -445,6 +494,13 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
             cancelAllTimers()
             _sessionState.value = SessionState.Completed
 
+            // Debug preview: show the completion screen, write nothing —
+            // no resume-cache clear, no ledger, no session row.
+            if (previewMode) {
+                _navigationEvent.emit(NavigationEvent.GoToCompletion)
+                return@launch
+            }
+
             // Routine finished normally — clear the local resume cache so a
             // completed session can never be mistaken for a resumable one
             // (e.g. by a future Resume Dialog check).
@@ -516,14 +572,6 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
      */
     private fun onSafetyNetExpired() {
         viewModelScope.launch {
-            activeSessionId?.let { sessionId ->
-                try {
-                    routineSessionRepository.markSessionAsAbandoned(sessionId)
-                    android.util.Log.d("StreakDebug", "SAFETY NET EXPIRED — session $sessionId marked abandoned")
-                } catch (e: Exception) {
-                    android.util.Log.e("StreakDebug", "Failed to mark session abandoned", e)
-                }
-            }
             RoutinePersistenceHelper.clear()
             _sessionState.value = SessionState.Exited
             _navigationEvent.emit(NavigationEvent.GoToHome)

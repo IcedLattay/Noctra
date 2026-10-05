@@ -22,10 +22,18 @@ import com.noctra.app.data.supabase.SupabaseClient
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.handleDeeplinks
 import com.noctra.app.ui.debug.DebugPanelListener
+import com.noctra.app.ui.debug.StagePreviewDialogFragment
+import com.noctra.app.ui.companion.MorningSleepPopupDialog
+import com.noctra.app.ui.companion.StreakNoticeDialogFragment
+import com.noctra.app.ui.companion.CompanionViewModel.CompanionNotice
+import com.noctra.app.ui.companion.CompanionViewModel
+import com.noctra.app.ui.companion.EvolutionDialogFragment
+import androidx.lifecycle.ViewModelProvider
 import com.noctra.app.ui.routine.RoutineViewModel
 import com.noctra.app.ui.routine.home.ResumeRoutineDialogFragment
 import com.noctra.app.utils.DebugSettings
 import com.noctra.app.utils.UserSession
+import com.noctra.app.utils.NetworkObserver
 import com.noctra.app.workers.WindDownNotificationScheduler
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -50,6 +58,7 @@ import com.noctra.app.data.model.UserProfile
 class MainActivity : AppCompatActivity(), DebugPanelListener {
 
     private var isLoading = true
+    private lateinit var networkObserver: NetworkObserver
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -84,6 +93,8 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         //DebugSettings.setForceRoutineWindow(true) // TEMP — remove before final submission
         //DebugSettings.setSkipCompletionCheck(true) // TEMP — remove before final submission
 
+        networkObserver = NetworkObserver(applicationContext)
+
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.nav_host) as NavHostFragment
         val navController = navHostFragment.navController
@@ -92,6 +103,19 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
 
         // Handle deep links from Supabase (e.g. password recovery)
         handleDeeplinks(intent)
+
+        // Check connectivity before proceeding
+        checkConnectivityAndInit(navController, bottomNav)
+    }
+
+    private fun checkConnectivityAndInit(
+        navController: androidx.navigation.NavController,
+        bottomNav: BottomNavigationView
+    ) {
+        if (!networkObserver.checkNow()) {
+            showOfflineUI()
+            return
+        }
 
         registerResumeDialogResultListener()
         observeRecoveryState()
@@ -106,17 +130,42 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         checkResumableRoutine()
     }
 
+    // ─── Offline UI ──────────────────────────────────────────────────────────
+
+    private fun showOfflineUI() {
+        isLoading = false
+        val navHost = findViewById<View>(R.id.nav_host)
+        val offlineView = findViewById<View>(R.id.offlineView)
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
+
+        navHost.visibility = View.GONE
+        bottomNav.visibility = View.GONE
+        offlineView.visibility = View.VISIBLE
+
+        offlineView.findViewById<android.widget.Button>(R.id.btnRetry).setOnClickListener {
+            if (networkObserver.checkNow()) {
+                hideOfflineUI()
+                val navHostFragment = supportFragmentManager
+                    .findFragmentById(R.id.nav_host) as NavHostFragment
+                val navController = navHostFragment.navController
+                val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
+                checkOnboardingStatus(navController, bottomNav)
+            }
+        }
+    }
+
+    private fun hideOfflineUI() {
+        val navHost = findViewById<View>(R.id.nav_host)
+        val offlineView = findViewById<View>(R.id.offlineView)
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
+
+        offlineView.visibility = View.GONE
+        navHost.visibility = View.VISIBLE
+        bottomNav.visibility = View.VISIBLE
+    }
+
     // ─── Global Resume Popup (tasks 7 & 8) ───────────────────────────────────
 
-    /**
-     * Trigger for The Global Resume Popup (task 7/10).
-     *
-     * FLAG: spec says "only if the user is logged in." UserSession.getUserId()
-     * is now nullable per the auth restructure (feature/health-connect-
-     * permission-ui) — a null userId itself is a reasonably direct "not
-     * logged in" signal, used here instead of the old onboardingCompleted
-     * proxy.
-     */
     private fun checkResumableRoutine() {
         lifecycleScope.launch {
             try {
@@ -131,13 +180,6 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         }
     }
 
-    /**
-     * Reacts to RoutineViewModel.recoveryState — shows the Resume Dialog
-     * (task 6) whenever checkRecoveryState() determines there's something
-     * resumable. Launched once in onCreate(); repeatOnLifecycle handles
-     * pausing/resuming this collector automatically, so it's safe against
-     * duplicate collectors across multiple onResume() calls.
-     */
     private fun observeRecoveryState() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -151,8 +193,6 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     }
 
     private fun showResumeDialogIfNeeded(state: RoutineViewModel.RecoveryState.Resumable) {
-        // Guard against showing a duplicate dialog if recoveryState re-emits
-        // while one is already on screen.
         if (supportFragmentManager.findFragmentByTag(ResumeRoutineDialogFragment.TAG) != null) return
 
         ResumeRoutineDialogFragment.newInstance(
@@ -162,24 +202,6 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         ).show(supportFragmentManager, ResumeRoutineDialogFragment.TAG)
     }
 
-    /**
-     * Handles the dialog's result — "Resume Routine" (task 7) vs
-     * "Not Now" (task 8).
-     *
-     * FLAG (race condition risk): confirmResume() does async DB work
-     * before it can emit the navigation event that actually jumps into the
-     * right activity fragment. That event is only listened for once
-     * RoutineStartFragment is on screen and subscribed — so this navigates
-     * there immediately after calling confirmResume(), relying on the DB
-     * round-trip taking longer than the synchronous navigation + fragment
-     * subscription. Needs on-device testing (Flag 13).
-     *
-     * "Not Now" (task 8): declineResume() deliberately does NOT touch
-     * RoutinePersistenceHelper — the cached session stays intact so a
-     * Passive Resume button can still appear elsewhere (e.g. My Routines
-     * tab), per the spec. That button's own UI logic lives outside this
-     * file.
-     */
     private fun registerResumeDialogResultListener() {
         supportFragmentManager.setFragmentResultListener(
             ResumeRoutineDialogFragment.REQUEST_KEY, this
@@ -200,29 +222,8 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         navHostFragment.navController.navigate(R.id.routineStartFragment)
     }
 
-    /**
-     * Morning After Cleanup (Cleanup & Enforcements, task 9/10).
-     *
-     * Catches the case where the device screen stayed off all night mid-
-     * routine. On the next onResume, if it's been 8+ hours since the last
-     * recorded routine activity, clear the local resume cache and send the
-     * user straight to AnalyticsDashboardFragment — so they never see last
-     * night's exercise screen again.
-     *
-     * FLAG: spec calls for "8 hours since session_start_time" specifically,
-     * but RoutinePersistenceHelper only stores last_activity_timestamp.
-     * Using last_activity_timestamp here as the closest available proxy.
-     *
-     * FIXED (Flag 25, crash found via on-device testing): blindly navigating
-     * to analyticsDashboardFragment crashed the app if the user was sitting
-     * on the Login screen (auth_graph) with a stale cached session —
-     * analyticsDashboardFragment only exists inside main_graph, so
-     * NavController threw IllegalArgumentException and killed the app on
-     * every resume. This looked like a login failure but was actually a
-     * crash loop unrelated to auth. Now wrapped in try/catch so a failed
-     * navigation attempt degrades gracefully instead of crashing — the
-     * cache still gets cleared either way, which is the important part.
-     */
+    // ─── Morning After Cleanup (task 9/10) ──────────────────────────────────
+
     private fun checkMorningAfterCleanup() {
         if (!RoutinePersistenceHelper.hasActiveSession()) return
 
@@ -245,9 +246,6 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                     .build()
                 navController.navigate(R.id.analyticsDashboardFragment, null, navOptions)
             } catch (e: Exception) {
-                // Not logged in yet, or otherwise not in main_graph — the
-                // cache is already cleared above, which is what actually
-                // matters here. Nothing else to do if we can't navigate.
                 android.util.Log.w("MainActivity", "checkMorningAfterCleanup: navigation skipped (not in main_graph)", e)
             }
         }
@@ -304,11 +302,17 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                     } else {
                         // Mid-flow recovery: Set the Onboarding Group as start
                         // and then adjust the internal start of that group
+                        android.util.Log.d(
+                            "MainActivity",
+                            "Onboarding resume: userId=$userId step=${profile.onboardingStep} completed=${profile.onboardingCompleted}"
+                        )
                         val onboardingGraph = graph.findNode(R.id.onboarding_graph) as androidx.navigation.NavGraph
                         val startStep = when (profile.onboardingStep) {
                             1 -> R.id.activityLibraryFragment
                             2 -> R.id.routineSequencingFragment
-                            3 -> R.id.onboardingSummaryFragment
+                            3 -> R.id.healthEducationFragment
+                            4 -> R.id.healthGrantFragment
+                            5 -> R.id.onboardingSummaryFragment
                             else -> R.id.bedtimeConfigFragment
                         }
                         onboardingGraph.setStartDestination(startStep)
@@ -495,6 +499,262 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
             } catch (e: Exception) {
                 android.util.Log.e("MainActivity", "Trigger Evolution failed", e)
                 Toast.makeText(this@MainActivity, "Evolution trigger failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    override fun onPreviewEvolution() {
+        // Zero-write preview: shows the evolution dialog for the next stage directly.
+        // Rendered animation comes from the already-loaded CompanionViewModel state,
+        // so visit the Companion tab first for the Shleepy preview to appear.
+        val companionVm = ViewModelProvider(this)[CompanionViewModel::class.java]
+        val currentLevel = companionVm.uiState.value.evolutionState?.stageLevel ?: 1
+        val previewLevel = (currentLevel + 1).coerceAtMost(5)
+        EvolutionDialogFragment.newInstance(currentLevel, previewLevel)
+            .show(supportFragmentManager, "EvolutionPreview")
+    }
+
+    override fun onPreviewStageAnimations() {
+        StagePreviewDialogFragment()
+            .show(supportFragmentManager, "StagePreview")
+    }
+
+    override fun onPreviewMorningRecap() {
+        MorningSleepPopupDialog.newInstance(82, 7)
+            .show(supportFragmentManager, "MorningPreview")
+    }
+
+    override fun onPreviewStreakRestored() {
+        StreakNoticeDialogFragment.newInstance(CompanionNotice.RESTORED)
+            .show(supportFragmentManager, "StreakPreview")
+    }
+
+    override fun onPreviewStreakLost() {
+        StreakNoticeDialogFragment.newInstance(CompanionNotice.LOST)
+            .show(supportFragmentManager, "StreakPreview")
+    }
+
+    override fun onPreviewStreakWarning() {
+        StreakNoticeDialogFragment.newInstance(CompanionNotice.WARNING)
+            .show(supportFragmentManager, "StreakPreview")
+    }
+
+    override fun onPreviewResumeDialog() {
+        ResumeRoutineDialogFragment.newInstance(1, 3, 25L)
+            .show(supportFragmentManager, "ResumePreview")
+    }
+
+    override fun onDumpSleepSession() {
+        lifecycleScope.launch {
+            try {
+                val context = applicationContext
+                if (!com.noctra.app.utils.HealthConnectPermissionHelper.isAvailable(context)) {
+                    Toast.makeText(context, "Health Connect unavailable", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val client = androidx.health.connect.client.HealthConnectClient.getOrCreate(context)
+                val granted = com.noctra.app.utils.HealthConnectPermissionHelper.getGrantedPermissions(client)
+                if (!com.noctra.app.utils.HealthConnectPermissionHelper.hasSleepPermission(granted)) {
+                    Toast.makeText(context, "Sleep permission not granted", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val now = java.time.Instant.now()
+                val response = client.readRecords(
+                    androidx.health.connect.client.request.ReadRecordsRequest(
+                        androidx.health.connect.client.records.SleepSessionRecord::class,
+                        androidx.health.connect.client.time.TimeRangeFilter.between(
+                            now.minus(48, java.time.temporal.ChronoUnit.HOURS), now
+                        )
+                    )
+                )
+                val latest = response.records.maxByOrNull {
+                    it.endTime.epochSecond
+                }
+                if (latest == null) {
+                    android.util.Log.d("SleepDump", "no sessions in last 48h")
+                    Toast.makeText(context, "No sessions in last 48h", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                android.util.Log.d("SleepDump", "window ${latest.startTime} -> ${latest.endTime} (${latest.stages.size} stages, by ${latest.metadata.dataOrigin.packageName})")
+                latest.stages.forEach { stage ->
+                    val name = when (stage.stage) {
+                        androidx.health.connect.client.records.SleepSessionRecord.STAGE_TYPE_AWAKE -> "AWAKE"
+                        androidx.health.connect.client.records.SleepSessionRecord.STAGE_TYPE_SLEEPING -> "SLEEPING"
+                        androidx.health.connect.client.records.SleepSessionRecord.STAGE_TYPE_OUT_OF_BED -> "OUT_OF_BED"
+                        androidx.health.connect.client.records.SleepSessionRecord.STAGE_TYPE_LIGHT -> "LIGHT"
+                        androidx.health.connect.client.records.SleepSessionRecord.STAGE_TYPE_DEEP -> "DEEP"
+                        androidx.health.connect.client.records.SleepSessionRecord.STAGE_TYPE_REM -> "REM"
+                        androidx.health.connect.client.records.SleepSessionRecord.STAGE_TYPE_AWAKE_IN_BED -> "AWAKE_IN_BED"
+                        else -> "UNKNOWN(${stage.stage})"
+                    }
+                    android.util.Log.d("SleepDump", "  $name ${stage.startTime} -> ${stage.endTime}")
+                }
+                Toast.makeText(context, "Dumped ${latest.stages.size} stages — see logcat", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                android.util.Log.e("SleepDump", "dump failed", e)
+                Toast.makeText(applicationContext, "Dump failed: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    override fun onDumpHeartRate() {
+        lifecycleScope.launch {
+            try {
+                val context = applicationContext
+                if (!com.noctra.app.utils.HealthConnectPermissionHelper.isAvailable(context)) {
+                    Toast.makeText(context, "Health Connect unavailable", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val client = androidx.health.connect.client.HealthConnectClient.getOrCreate(context)
+                val granted = com.noctra.app.utils.HealthConnectPermissionHelper.getGrantedPermissions(client)
+                if (!com.noctra.app.utils.HealthConnectPermissionHelper.hasHeartRatePermission(granted)) {
+                    Toast.makeText(context, "Heart rate permission not granted", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val now = java.time.Instant.now()
+                val twoDaysAgo = now.minus(48, java.time.temporal.ChronoUnit.HOURS)
+                // Latest sleep window first, so samples are shown in context
+                val sessions = client.readRecords(
+                    androidx.health.connect.client.request.ReadRecordsRequest(
+                        androidx.health.connect.client.records.SleepSessionRecord::class,
+                        androidx.health.connect.client.time.TimeRangeFilter.between(twoDaysAgo, now)
+                    )
+                ).records
+                val latest = sessions.maxByOrNull { it.endTime.epochSecond }
+                val windowStart: java.time.Instant
+                val windowEnd: java.time.Instant
+                val windowLabel: String
+                if (latest != null) {
+                    windowStart = latest.startTime
+                    windowEnd = latest.endTime
+                    windowLabel = "latest sleep window $windowStart -> $windowEnd"
+                } else {
+                    windowStart = now.minus(12, java.time.temporal.ChronoUnit.HOURS)
+                    windowEnd = now
+                    windowLabel = "last 12h (no sleep session found)"
+                }
+                val samples = client.readRecords(
+                    androidx.health.connect.client.request.ReadRecordsRequest(
+                        androidx.health.connect.client.records.HeartRateRecord::class,
+                        androidx.health.connect.client.time.TimeRangeFilter.between(windowStart, windowEnd)
+                    )
+                ).records.flatMap { it.samples }
+                    .sortedBy { it.time.epochSecond }
+                if (samples.isEmpty()) {
+                    android.util.Log.d("HeartDump", "no HR samples in $windowLabel")
+                    Toast.makeText(context, "No HR samples in window", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val avg = samples.map { it.beatsPerMinute }.average()
+                android.util.Log.d("HeartDump", "${samples.size} samples in $windowLabel, avg=${"%.1f".format(avg)} bpm")
+                samples.forEach { sample ->
+                    android.util.Log.d("HeartDump", "  ${sample.time} -> ${sample.beatsPerMinute} bpm")
+                }
+                Toast.makeText(context, "Dumped ${samples.size} samples — see logcat", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                android.util.Log.e("HeartDump", "dump failed", e)
+                Toast.makeText(applicationContext, "Dump failed: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    override fun onResyncLastNight() {
+        lifecycleScope.launch {
+            try {
+                val userId = UserSession.getUserId(applicationContext) ?: return@launch
+                val yesterday = java.time.LocalDate.now().minusDays(1)
+                val result = com.noctra.app.data.repository.SleepSyncManager()
+                    .syncSessionDate(userId, yesterday)
+                Toast.makeText(applicationContext, "Resync: $result", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Toast.makeText(applicationContext, "Resync failed: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    override fun onBackfillNow() {
+        androidx.work.WorkManager.getInstance(applicationContext).enqueueUniqueWork(
+            "AuditBackfillNow",
+            androidx.work.ExistingWorkPolicy.REPLACE,
+            androidx.work.OneTimeWorkRequestBuilder<com.noctra.app.workers.AuditBackfillWorker>()
+                .build()
+        )
+        Toast.makeText(applicationContext, "Backfill enqueued — watch logcat", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onPreviewSequencing() {
+        try {
+            val navHost =
+                supportFragmentManager.findFragmentById(R.id.nav_host) as androidx.navigation.fragment.NavHostFragment
+            val controller = navHost.navController
+            val args = android.os.Bundle().apply { putBoolean("previewMode", true) }
+            try {
+                controller.navigate(R.id.action_global_previewSequencing, args)
+            } catch (e: Exception) {
+                // Nested-graph scoping can reject the cross-graph hop:
+                // step back to the main graph first, then go direct. Back
+                // from the preview then lands on the pre-debug screen.
+                controller.popBackStack()
+                controller.navigate(R.id.editRoutineSequencingFragment, args)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Preview arrange screen failed", e)
+            Toast.makeText(applicationContext, "Preview failed: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onPreviewActivity(label: String) = previewActivityFlow(
+        labels = setOf(label),
+        actionId = destinationForLabel(label)
+    )
+
+    private fun destinationForLabel(label: String): Int = when (label) {
+        "Bedtime To-Do List Writing",
+        "Reading",
+        "White/Pink Noise",
+        "Warm Shower",
+        "Mindfulness",
+        "Low-Stimulus Audio Listening"
+            -> R.id.action_global_previewAudioscape
+
+        "Slow-Paced Breathing"
+            -> R.id.action_global_previewBreathing
+
+        "Gratitude Journaling"
+            -> R.id.action_global_previewGratitude
+
+        else -> R.id.action_global_previewTimer
+    }
+
+    /**
+     * Debug preview: seeds the shared RoutineViewModel with library
+     * activities (memory only, writes disabled via previewMode) and opens
+     * that flow's player. Back returns to the debug panel.
+     */
+    private fun previewActivityFlow(labels: Set<String>, actionId: Int) {
+        lifecycleScope.launch {
+            try {
+                val vm = androidx.lifecycle.ViewModelProvider(this@MainActivity)
+                    .get(com.noctra.app.ui.routine.RoutineViewModel::class.java)
+                val library = com.noctra.app.data.repository.RoutineRepository().getActivityLibrary()
+                // Seed the one tapped activity: it plays, then offers
+                // Complete (writes disabled, so finishing lands nowhere).
+                val seed = labels.mapNotNull { label ->
+                    library.firstOrNull { it.label == label }
+                }.ifEmpty { listOfNotNull(library.firstOrNull()) }
+                if (seed.isEmpty()) return@launch
+                vm.seedPreview(seed)
+                val navHost =
+                    supportFragmentManager.findFragmentById(R.id.nav_host) as androidx.navigation.fragment.NavHostFragment
+                try {
+                    navHost.navController.navigate(actionId)
+                } catch (e: Exception) {
+                    navHost.navController.popBackStack()
+                    navHost.navController.navigate(actionId)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Preview activity flow failed", e)
+                Toast.makeText(applicationContext, "Preview failed: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }

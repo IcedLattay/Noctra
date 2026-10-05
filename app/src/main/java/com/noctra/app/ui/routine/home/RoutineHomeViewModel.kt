@@ -8,6 +8,7 @@ import com.noctra.app.data.model.RoutineConfiguration
 import com.noctra.app.data.repository.RoutineRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.data.repository.UserProfileRepository
+import com.noctra.app.utils.NetworkObserver
 import com.noctra.app.utils.DebugSettings
 import com.noctra.app.data.utils.RoutinePersistenceHelper
 import com.noctra.app.utils.UserSession
@@ -51,6 +52,7 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
     private val routineRepository        = RoutineRepository()
     private val routineSessionRepository = RoutineSessionRepository()
     private val userProfileRepository    = UserProfileRepository()
+    private val networkObserver          = NetworkObserver(getApplication())
 
     // ─── User ID ─────────────────────────────────────────────────────────────
 
@@ -61,6 +63,7 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
 
     sealed class RoutineHomeState {
         object Loading : RoutineHomeState()
+        object Offline : RoutineHomeState()
         object NoRoutine : RoutineHomeState()
 
         data class BeforeWindow(
@@ -125,6 +128,11 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
         loadHomeState()
     }
 
+    fun retry() {
+        _state.value = RoutineHomeState.Loading
+        loadHomeState()
+    }
+
     fun forceResetForDemo() {
         DebugSettings.setSkipCompletionCheck(true)
     }
@@ -133,6 +141,10 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
 
     private fun loadHomeState() {
         viewModelScope.launch {
+            if (!networkObserver.checkNow()) {
+                _state.value = RoutineHomeState.Offline
+                return@launch
+            }
             _state.value = RoutineHomeState.Loading
             val userId = userId ?: return@launch
 
@@ -212,9 +224,14 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
                 }
 
             } catch (e: Exception) {
-                _state.value = RoutineHomeState.Error(
-                    message = e.message ?: "Something went wrong loading your routine."
-                )
+                android.util.Log.e("RoutineHomeVM", "Load failed: ${e.javaClass.simpleName}: ${e.message}", e)
+                if (!networkObserver.checkNow()) {
+                    _state.value = RoutineHomeState.Offline
+                } else {
+                    _state.value = RoutineHomeState.Error(
+                        message = e.message ?: "Something went wrong loading your routine."
+                    )
+                }
             }
         }
     }

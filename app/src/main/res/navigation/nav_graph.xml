@@ -93,90 +93,10 @@
     </navigation>
 
     <!-- ═══════════════════════════════════════════════════
-         ONBOARDING FLOW (onboarding_graph)
-
-         Step order:
-           1. bedtimeConfigFragment      — Set Your Target Bedtime
-           2. activityLibraryFragment    — Choose Your Activities
-           3. routineSequencingFragment  — Arrange Your Routine
-           4a. healthEducationFragment   — Connect Your Watch (real, non-placeholder)
-           4b. healthGrantFragment       — Grant Health Connect Access (real, non-placeholder)
-              → onboardingSummaryFragment — You're All Set
-
-         FLAG (Flag 22): action IDs inside healthEducationFragment and
-         healthGrantFragment below are named by convention, matching this
-         file's existing pattern (action_X_to_Y). Not confirmed against the
-         actual HealthEducationFragment.kt / HealthGrantFragment.kt source
-         — if the build errors with "unresolved reference" on any
-         action_health* ID, send those two files for a precise fix.
+         ONBOARDING FLOW (single source of truth — full graph with
+         health screens lives in onboarding_graph.xml)
     ════════════════════════════════════════════════════ -->
-    <navigation
-        android:id="@+id/onboarding_graph"
-        app:startDestination="@id/bedtimeConfigFragment">
-
-        <fragment
-            android:id="@+id/bedtimeConfigFragment"
-            android:name="com.noctra.app.ui.routine.onboarding.BedtimeConfigFragment"
-            android:label="Set Your Bedtime">
-            <action
-                android:id="@+id/action_bedtimeConfig_to_activityLibrary"
-                app:destination="@id/activityLibraryFragment" />
-        </fragment>
-
-        <fragment
-            android:id="@+id/activityLibraryFragment"
-            android:name="com.noctra.app.ui.routine.onboarding.ActivityLibraryFragment"
-            android:label="Choose Activities">
-            <argument
-                android:name="editMode"
-                app:argType="boolean"
-                android:defaultValue="false" />
-            <action
-                android:id="@+id/action_activityLibrary_to_routineSequencing"
-                app:destination="@id/routineSequencingFragment" />
-        </fragment>
-
-        <fragment
-            android:id="@+id/routineSequencingFragment"
-            android:name="com.noctra.app.ui.routine.onboarding.RoutineSequencingFragment"
-            android:label="Arrange Routine">
-            <action
-                android:id="@+id/action_routineSequencing_to_onboardingSummary"
-                app:destination="@id/onboardingSummaryFragment" />
-            <action
-                android:id="@+id/action_routineSequencing_to_healthEducation"
-                app:destination="@id/healthEducationFragment" />
-        </fragment>
-
-        <fragment
-            android:id="@+id/healthEducationFragment"
-            android:name="com.noctra.app.ui.health.HealthEducationFragment"
-            android:label="Connect Your Watch">
-            <action
-                android:id="@+id/action_healthEducation_to_healthGrant"
-                app:destination="@id/healthGrantFragment" />
-        </fragment>
-
-        <fragment
-            android:id="@+id/healthGrantFragment"
-            android:name="com.noctra.app.ui.health.HealthGrantFragment"
-            android:label="Grant Access">
-            <action
-                android:id="@+id/action_healthGrant_to_onboardingSummary"
-                app:destination="@id/onboardingSummaryFragment" />
-        </fragment>
-
-        <fragment
-            android:id="@+id/onboardingSummaryFragment"
-            android:name="com.noctra.app.ui.routine.onboarding.OnboardingSummaryFragment"
-            android:label="You're All Set">
-            <action
-                android:id="@+id/action_onboardingSummary_to_routineHome"
-                app:destination="@+id/main_graph"
-                app:popUpTo="@id/onboarding_graph"
-                app:popUpToInclusive="true" />
-        </fragment>
-    </navigation>
+    <include app:graph="@navigation/onboarding_graph" />
 
     <!-- ═══════════════════════════════════════════════════
          MAIN APP FLOW (main_graph)
@@ -214,7 +134,12 @@
         <fragment
             android:id="@+id/editRoutineSequencingFragment"
             android:name="com.noctra.app.ui.routine.onboarding.RoutineSequencingFragment"
-            android:label="Edit Order" />
+            android:label="Edit Order">
+            <argument
+                android:name="previewMode"
+                app:argType="boolean"
+                android:defaultValue="false" />
+        </fragment>
 
         <fragment
             android:id="@+id/analyticsDashboardFragment"
@@ -228,6 +153,9 @@
             <action
                 android:id="@+id/action_companion_to_settings"
                 app:destination="@id/settingsFragment" />
+            <action
+                android:id="@+id/action_companion_to_analytics"
+                app:destination="@id/analyticsDashboardFragment" />
         </fragment>
 
         <fragment
@@ -237,7 +165,32 @@
             <action
                 android:id="@+id/action_profile_to_settings"
                 app:destination="@id/settingsFragment" />
+            <action
+                android:id="@+id/action_profile_to_social"
+                app:destination="@id/socialFragment" />
+            <action
+                android:id="@+id/action_profile_to_leaderboard"
+                app:destination="@id/leaderboardFragment" />
         </fragment>
+
+        <fragment
+            android:id="@+id/leaderboardFragment"
+            android:name="com.noctra.app.ui.social.LeaderboardFragment"
+            android:label="Friends Leaderboard" />
+
+        <fragment
+            android:id="@+id/socialFragment"
+            android:name="com.noctra.app.ui.social.SocialFragment"
+            android:label="Friends Leaderboard">
+            <action
+                android:id="@+id/action_social_to_friendRequests"
+                app:destination="@id/friendRequestsFragment" />
+        </fragment>
+
+        <fragment
+            android:id="@+id/friendRequestsFragment"
+            android:name="com.noctra.app.ui.social.FriendRequestsFragment"
+            android:label="Friend Requests" />
 
         <fragment
             android:id="@+id/settingsFragment"
@@ -312,5 +265,22 @@
         app:launchSingleTop="true"
         app:popUpTo="@id/nav_graph"
         app:popUpToInclusive="true" />
+
+    <!-- Debug preview only: no popUpTo, so Back returns to the debug panel. -->
+    <action
+        android:id="@+id/action_global_previewSequencing"
+        app:destination="@id/editRoutineSequencingFragment" />
+    <action
+        android:id="@+id/action_global_previewBreathing"
+        app:destination="@id/breathingActivityFragment" />
+    <action
+        android:id="@+id/action_global_previewAudioscape"
+        app:destination="@id/audioscapeActivityFragment" />
+    <action
+        android:id="@+id/action_global_previewGratitude"
+        app:destination="@id/gratitudeJournalingActivityFragment" />
+    <action
+        android:id="@+id/action_global_previewTimer"
+        app:destination="@id/genericTimerActivityFragment" />
 
 </navigation>

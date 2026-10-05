@@ -2,6 +2,7 @@ package com.noctra.app.ui.analytics
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
@@ -11,16 +12,16 @@ import com.noctra.app.domain.usecase.BedtimeAdherenceCalculator
 import com.noctra.app.domain.usecase.BedtimeAdherenceCalculator.Adherence
 
 /**
- * Custom chart showing target bedtime vs actual sleep onset for 7 days.
+ * Bedtime pairs for the 7-day block (ANALYTICS_SPEC.md §2.1, §6 item 4).
  *
- * Layout (per day column):
- *   ● Target (faded purple, fixed Y)
- *   │
- *   │  ← vertical connector encoding delay
- *   │
- *   ● Actual (color-coded, Y depends on delay)
+ * Per night: a hollow dashed ring at the target bedtime row, and — only when
+ * sleep onset was actually recorded — a filled dot below it, joined by a short
+ * connector whose length grows with the delay. Colour encodes the adherence
+ * band: on-time, slight delay, late.
  *
- *   Mon  (day label below)
+ * §2.1: a night with no data shows the ring alone, with no dot and no
+ * connector, so "we did not measure this" never looks like "we measured zero
+ * delay". §3: the view is read-only.
  */
 class BedtimeAdherenceChartView @JvmOverloads constructor(
     context: Context,
@@ -29,33 +30,53 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     private var data: List<BedtimeAdherenceCalculator.NightAdherence> = emptyList()
-    private val dayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    private var labels: List<String> = emptyList()
 
+    private val ringPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = dpToPx(1.5f)
+        pathEffect = DashPathEffect(floatArrayOf(dpToPx(3f), dpToPx(3f)), 0f)
+    }
     private val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val connectorPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        strokeWidth = dpToPx(1.5f)
+        strokeWidth = dpToPx(2f)
         strokeCap = Paint.Cap.ROUND
     }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
+        textSize = dpToPx(11f)
+        color = ContextCompat.getColor(context, R.color.analytics_muted)
+    }
+    private val captionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
         textSize = dpToPx(13f)
-        color = ContextCompat.getColor(context, R.color.noctra_purple_dark)
+        color = ContextCompat.getColor(context, R.color.analytics_muted)
     }
 
-    private val dotRadiusPx = dpToPx(7f)
-    private val labelHeightPx = dpToPx(28f)
-    private val verticalPadding = dpToPx(8f)
+    // [MEASURE] against NEW_ANALYTICS_UI.png: the dashed target ring reads
+    // ~14dp across and the actual dot ~12dp, so the ring sits just proud of
+    // the dot it anchors.
+    private val ringRadiusPx = dpToPx(7f)
+    private val dotRadiusPx = dpToPx(6f)
+    private val labelHeightPx = dpToPx(20f)
+    private val verticalPadding = dpToPx(10f)
 
-    // Fractional positions within the dot-drawing area (between top padding and label area).
-    // These are clamped so dots never escape the chart bounds regardless of height.
-    private val targetYFraction = 0.10f       // target dots at 10% down from top of drawable area
-    private val onTimeYFraction = 0.30f       // on-time actual dots at 30%
-    private val slightDelayYFraction = 0.55f  // slight delay at 55%
-    private val lateYFraction = 0.85f         // late at 85% — still has room above labels
+    // Vertical bands for the actual dot. Fractions of the drawable area so
+    // nothing escapes the bounds at any container height.
+    private val onTimeYFraction = 0.30f
+    private val slightDelayYFraction = 0.55f
+    private val lateYFraction = 0.82f
 
-    fun setData(weekAdherence: List<BedtimeAdherenceCalculator.NightAdherence>) {
-        require(weekAdherence.size == 7) { "Expected 7 days, got ${weekAdherence.size}" }
+    /**
+     * @param weekAdherence one entry per night in the window
+     * @param dateLabels    one date label per night, already formatted
+     */
+    fun setData(weekAdherence: List<BedtimeAdherenceCalculator.NightAdherence>, dateLabels: List<String>) {
+        require(weekAdherence.size == dateLabels.size) {
+            "adherence (${weekAdherence.size}) and labels (${dateLabels.size}) must line up"
+        }
         data = weekAdherence
+        labels = dateLabels
         invalidate()
     }
 
@@ -65,121 +86,69 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
 
         val w = width.toFloat()
         val h = height.toFloat()
-        val columnWidth = w / 7f
+        val columnWidth = w / data.size
 
-        val isEmpty = data.all { it.adherence == Adherence.NO_DATA }
+        val drawableTop = verticalPadding
+        val drawableHeight = h - labelHeightPx - drawableTop
+        val targetY = drawableTop + drawableHeight * 0.10f
 
-        if (isEmpty) {
-            drawEmptyState(canvas)
-            return
-        }
+        val ringColor = ContextCompat.getColor(context, R.color.adherence_target)
+        val connectorColor = ContextCompat.getColor(context, R.color.adherence_connector)
 
-        // Drawable area = full height minus space reserved for day labels
-        val drawableAreaTop = verticalPadding
-        val drawableAreaBottom = h - labelHeightPx
-        val drawableAreaHeight = drawableAreaBottom - drawableAreaTop
-
-        val targetY = drawableAreaTop + drawableAreaHeight * targetYFraction
-
-        for (i in 0 until 7) {
+        for (i in data.indices) {
             val centerX = (i + 0.5f) * columnWidth
             val night = data[i]
-            val targetColor = ContextCompat.getColor(context, R.color.adherence_target)
+            val hasData = night.adherence != Adherence.NO_DATA
 
-            // Compute actual dot position
-            val (actualY, actualColor) = computeActualDotPosition(
-                night, targetY, drawableAreaTop, drawableAreaHeight
-            )
-
-            // Draw connector line (only if we have data and the actual dot is below the target)
-            if (night.adherence != Adherence.NO_DATA && actualY != null && actualY > targetY + dotRadiusPx * 2) {
-                connectorPaint.color = ContextCompat.getColor(context, R.color.adherence_connector)
-                canvas.drawLine(
-                    centerX,
-                    targetY + dotRadiusPx,
-                    centerX,
-                    actualY - dotRadiusPx,
-                    connectorPaint
+            if (hasData) {
+                val (actualY, actualColor) = actualDotPosition(
+                    night, targetY, drawableTop, drawableHeight
                 )
+                if (actualY != null) {
+                    connectorPaint.color = connectorColor
+                    canvas.drawLine(
+                        centerX, targetY + ringRadiusPx,
+                        centerX, actualY - dotRadiusPx,
+                        connectorPaint
+                    )
+                    dotPaint.color = actualColor
+                    canvas.drawCircle(centerX, actualY, dotRadiusPx, dotPaint)
+                }
             }
 
-            // Draw target dot
-            if (night.adherence != Adherence.NO_DATA) {
-                dotPaint.color = targetColor
-                canvas.drawCircle(centerX, targetY, dotRadiusPx, dotPaint)
-            }
+            // Hollow dashed target ring — drawn last so it reads as the anchor
+            // even when the connector passes behind it.
+            ringPaint.color = ringColor
+            canvas.drawCircle(centerX, targetY, ringRadiusPx, ringPaint)
 
-            // Draw actual dot
-            if (actualY != null) {
-                dotPaint.color = actualColor
-                canvas.drawCircle(centerX, actualY, dotRadiusPx, dotPaint)
-            }
+            val labelY = h - dpToPx(6f)
+            canvas.drawText(labels.getOrElse(i) { "" }, centerX, labelY, labelPaint)
+        }
 
-            // Day label at the bottom
-            val labelY = h - dpToPx(8f)
-            canvas.drawText(dayLabels[i], centerX, labelY, labelPaint)
+        if (data.all { it.adherence == Adherence.NO_DATA }) {
+            canvas.drawText(
+                context.getString(R.string.analytics_no_bedtime_data),
+                w / 2f, h / 2f, captionPaint
+            )
         }
     }
 
-    /**
-     * Returns (yPosition, color) for the actual dot.
-     * Y positions are computed as fractions of the drawable area so dots never
-     * escape the chart bounds regardless of container size.
-     */
-    private fun computeActualDotPosition(
+    private fun actualDotPosition(
         night: BedtimeAdherenceCalculator.NightAdherence,
         targetY: Float,
-        drawableAreaTop: Float,
-        drawableAreaHeight: Float
-    ): Pair<Float?, Int> {
-        return when (night.adherence) {
-            Adherence.ADHERENT -> {
-                val y = drawableAreaTop + drawableAreaHeight * onTimeYFraction
-                y to ContextCompat.getColor(context, R.color.adherence_on_time)
-            }
-            Adherence.SLIGHT_DELAY -> {
-                val y = drawableAreaTop + drawableAreaHeight * slightDelayYFraction
-                y to ContextCompat.getColor(context, R.color.adherence_slight_delay)
-            }
-            Adherence.SIGNIFICANT_DELAY -> {
-                val y = drawableAreaTop + drawableAreaHeight * lateYFraction
-                y to ContextCompat.getColor(context, R.color.adherence_late)
-            }
-            Adherence.NO_DATA -> {
-                // Same Y as target row, navy color, no connecting line
-                targetY to ContextCompat.getColor(context, R.color.adherence_no_data)
-            }
-        }
-    }
-
-    private fun drawEmptyState(canvas: Canvas) {
-        val w = width.toFloat()
-        val h = height.toFloat()
-        val columnWidth = w / 7f
-
-        // 1. Draw the day labels faintly
-        val originalColor = labelPaint.color
-        val originalAlpha = labelPaint.alpha
-        labelPaint.color = ContextCompat.getColor(context, R.color.adherence_no_data)
-        labelPaint.alpha = 100
-
-        for (i in 0 until 7) {
-            val centerX = (i + 0.5f) * columnWidth
-            val labelY = h - dpToPx(8f)
-            canvas.drawText(dayLabels[i], centerX, labelY, labelPaint)
-        }
-
-        // 2. Draw centered "No data" caption
-        val captionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = ContextCompat.getColor(context, R.color.adherence_no_data)
-            textSize = labelPaint.textSize * 1.1f
-            textAlign = Paint.Align.CENTER
-        }
-        canvas.drawText("No bedtime data for this week", w / 2f, h / 2f, captionPaint)
-
-        // Restore paint state
-        labelPaint.color = originalColor
-        labelPaint.alpha = originalAlpha
+        drawableTop: Float,
+        drawableHeight: Float
+    ): Pair<Float?, Int> = when (night.adherence) {
+        Adherence.ADHERENT -> (drawableTop + drawableHeight * onTimeYFraction) to
+            ContextCompat.getColor(context, R.color.adherence_on_time)
+        Adherence.SLIGHT_DELAY -> (drawableTop + drawableHeight * slightDelayYFraction) to
+            ContextCompat.getColor(context, R.color.adherence_slight_delay)
+        Adherence.SIGNIFICANT_DELAY -> (drawableTop + drawableHeight * lateYFraction) to
+            ContextCompat.getColor(context, R.color.adherence_late)
+        // No measurement: the ring above stands alone, so the view must not
+        // also draw a dot sitting on the target row.
+        Adherence.NO_DATA -> null to
+            ContextCompat.getColor(context, R.color.adherence_no_data)
     }
 
     private fun dpToPx(dp: Float): Float =

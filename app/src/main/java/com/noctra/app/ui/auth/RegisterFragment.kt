@@ -89,6 +89,11 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
             } else {
                 binding.etPassword.inputType = android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
             }
+            // Changing inputType resets the typeface — re-apply so the
+            // exposed password uses the same font as the other fields
+            binding.etPassword.typeface = androidx.core.content.res.ResourcesCompat.getFont(
+                requireContext(), R.font.poppinsregular
+            )
             binding.etPassword.setSelection(binding.etPassword.text.length)
         }
     }
@@ -136,7 +141,8 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
     private fun handleAuthState(state: AuthViewModel.AuthState) {
         when (state) {
             is AuthViewModel.AuthState.Loading -> {
-                binding.btnCreateAccount.text = "Creating account..."
+                binding.btnCreateAccount.text = ""
+                binding.pbCreateAccount.visibility = View.VISIBLE
             }
             is AuthViewModel.AuthState.Success -> {
                 val email = viewModel.email.value
@@ -149,11 +155,13 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
             }
             is AuthViewModel.AuthState.Error -> {
                 binding.btnCreateAccount.text = "Create Account"
+                binding.pbCreateAccount.visibility = View.GONE
                 Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
                 viewModel.resetState()
             }
             else -> {
                 binding.btnCreateAccount.text = "Create Account"
+                binding.pbCreateAccount.visibility = View.GONE
             }
         }
     }

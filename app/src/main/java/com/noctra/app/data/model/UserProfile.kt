@@ -13,5 +13,13 @@ data class UserProfile(
     @SerialName("onboarding_completed") val onboardingCompleted: Boolean = false,
     @SerialName("onboarding_step") val onboardingStep: Int = 0,
     @SerialName("hr_baseline_bpm") val hrBaselineBpm: Double? = null,
-    @SerialName("is_email_verified") val isEmailVerified: Boolean = false
+    @SerialName("is_email_verified") val isEmailVerified: Boolean = false,
+    @SerialName("draft_bedtime") val draftBedtime: String? = null,
+    @SerialName("draft_activity_ids") val draftActivityIds: List<String>? = null,
+    @SerialName("outfit_equipped") val outfitEquipped: String? = null,
+
+    // Journey anchoring: rows predating Migration 5 read back as null
+    // rather than failing to decode (both nullable, no DB default overridden).
+    @SerialName("onboarding_completed_at") val onboardingCompletedAt: String? = null,
+    @SerialName("created_at") val createdAt: String? = null
 )
