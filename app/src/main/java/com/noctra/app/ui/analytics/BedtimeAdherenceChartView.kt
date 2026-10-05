@@ -185,12 +185,20 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
             )
         }
 
-        // Regime brackets: one line joining the endpoint labels of each run.
+        // Regime brackets: one line in the gap between the endpoint labels
+        // of each run — never over the text itself.
         for ((from, to) in brackets) {
-            val startX = (from + 0.5f) * columnWidth
-            val endX = (to + 0.5f) * columnWidth
-            val y = targetLabelY - dpToPx(12f)
-            canvas.drawLine(startX, y, endX, y, bracketPaint)
+            val firstLabel = targetLabels.getOrElse(from) { "" }
+            val lastLabel = targetLabels.getOrElse(to) { "" }
+            val gap = dpToPx(6f)
+            val startX = (from + 0.5f) * columnWidth +
+                targetLabelPaint.measureText(firstLabel) / 2f + gap
+            val endX = (to + 0.5f) * columnWidth -
+                targetLabelPaint.measureText(lastLabel) / 2f - gap
+            val y = targetLabelY - dpToPx(4f)
+            if (endX > startX) {
+                canvas.drawLine(startX, y, endX, y, bracketPaint)
+            }
         }
     }
 
