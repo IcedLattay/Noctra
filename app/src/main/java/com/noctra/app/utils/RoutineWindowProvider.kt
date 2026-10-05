@@ -60,4 +60,15 @@ object RoutineWindowProvider {
     fun resolveRoutineSessionDate(now: java.time.LocalDateTime): java.time.LocalDate {
         return if (now.hour < 4) now.toLocalDate().minusDays(1) else now.toLocalDate()
     }
+
+    /**
+     * Which date the Routine screen treats as "today" for its completed
+     * state. The latest possible window (2 AM bedtime) closes at 3 AM, so
+     * the screen resets at 3 — not midnight (which forgets tonight's
+     * completion and lets a moved bedtime reopen a second routine) and
+     * not 2 AM (which would split that latest window mid-routine).
+     */
+    fun resolveRoutineScreenDate(now: java.time.LocalDateTime = java.time.LocalDateTime.now()): java.time.LocalDate {
+        return if (now.hour < 3) now.toLocalDate().minusDays(1) else now.toLocalDate()
+    }
 }

@@ -181,7 +181,10 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
                 }
 
                 // Check tonight's completion BEFORE window logic — completion wins.
-                val todayDate = routineSessionRepository.getTodayDateString()
+                // "Tonight" runs to 3 AM (latest window closes then), so a
+                // post-midnight open still sees the completed state.
+                val todayDate = com.noctra.app.utils.RoutineWindowProvider
+                    .resolveRoutineScreenDate().toString()
                 val alreadyCompleted = if (DebugSettings.skipCompletionCheck.value) false else {
                     routineSessionRepository.hasCompletedSessionForDate(userId, todayDate)
                 }
