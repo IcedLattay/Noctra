@@ -32,6 +32,12 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
     private var data: List<BedtimeAdherenceCalculator.NightAdherence> = emptyList()
     private var labels: List<String> = emptyList()
     private var targetLabels: List<String> = emptyList()
+    private var brackets: List<Pair<Int, Int>> = emptyList()
+    private val bracketPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = dpToPx(1.5f)
+        color = ContextCompat.getColor(context, R.color.analytics_muted)
+    }
     private val targetLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
         textSize = dpToPx(11f)
@@ -91,7 +97,26 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
         data = weekAdherence
         labels = dateLabels
         this.targetLabels = targetLabels
+        brackets = computeBrackets(targetLabels)
         invalidate()
+    }
+
+    /**
+     * Maximal runs of equal targets clipped to the visible window: each
+     * run of 2+ nights gets one overline bracket ("this whole stretch ran
+     * one target"). Runs continuing past the window edge bracket to the
+     * edge. Single nights carry just their label.
+     */
+    private fun computeBrackets(targets: List<String>): List<Pair<Int, Int>> {
+        val out = mutableListOf<Pair<Int, Int>>()
+        var i = 0
+        while (i < targets.size) {
+            var j = i
+            while (j + 1 < targets.size && targets[j + 1] == targets[i]) j++
+            if (j > i) out += i to j
+            i = j + 1
+        }
+        return out
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -105,6 +130,7 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
         val drawableTop = verticalPadding
         val drawableHeight = h - labelHeightPx - drawableTop
         val targetY = drawableTop + drawableHeight * 0.10f
+        val targetLabelY = targetY - ringRadiusPx - dpToPx(6f)
 
         val ringColor = ContextCompat.getColor(context, R.color.adherence_target)
         val connectorColor = ContextCompat.getColor(context, R.color.adherence_connector)
@@ -138,7 +164,7 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
             // Hour-only target value for this night ("10 PM").
             canvas.drawText(
                 targetLabels.getOrElse(i) { "" },
-                centerX, targetY - ringRadiusPx - dpToPx(6f), targetLabelPaint
+                centerX, targetLabelY, targetLabelPaint
             )
 
             val labelY = h - dpToPx(6f)
@@ -150,6 +176,14 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
                 context.getString(R.string.analytics_no_bedtime_data),
                 w / 2f, h / 2f, captionPaint
             )
+        }
+
+        // Regime brackets: one overline per run of equal targets.
+        for ((from, to) in brackets) {
+            val startX = from * columnWidth + dpToPx(4f)
+            val endX = (to + 1) * columnWidth - dpToPx(4f)
+            val y = targetLabelY - dpToPx(12f)
+            canvas.drawLine(startX, y, endX, y, bracketPaint)
         }
     }
 
