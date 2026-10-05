@@ -47,6 +47,10 @@ class BreathingActivityFragment : Fragment() {
     private var breathingAnimatorSet: AnimatorSet? = null
     private var isBreathingRunning = false
 
+    // Session 5 (R11): true once the real breathing timer starts, so the
+    // "timer = 0 -> freeze" check ignores the VM's leftover 0 value.
+    private var breathingTimerStarted = false
+
     private val INHALE_MS = 4_000L
     private val HOLD_MS = 7_000L
     private val EXHALE_MS = 8_000L
@@ -103,6 +107,10 @@ class BreathingActivityFragment : Fragment() {
                         updateMainTimerDisplay(secs.toLong())
                         updateMainTimerColor(secs.toLong())
 
+                        // Session 5 (R11): time's up — freeze the circle and the
+                        // Inhale/Hold/Exhale label exactly where they are.
+                        if (secs == 0 && breathingTimerStarted) stopBreathingAnimation()
+
                         // Show "Complete Routine" button if timer is 0 AND it's the last step
                         if (secs == 0 && routineViewModel.isLastStep) {
                             binding.btnCompleteRoutine.visibility = View.VISIBLE
@@ -144,6 +152,7 @@ class BreathingActivityFragment : Fragment() {
         binding.preCountdownPanel.visibility = View.GONE
         binding.breathingPanel.visibility = View.VISIBLE
         startBreathingLoop()
+        breathingTimerStarted = true
         val durationSeconds = if (TEST_MODE_SHORT_DURATION) TEST_DURATION_SECONDS
         else (routineViewModel.currentActivity?.defaultDurationMinutes ?: 0) * 60
         routineViewModel.startCurrentActivityTimer(durationSeconds)
@@ -247,6 +256,12 @@ class BreathingActivityFragment : Fragment() {
         binding.tvBreathPhase.setTextColor(android.graphics.Color.parseColor(hexColor))
     }
 
+    /**
+     * Stops the breathing loop. cancel() leaves the circle at its current
+     * size (no snap back), and the phase label keeps its last text, so the
+     * screen looks "frozen". The pending Hold-phase postDelayed is ignored
+     * because isBreathingRunning is now false.
+     */
     private fun stopBreathingAnimation() {
         isBreathingRunning = false
         breathingAnimatorSet?.cancel()

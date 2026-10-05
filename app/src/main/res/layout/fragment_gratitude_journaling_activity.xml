@@ -242,20 +242,25 @@
                 tools:text="05 : 00" />
         </LinearLayout>
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCompleteRoutine"
-            android:layout_width="0dp"
             android:layout_height="56dp"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/bg_button_primary"
+            android:background="@drawable/bg_button_complete"
             app:backgroundTint="@null"
-            android:textAllCaps="false"
             android:stateListAnimator="@null"
-            android:text="Complete Routine"
+            android:elevation="4dp"
+            android:textAllCaps="false"
             android:textColor="@color/white"
             android:textSize="16sp"
-            android:textStyle="bold"
             android:fontFamily="@font/poppinsbold"
+            app:icon="@drawable/ic_btn_check"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp"
+            app:iconSize="20dp"
+            app:iconTint="#FFFFFF"
+            android:layout_width="0dp"
+            android:layout_marginBottom="8dp"
+            android:text="Complete Routine"
             android:visibility="gone"
             tools:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
