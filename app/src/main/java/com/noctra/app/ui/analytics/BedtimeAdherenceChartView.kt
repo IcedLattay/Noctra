@@ -167,8 +167,10 @@ class BedtimeAdherenceChartView @JvmOverloads constructor(
             canvas.drawCircle(centerX, targetY, ringRadiusPx, ringPaint)
 
             // Hour-only target value for this night ("10 PM").
+            // Middles of a bracket stay blank — endpoints carry the run.
+            val inBracketMiddle = brackets.any { (from, to) -> i > from && i < to }
             canvas.drawText(
-                targetLabels.getOrElse(i) { "" },
+                if (inBracketMiddle) "" else targetLabels.getOrElse(i) { "" },
                 centerX, targetLabelY, targetLabelPaint
             )
 
