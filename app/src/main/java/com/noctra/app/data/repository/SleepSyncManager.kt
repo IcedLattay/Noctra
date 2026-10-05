@@ -180,6 +180,7 @@ class SleepSyncManager {
 
             if (segments.isEmpty()) {
                 Log.w(TAG, "No valid segments — returning NoData")
+                stampExistingRowIfNeeded(userId, sessionDate)
                 return SyncResult.NoData
             }
 
@@ -187,6 +188,7 @@ class SleepSyncManager {
             val aggregated = aggregateSegments(segments)
             if (aggregated == null) {
                 Log.w(TAG, "Aggregation returned null — returning NoData")
+                stampExistingRowIfNeeded(userId, sessionDate)
                 return SyncResult.NoData
             }
 
@@ -257,6 +259,31 @@ class SleepSyncManager {
     // ---------------------------------------------------------------------
     // Parsing & aggregation
     // ---------------------------------------------------------------------
+
+    /**
+     * Stamp-only backfill for pre-feature rows: if this date already has a
+     * row with no bedtime stamp, fill just that column (never overwrites).
+     * Runs on the NoData path so already-synced nights still converge.
+     */
+    private suspend fun stampExistingRowIfNeeded(userId: String, sessionDate: LocalDate) {
+        try {
+            val dateStr = sessionDate.toString()
+            val existing = sleepRecordRepository
+                .getRecordsInRange(userId, dateStr, dateStr)
+                .firstOrNull()
+                ?: return
+            if (existing.targetBedtime != null) return
+            val bedtime = try {
+                UserProfileRepository().getOrCreateProfile(userId).targetBedtime
+            } catch (e: Exception) {
+                null
+            } ?: return
+            sleepRecordRepository.stampTargetBedtime(userId, dateStr, bedtime)
+            Log.d(TAG, "Stamped $dateStr with $bedtime")
+        } catch (e: Exception) {
+            Log.w(TAG, "Stamp pass failed for $sessionDate", e)
+        }
+    }
 
     /**
      * A single Health Connect sleep session parsed into Noctra's shape.

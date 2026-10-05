@@ -134,6 +134,32 @@ class SleepRecordRepository {
     }
 
     /**
+     * Fills only the bedtime stamp on one night's row. Used by the sync's
+     * NoData path to converge pre-feature rows — never overwrites, never
+     * touches scores or times.
+     */
+    suspend fun stampTargetBedtime(userId: String, sessionDate: String, bedtime: String) {
+        try {
+            client.from("sleep_records").update(
+                {
+                    set("target_bedtime", bedtime)
+                }
+            ) {
+                filter {
+                    eq("user_id", userId)
+                    eq("session_date", sessionDate)
+                }
+            }
+        } catch (e: IOException) {
+            Log.e(tag, "Network error stamping bedtime", e)
+            throw e
+        } catch (e: SocketTimeoutException) {
+            Log.e(tag, "Timeout stamping bedtime", e)
+            throw e
+        }
+    }
+
+    /**
      * Inserts multiple records in one call. Used by dev seed function.
      */
     suspend fun insertRecords(records: List<SleepRecord>) {
