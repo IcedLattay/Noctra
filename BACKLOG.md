@@ -213,7 +213,7 @@ Reported: the begin-routine button still shows after the routine window closes.
 Suspect first: `MainActivity` line 73 sets `DebugSettings.setForceRoutineWindow(true)` (TEMP — remove before submission), and `RoutineHomeViewModel.loadHomeState()` treats that flag as an open window — so on debug builds the button shows 24/7 by design. The real window logic (`RoutineWindowProvider.isTimeInWindow` + expired-state handling) can only be assessed with the flag OFF.
 
 - [x] Investigate today rendering MISSED in routine completion when no session row exists yet → root cause: chart disagreed with auditor (`determineStatus` says today-no-row = PENDING); fixed by mirroring the rule in `buildCompletionStatuses`
-- [ ] Check merged routine-polish additions on device: home single-column list, resume fallback button, timer/keyboard/TimesUp screens (verify on device against text descriptions — descriptions anchor expectations only), real windows + full durations default, edit-mode save flow, step-2 Back button
+- [ ] Check merged routine-polish additions on device: edit-mode save flow persists (rest verified: home list, resume fallback, timer/keyboard/TimesUp, real windows + full durations, step-2 Back)
 - [ ] Decide details-popup mechanic on Routine home list: dedicated button vs long-press (discoverability vs clean look)
 - [ ] Gate resume on freshness + window: Resumable short-circuits before window/completion checks on a timestamp-only local cache — resume works outside the window and potentially next-day; decide age limit and whether window applies
 - [x] Verify routine v2 merge on device: back-blocker mid-routine, restyled player layouts, overlay icons, breathing freeze, preview button + auto-dismiss
