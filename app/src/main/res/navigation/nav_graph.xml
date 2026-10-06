@@ -126,6 +126,10 @@
                 android:name="editMode"
                 app:argType="boolean"
                 android:defaultValue="true" />
+            <argument
+                android:name="previewMode"
+                app:argType="boolean"
+                android:defaultValue="false" />
             <action
                 android:id="@+id/action_activityLibrary_to_routineSequencing"
                 app:destination="@id/editRoutineSequencingFragment" />
@@ -285,5 +289,8 @@
     <action
         android:id="@+id/action_global_previewCompletion"
         app:destination="@id/routineCompletionOverlayFragment" />
+    <action
+        android:id="@+id/action_global_previewLibrary"
+        app:destination="@id/editActivityLibraryFragment" />
 
 </navigation>

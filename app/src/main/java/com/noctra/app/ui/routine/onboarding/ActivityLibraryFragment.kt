@@ -61,6 +61,14 @@ class ActivityLibraryFragment : Fragment() {
             setupEditModeBackPress()
         }
 
+        // Debug preview: look freely, save nothing. The continue button
+        // is gone (every write path lives behind it); taps only rearrange
+        // ViewModel memory, discarded on exit (see onDestroyView).
+        val previewMode = arguments?.getBoolean("previewMode") ?: false
+        if (previewMode) {
+            binding.btnContinue.visibility = View.GONE
+        }
+
         setupAdapter()
         setupButtons()
         loadActivities()
@@ -248,6 +256,11 @@ class ActivityLibraryFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        // Preview mutated only ViewModel memory (taps); discard it so the
+        // next real flow loads fresh instead of preview leftovers.
+        if (arguments?.getBoolean("previewMode") == true) {
+            viewModel.resetEditSession()
+        }
         super.onDestroyView()
         _binding = null
     }

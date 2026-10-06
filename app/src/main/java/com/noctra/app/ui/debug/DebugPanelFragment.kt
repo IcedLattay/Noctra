@@ -35,6 +35,7 @@ interface DebugPanelListener {
     fun onPreviewSequencing()
     fun onPreviewActivity(label: String)
     fun onPreviewCompletion()
+    fun onPreviewLibrary(editMode: Boolean)
     fun onSeedDemoData()
     fun onClearDemoData()
 }
@@ -136,6 +137,12 @@ class DebugPanelFragment : Fragment() {
         }
         view.findViewById<MaterialButton>(R.id.btn_preview_completion).setOnClickListener {
             listener?.onPreviewCompletion()
+        }
+        view.findViewById<MaterialButton>(R.id.btn_preview_library_onboarding).setOnClickListener {
+            listener?.onPreviewLibrary(false)
+        }
+        view.findViewById<MaterialButton>(R.id.btn_preview_library_edit).setOnClickListener {
+            listener?.onPreviewLibrary(true)
         }
         // One preview button per library activity, built from the DB so new
         // activities appear with no code change.

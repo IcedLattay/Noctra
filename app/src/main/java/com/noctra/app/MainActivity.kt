@@ -737,22 +737,34 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         val vm = androidx.lifecycle.ViewModelProvider(this@MainActivity)
             .get(com.noctra.app.ui.routine.RoutineViewModel::class.java)
         vm.previewReward()
+        previewNavigate(R.id.action_global_previewCompletion)
+    }
+
+    override fun onPreviewLibrary(editMode: Boolean) {
+        val args = android.os.Bundle().apply {
+            putBoolean("editMode", editMode)
+            putBoolean("previewMode", true)
+        }
+        previewNavigate(R.id.action_global_previewLibrary, args)
+    }
+
+    /** Debug preview navigation with pop-then-direct fallback. */
+    private fun previewNavigate(actionId: Int, args: android.os.Bundle? = null) {
         try {
             val navHost =
                 supportFragmentManager.findFragmentById(R.id.nav_host) as androidx.navigation.fragment.NavHostFragment
-            navHost.navController.navigate(R.id.action_global_previewCompletion)
+            navHost.navController.navigate(actionId, args)
         } catch (e: Exception) {
             try {
                 val navHost =
                     supportFragmentManager.findFragmentById(R.id.nav_host) as androidx.navigation.fragment.NavHostFragment
                 navHost.navController.popBackStack()
-                navHost.navController.navigate(R.id.action_global_previewCompletion)
+                navHost.navController.navigate(actionId, args)
             } catch (e2: Exception) {
                 Toast.makeText(applicationContext, "Preview failed: ${e2.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
-
     private fun destinationForLabel(label: String): Int = when (label) {
         "Bedtime To-Do List Writing",
         "Reading",
