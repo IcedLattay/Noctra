@@ -216,7 +216,7 @@ Suspect first: `MainActivity` line 73 sets `DebugSettings.setForceRoutineWindow(
 - [ ] Check merged routine-polish additions on device: home single-column list, resume fallback button, timer/keyboard/TimesUp screens (verify on device against text descriptions — descriptions anchor expectations only), real windows + full durations default, edit-mode save flow, step-2 Back button
 - [ ] Decide details-popup mechanic on Routine home list: dedicated button vs long-press (discoverability vs clean look)
 - [ ] Gate resume on freshness + window: Resumable short-circuits before window/completion checks on a timestamp-only local cache — resume works outside the window and potentially next-day; decide age limit and whether window applies
-- [ ] Verify routine v2 merge on device: back-blocker mid-routine, restyled player layouts (done: overlay icons, breathing freeze, preview button + auto-dismiss)
+- [ ] Verify routine v2 merge on device: back-blocker mid-routine (needs a real routine run — previews don't exercise it), restyled player layouts (done: overlay icons, breathing freeze, preview button + auto-dismiss)
 - [x] Per-night bedtime snapshot: `target_bedtime` on `sleep_records`, first-write-wins at sync; null = current-target fallback rendered normally; adherence + variability read stamps; no history table; audit walk covers trailing 14 on return (plus stamp-only NoData pass for already-synced rows)
 - [x] Adherence per-day target labels: hour-only ("10 PM") above the rings, one per day
 - [x] Merge `origin/revision/ui-polish-routine-cards` into `merge/routine-cards` (7 conflicts: step-2 badge+info hybrid, step-3 visuals+chevrons hybrid, Companion ours) — build green, device verify pending

@@ -209,8 +209,8 @@
                 <!-- Session 5 (R11): Current Streak icon (streakprofile vector, no tint) -->
                 <ImageView
                     android:id="@+id/iv_streak_icon"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
                     android:scaleType="fitCenter"
                     android:src="@drawable/streakprofile"
                     android:contentDescription="Current Streak" />
