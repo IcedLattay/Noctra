@@ -92,6 +92,12 @@ class RoutineStartFragment : Fragment() {
         bindViews(view)
         setupRecyclerView()
 
+        // Debug preview: the session-starting button is gone, so no write
+        // path is reachable. Everything else (panels, step list) runs live.
+        if (arguments?.getBoolean("previewMode") == true) {
+            btnStartRoutine.visibility = View.GONE
+        }
+
         // If opened via deep link, VM might be empty. Fetch data if needed.
         routineViewModel.initializeIfNecessary()
 

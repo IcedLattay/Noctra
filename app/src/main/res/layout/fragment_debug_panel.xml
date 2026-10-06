@@ -305,6 +305,10 @@
                         android:id="@+id/btn_preview_library_edit"
                         style="@style/DebugButton"
                         android:text="Preview Select (Edit)" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_routine_start"
+                        style="@style/DebugButton"
+                        android:text="Preview Routine Start" />
                     <TextView
                         style="@style/DebugDescription"
                         android:text="Opens step-3 arrange with your active routine, Confirm hidden — look and reorder freely, nothing is saved." />

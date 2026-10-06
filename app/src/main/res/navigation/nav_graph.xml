@@ -217,6 +217,10 @@
             android:id="@+id/routineStartFragment"
             android:name="com.noctra.app.ui.routine.home.RoutineStartFragment"
             android:label="Start Routine">
+            <argument
+                android:name="previewMode"
+                app:argType="boolean"
+                android:defaultValue="false" />
             <action
                 android:id="@+id/action_routineStartFragment_to_breathingActivityFragment"
                 app:destination="@id/breathingActivityFragment" />
@@ -292,5 +296,8 @@
     <action
         android:id="@+id/action_global_previewLibrary"
         app:destination="@id/editActivityLibraryFragment" />
+    <action
+        android:id="@+id/action_global_previewRoutineStart"
+        app:destination="@id/routineStartFragment" />
 
 </navigation>

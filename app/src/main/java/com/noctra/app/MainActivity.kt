@@ -748,6 +748,31 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         previewNavigate(R.id.action_global_previewLibrary, args)
     }
 
+    override fun onPreviewRoutineStart() {
+        lifecycleScope.launch {
+            try {
+                val userId = UserSession.getUserId(applicationContext)
+                val vm = androidx.lifecycle.ViewModelProvider(this@MainActivity)
+                    .get(com.noctra.app.ui.routine.RoutineViewModel::class.java)
+                // Seed the active routine if the VM is empty; the screen's
+                // own initializeIfNecessary() loads it live otherwise.
+                // Writes stay disabled: the session-starting button is
+                // hidden in preview mode.
+                if (userId != null) {
+                    val repo = com.noctra.app.data.repository.RoutineRepository()
+                    val active = repo.getActiveRoutine(userId)
+                    if (active != null) {
+                        val entries = repo.parseActivitySequence(active.activitySequence)
+                        vm.seedPreview(repo.hydrateActivitySequence(entries))
+                    }
+                }
+                val args = android.os.Bundle().apply { putBoolean("previewMode", true) }
+                previewNavigate(R.id.action_global_previewRoutineStart, args)
+            } catch (e: Exception) {
+                Toast.makeText(applicationContext, "Preview failed: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
     /** Debug preview navigation with pop-then-direct fallback. */
     private fun previewNavigate(actionId: Int, args: android.os.Bundle? = null) {
         try {
