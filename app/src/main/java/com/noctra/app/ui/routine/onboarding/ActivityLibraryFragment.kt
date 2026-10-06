@@ -240,10 +240,7 @@ class ActivityLibraryFragment : Fragment() {
                 val ready = count == 3
                 binding.btnContinue.isEnabled = ready
                 binding.btnContinue.alpha = if (ready) 1f else 0.5f
-                binding.btnContinue.text = if (ready)
-                    "Continue"
-                else
-                    "Select exactly 3 activities"
+                binding.btnContinue.text = "Continue"
 
                 // Update adapter selection state
                 adapter.setSelected(selected.map { it.activityId }.toSet())
