@@ -72,9 +72,8 @@
         <ImageView
             android:layout_width="16dp"
             android:layout_height="16dp"
-            android:src="@drawable/ic_alarm_clock"
-            android:contentDescription="streak"
-            android:tint="#FF6B2C" />
+            android:src="@drawable/streakprofile"
+            android:contentDescription="streak" />
 
         <TextView
             android:id="@+id/tv_streak_count"
