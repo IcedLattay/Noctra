@@ -54,7 +54,8 @@ class ActivityGridAdapter(
             // ripple so they don't look pressable
             val maxReached = selectedIds.size >= 3
             val enabled = !maxReached || isSelected
-            binding.cardRoot.alpha = if (enabled) 1.0f else 0.5f
+            // No faded look at max: disabled state is click-blocking only.
+            binding.cardRoot.alpha = 1.0f
             binding.cardRoot.isClickable = enabled
 
             binding.root.setOnClickListener { onActivityClick(activity) }
