@@ -85,6 +85,19 @@ class ResumeRoutineDialogFragment : DialogFragment() {
         return dialog
     }
 
+    override fun onStart() {
+        super.onStart()
+        // Full-width card like the other dialogs (width lives here, not in
+        // padding/margins): transparent window lets our rounded card show.
+        dialog?.window?.setBackgroundDrawable(
+            android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)
+        )
+        dialog?.window?.setLayout(
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: android.view.ViewGroup?,

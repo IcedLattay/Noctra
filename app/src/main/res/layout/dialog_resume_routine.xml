@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/bg_card_white"
+    android:background="@drawable/bg_resume_card"
     android:padding="24dp">
 
     <!-- Shleepy illustration — real asset (Flag 11 resolved) -->
@@ -36,6 +36,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
+        android:gravity="center"
         android:text="You have a routine in progress. Resume?"
         android:textColor="#6B6B6B"
         android:textSize="14sp"
