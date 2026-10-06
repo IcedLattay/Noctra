@@ -88,21 +88,24 @@
 
     </LinearLayout>
 
-    <!-- Activity Cards (single column list) -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_activity_cards"
+    <!-- Activity Cards (always ~3: equal weights fill the space natively) -->
+    <LinearLayout
+        android:id="@+id/cards_container"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginTop="20dp"
         android:clipToPadding="false"
+        android:orientation="vertical"
         android:paddingBottom="16dp"
         app:layout_constraintTop_toBottomOf="@id/tv_window_hint"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/btn_begin_routine"
-        tools:listitem="@layout/item_activity_card_home" />
+        tools:listitem="@layout/item_activity_card_home" >
+
+    </LinearLayout>
 
     <!-- Begin Routine Button (InWindow state only) -->
     <Button

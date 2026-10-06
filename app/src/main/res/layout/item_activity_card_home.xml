@@ -49,20 +49,19 @@
                 tools:src="@drawable/illus_reading" />
         </androidx.cardview.widget.CardView>
 
-        <!-- Number badge -->
+        <!-- Number badge (over illustration top-left corner) -->
         <TextView
             android:id="@+id/tv_step_number"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:layout_marginStart="14dp"
             android:background="@drawable/bg_activity_step_circle"
+            android:elevation="2dp"
             android:gravity="center"
             android:textColor="@color/white"
             android:textSize="12sp"
             android:textStyle="bold"
-            app:layout_constraintStart_toEndOf="@id/card_illustration"
-            app:layout_constraintTop_toTopOf="@id/tv_activity_label"
-            app:layout_constraintBottom_toBottomOf="@id/tv_activity_label"
+            app:layout_constraintStart_toStartOf="@id/card_illustration"
+            app:layout_constraintTop_toTopOf="@id/card_illustration"
             tools:text="1" />
 
         <!-- Activity name -->
@@ -70,14 +69,14 @@
             android:id="@+id/tv_activity_label"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="12dp"
             android:fontFamily="@font/poppinsbold"
             android:maxLines="2"
             android:ellipsize="end"
             android:textColor="@color/noctra_purple_dark"
             android:textSize="15sp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/tv_step_number"
+            app:layout_constraintStart_toEndOf="@id/card_illustration"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toTopOf="@id/tv_activity_duration"
             app:layout_constraintVertical_chainStyle="packed"
@@ -92,7 +91,7 @@
             android:fontFamily="@font/poppinsregular"
             android:textColor="#6B6490"
             android:textSize="12sp"
-            app:layout_constraintStart_toStartOf="@id/tv_step_number"
+            app:layout_constraintStart_toStartOf="@id/tv_activity_label"
             app:layout_constraintTop_toBottomOf="@id/tv_activity_label"
             app:layout_constraintBottom_toTopOf="@id/tv_activity_description"
             tools:text="15 min" />
@@ -110,7 +109,7 @@
             android:textSize="12sp"
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="@id/tv_step_number"
+            app:layout_constraintStart_toStartOf="@id/tv_activity_label"
             app:layout_constraintTop_toBottomOf="@id/tv_activity_duration"
             app:layout_constraintBottom_toBottomOf="parent"
             tools:text="Slow your breath to calm your body."

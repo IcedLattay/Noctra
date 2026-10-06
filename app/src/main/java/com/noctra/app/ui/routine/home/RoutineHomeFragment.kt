@@ -46,16 +46,12 @@ class RoutineHomeFragment : Fragment() {
     private lateinit var tvSubtitle: TextView
     private lateinit var tvWindowHint: TextView
     private lateinit var tvStreakCount: TextView
-    private lateinit var rvActivityCards: RecyclerView
+    private lateinit var cardsContainer: LinearLayout
     private lateinit var btnBeginRoutine: Button
     private lateinit var btnEditRoutine: Button
     private lateinit var btnResumeRoutine: Button
     private lateinit var layoutCompleted: LinearLayout
     private lateinit var layoutNoRoutine: LinearLayout
-
-    // ─── Adapter ─────────────────────────────────────────────────────────────
-
-    private lateinit var activityCardAdapter: ActivityCardAdapter
 
     // ─── Lifecycle ───────────────────────────────────────────────────────────
 
@@ -70,7 +66,6 @@ class RoutineHomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         bindViews(view)
-        setupRecyclerView()
         setupListeners()
         observeState()
     }
@@ -87,7 +82,7 @@ class RoutineHomeFragment : Fragment() {
         tvSubtitle        = view.findViewById(R.id.tv_routine_subtitle)
         tvWindowHint      = view.findViewById(R.id.tv_window_hint)
         tvStreakCount     = view.findViewById(R.id.tv_streak_count)
-        rvActivityCards   = view.findViewById(R.id.rv_activity_cards)
+        cardsContainer  = view.findViewById(R.id.cards_container)
         btnBeginRoutine   = view.findViewById(R.id.btn_begin_routine)
         btnEditRoutine    = view.findViewById(R.id.btn_edit_routine)
         btnResumeRoutine  = view.findViewById(R.id.btn_resume_routine)
@@ -96,22 +91,6 @@ class RoutineHomeFragment : Fragment() {
     }
 
     private fun setupListeners() {
-    }
-
-    /**
-     * Session 5: single full-width column (was a 2-column grid).
-     * Long-press a card -> ActivityInfoDialogFragment.
-     */
-    private fun setupRecyclerView() {
-        activityCardAdapter = ActivityCardAdapter { activity, stepNumber ->
-            ActivityInfoDialogFragment.show(childFragmentManager, activity, stepNumber)
-        }
-
-        rvActivityCards.apply {
-            layoutManager = LinearLayoutManager(requireContext())
-            adapter = activityCardAdapter
-            isNestedScrollingEnabled = false
-        }
     }
 
     // ─── State Observation ───────────────────────────────────────────────────
@@ -138,7 +117,7 @@ class RoutineHomeFragment : Fragment() {
             layoutNoRoutine.visibility = View.GONE
             btnBeginRoutine.visibility = View.GONE
             btnEditRoutine.visibility = View.GONE
-            rvActivityCards.visibility = View.GONE
+            cardsContainer.visibility = View.GONE
             tvWindowHint.visibility = View.GONE
             setupRetryButton()
             return
@@ -155,7 +134,7 @@ class RoutineHomeFragment : Fragment() {
         btnBeginRoutine.visibility = View.GONE
         btnEditRoutine.visibility = View.GONE
         btnResumeRoutine.visibility = View.GONE
-        rvActivityCards.visibility = View.GONE
+        cardsContainer.visibility = View.GONE
         tvWindowHint.visibility = View.GONE
 
         when (state) {
@@ -173,8 +152,8 @@ class RoutineHomeFragment : Fragment() {
                 tvWindowHint.text = "Routine opens at ${state.routineStartTime}"
                 tvWindowHint.visibility = View.VISIBLE
 
-                activityCardAdapter.submitList(state.activities)
-                rvActivityCards.visibility = View.VISIBLE
+                renderCards(state.activities)
+                cardsContainer.visibility = View.VISIBLE
 
                 btnEditRoutine.visibility = View.VISIBLE
                 btnEditRoutine.setOnClickListener {
@@ -186,8 +165,8 @@ class RoutineHomeFragment : Fragment() {
                 tvSubtitle.text = "${state.activities.size} activities • ${state.totalDurationMinutes} minutes total"
                 tvStreakCount.text = "${state.currentStreak} day streak"
 
-                activityCardAdapter.submitList(state.activities)
-                rvActivityCards.visibility = View.VISIBLE
+                renderCards(state.activities)
+                cardsContainer.visibility = View.VISIBLE
 
                 btnBeginRoutine.visibility = View.VISIBLE
                 btnBeginRoutine.setOnClickListener {
@@ -211,8 +190,8 @@ class RoutineHomeFragment : Fragment() {
                 tvSubtitle.text = "${state.activities.size} activities • ${state.totalDurationMinutes} minutes total"
                 tvStreakCount.text = "${state.currentStreak} day streak"
 
-                activityCardAdapter.submitList(state.activities)
-                rvActivityCards.visibility = View.VISIBLE
+                renderCards(state.activities)
+                cardsContainer.visibility = View.VISIBLE
 
                 btnResumeRoutine.visibility = View.VISIBLE
                 btnResumeRoutine.text = "Resume Routine (Step ${state.resumeStepIndex + 1} of ${state.activities.size})"
@@ -272,6 +251,40 @@ class RoutineHomeFragment : Fragment() {
      * instead of inserting a new config.
      * Save happens in RoutineSequencingFragment (Session 5 fix).
      */
+    /**
+     * No adapter: always ~3 cards, inflated directly with equal weights so
+     * they share the container height natively. Long-press opens info.
+     */
+    private fun renderCards(activities: List<com.noctra.app.data.model.Activity>) {
+        cardsContainer.removeAllViews()
+        val inflater = LayoutInflater.from(requireContext())
+        activities.forEachIndexed { index, activity ->
+            val card = inflater.inflate(R.layout.item_activity_card_home, cardsContainer, false)
+            card.findViewById<TextView>(R.id.tv_step_number).text = "${index + 1}"
+            card.findViewById<TextView>(R.id.tv_activity_label).text = activity.label
+            card.findViewById<TextView>(R.id.tv_activity_duration).text =
+                "${activity.defaultDurationMinutes} min"
+            val desc = card.findViewById<TextView>(R.id.tv_activity_description)
+            if (activity.description.isNotBlank()) {
+                desc.text = activity.description
+                desc.visibility = View.VISIBLE
+            } else {
+                desc.visibility = View.GONE
+            }
+            com.noctra.app.utils.ActivityIllustrations.load(
+                card.findViewById(R.id.iv_activity_icon), activity.label
+            )
+            card.setOnLongClickListener {
+                ActivityInfoDialogFragment.show(childFragmentManager, activity, index + 1)
+                true
+            }
+            card.layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
+            )
+            cardsContainer.addView(card)
+        }
+    }
+
     private fun navigateToEditRoutine() {
         val args = Bundle().apply { putBoolean("editMode", true) }
         findNavController().navigate(
