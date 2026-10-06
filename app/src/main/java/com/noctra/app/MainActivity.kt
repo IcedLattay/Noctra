@@ -717,6 +717,26 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         actionId = destinationForLabel(label)
     )
 
+    override fun onPreviewCompletion() {
+        val vm = androidx.lifecycle.ViewModelProvider(this@MainActivity)
+            .get(com.noctra.app.ui.routine.RoutineViewModel::class.java)
+        vm.previewReward()
+        try {
+            val navHost =
+                supportFragmentManager.findFragmentById(R.id.nav_host) as androidx.navigation.fragment.NavHostFragment
+            navHost.navController.navigate(R.id.action_global_previewCompletion)
+        } catch (e: Exception) {
+            try {
+                val navHost =
+                    supportFragmentManager.findFragmentById(R.id.nav_host) as androidx.navigation.fragment.NavHostFragment
+                navHost.navController.popBackStack()
+                navHost.navController.navigate(R.id.action_global_previewCompletion)
+            } catch (e2: Exception) {
+                Toast.makeText(applicationContext, "Preview failed: ${e2.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun destinationForLabel(label: String): Int = when (label) {
         "Bedtime To-Do List Writing",
         "Reading",

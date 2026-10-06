@@ -282,5 +282,8 @@
     <action
         android:id="@+id/action_global_previewTimer"
         app:destination="@id/genericTimerActivityFragment" />
+    <action
+        android:id="@+id/action_global_previewCompletion"
+        app:destination="@id/routineCompletionOverlayFragment" />
 
 </navigation>

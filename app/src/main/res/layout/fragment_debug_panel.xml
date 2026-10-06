@@ -293,6 +293,10 @@
                         android:id="@+id/btn_preview_sequencing"
                         style="@style/DebugButton"
                         android:text="Preview Arrange Screen" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_completion"
+                        style="@style/DebugButton"
+                        android:text="Preview Completion Screen" />
                     <TextView
                         style="@style/DebugDescription"
                         android:text="Opens step-3 arrange with your active routine, Confirm hidden — look and reorder freely, nothing is saved." />

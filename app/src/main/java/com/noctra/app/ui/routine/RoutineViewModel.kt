@@ -169,6 +169,21 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
     private val _rewardResult = MutableStateFlow<RewardCalculationUseCase.RewardResult?>(null)
     val rewardResult: StateFlow<RewardCalculationUseCase.RewardResult?> = _rewardResult.asStateFlow()
 
+    /**
+     * Debug preview only: puts a sample reward on screen with no session,
+     * no ledger, no writes of any kind.
+     */
+    fun previewReward() {
+        previewMode = true
+        _rewardResult.value = RewardCalculationUseCase.RewardResult(
+            tokensEarned = 50,
+            xpEarned = 100,
+            multiplierApplied = 1.0,
+            streakTier = "Rested",
+            newStreak = 6
+        )
+    }
+
     // ─── Session Tracking ─────────────────────────────────────────────────────
 
     private var activeSessionId: String? = null
@@ -322,6 +337,7 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
 
     fun reset() {
         cancelAllTimers()
+        previewMode = false
         _currentStepIndex.value = 0
         _sessionSecondsRemaining.value = SESSION_DURATION_SECONDS
         _activitySecondsRemaining.value = 0
