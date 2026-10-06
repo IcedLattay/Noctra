@@ -58,7 +58,10 @@ class ActivityGridAdapter(
             binding.cardRoot.alpha = 1.0f
             binding.cardRoot.isClickable = enabled
 
-            binding.root.setOnClickListener { onActivityClick(activity) }
+            // Clicks land on the card (the wrapper is just a positioning
+            // shell since the restructure) — handler lives here or taps
+            // die silently and every card looks locked.
+            binding.cardRoot.setOnClickListener { onActivityClick(activity) }
             binding.btnInfo.setOnClickListener { onInfoClick(activity) }
         }
     }
