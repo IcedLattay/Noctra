@@ -214,6 +214,7 @@ Suspect first: `MainActivity` line 73 sets `DebugSettings.setForceRoutineWindow(
 
 - [x] Investigate today rendering MISSED in routine completion when no session row exists yet → root cause: chart disagreed with auditor (`determineStatus` says today-no-row = PENDING); fixed by mirroring the rule in `buildCompletionStatuses`
 - [ ] Check merged routine-polish additions on device: edit-mode save flow persists (rest verified: home list, resume fallback, timer/keyboard/TimesUp, real windows + full durations, step-2 Back)
+- [ ] See resume dialog rework in a real uncontrolled flow (preview verified only)
 - [ ] Verify select-screen card rework in actual flows (onboarding + edit): badge, info button, no duration, spacing
 - [ ] Decide details-popup mechanic on Routine home list: dedicated button vs long-press (discoverability vs clean look)
 - [ ] Gate resume on freshness + window: Resumable short-circuits before window/completion checks on a timestamp-only local cache — resume works outside the window and potentially next-day; decide age limit and whether window applies
