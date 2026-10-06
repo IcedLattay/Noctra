@@ -43,7 +43,7 @@ class ActivityGridAdapter(
             ActivityIllustrations.load(binding.ivActivityIcon, activity.label)
 
             // Selected state: purple stroke + check badge
-            binding.root.strokeColor = if (isSelected)
+            binding.cardRoot.strokeColor = if (isSelected)
                 ContextCompat.getColor(context, R.color.noctra_purple)
             else
                 ContextCompat.getColor(context, R.color.noctra_lavender_border)
@@ -54,8 +54,8 @@ class ActivityGridAdapter(
             // ripple so they don't look pressable
             val maxReached = selectedIds.size >= 3
             val enabled = !maxReached || isSelected
-            binding.root.alpha = if (enabled) 1.0f else 0.5f
-            binding.root.isClickable = enabled
+            binding.cardRoot.alpha = if (enabled) 1.0f else 0.5f
+            binding.cardRoot.isClickable = enabled
 
             binding.root.setOnClickListener { onActivityClick(activity) }
             binding.btnInfo.setOnClickListener { onInfoClick(activity) }
