@@ -280,7 +280,12 @@ class RoutineHomeFragment : Fragment() {
             }
             card.layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
-            )
+            ).apply {
+                // XML margins are dropped when params are replaced: re-apply
+                // in px so the gutters actually exist.
+                val d = resources.displayMetrics.density
+                setMargins((4 * d).toInt(), (10 * d).toInt(), (4 * d).toInt(), (10 * d).toInt())
+            }
             cardsContainer.addView(card)
         }
     }
