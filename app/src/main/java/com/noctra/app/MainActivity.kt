@@ -52,6 +52,7 @@ import kotlin.random.Random
 import kotlinx.coroutines.launch
 import android.widget.Toast
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.activity.OnBackPressedCallback
 import com.noctra.app.data.model.UserProfile
 
 class MainActivity : AppCompatActivity(), DebugPanelListener {
@@ -71,10 +72,24 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     // all share one ViewModel/ViewModelStore.
     private val routineViewModel: RoutineViewModel by viewModels()
 
+    private val routineLockedScreens = setOf(
+        R.id.audioscapeActivityFragment,
+        R.id.breathingActivityFragment,
+        R.id.gratitudeJournalingActivityFragment,
+        R.id.genericTimerActivityFragment,
+        R.id.timesUpTransitionFragment,
+        R.id.routineCompletionOverlayFragment
+    )
+
+    private val routineBackBlocker = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() { /* ignore Back during the routine */ }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen().setKeepOnScreenCondition { isLoading }
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        onBackPressedDispatcher.addCallback(this, routineBackBlocker)
         //DebugSettings.setForceRoutineWindow(true) // TEMP — remove before final submission
         //DebugSettings.setSkipCompletionCheck(true) // TEMP — remove before final submission
 
@@ -334,6 +349,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                 R.id.userProfileFragment
             )
             bottomNav.visibility = if (destination.id in mainTabs) View.VISIBLE else View.GONE
+            routineBackBlocker.isEnabled = destination.id in routineLockedScreens
         }
     }
 
