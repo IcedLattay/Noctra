@@ -1,30 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    "Choose Your Activities" grid card — Session 5 (R1).
-    Illustration on top, name + duration below, check badge when selected.
-    View IDs unchanged (ivActivityIcon, tvActivityName, tvActivityDuration,
-    ivCheckSelected) so ViewBinding names stay the same.
+    "Choose Your Activities" grid card.
+    White card + purple outline when selected, illustration, two-line name
+    (no duration). Check badge straddles top-right; info ⓘ straddles
+    bottom-right. Both live on the wrapper (outside the card) so the card
+    keeps its exact size; wrapper padding is the overflow zone. Adapter
+    wiring (badge visibility, info click) unchanged.
 -->
-<com.google.android.material.card.MaterialCardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="170dp"
-    android:layout_margin="6dp"
-    android:clickable="true"
-    android:focusable="true"
-    app:cardBackgroundColor="#FFFFFF"
-    app:cardCornerRadius="20dp"
-    app:cardElevation="0dp"
-    app:strokeColor="#D9D4F0"
-    app:strokeWidth="2dp">
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:paddingTop="14dp"
+    android:paddingEnd="14dp"
+    android:paddingBottom="14dp">
 
-    <FrameLayout
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="170dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:cardBackgroundColor="#FFFFFF"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
+        app:strokeColor="#D9D4F0"
+        app:strokeWidth="2dp">
 
-        <!-- Card content -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -61,45 +64,31 @@
                 android:textColor="#16056E"
                 android:textSize="14sp"
                 tools:text="Slow-Paced Breathing" />
-
-            <TextView
-                android:id="@+id/tvActivityDuration"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="4dp"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="4dp"
-                android:fontFamily="@font/poppinsregular"
-                android:textColor="#7B6FA0"
-                android:textSize="12sp"
-                tools:text="5 min" />
         </LinearLayout>
 
-        <!-- Info button (bottom-right): badge owns top-right when selected -->
-        <ImageView
-            android:id="@+id/btnInfo"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:layout_gravity="bottom|end"
-            android:layout_marginEnd="8dp"
-            android:layout_marginBottom="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="4dp"
-            android:src="@drawable/ic_info_circle"
-            android:contentDescription="Activity details" />
+    </com.google.android.material.card.MaterialCardView>
 
-        <!-- Selected check badge -->
-        <ImageView
-            android:id="@+id/ivCheckSelected"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:layout_gravity="top|end"
-            android:layout_margin="16dp"
-            android:contentDescription="Selected"
-            android:elevation="2dp"
-            android:src="@drawable/ic_selected_check"
-            android:visibility="gone"
-            tools:visibility="visible" />
-    </FrameLayout>
+    <!-- Selected check badge (straddles top-right corner) -->
+    <ImageView
+        android:id="@+id/ivCheckSelected"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_gravity="top|end"
+        android:contentDescription="Selected"
+        android:elevation="2dp"
+        android:src="@drawable/ic_selected_check"
+        android:visibility="gone"
+        tools:visibility="visible" />
 
-</com.google.android.material.card.MaterialCardView>
+    <!-- Info button (straddles bottom-right corner) -->
+    <ImageView
+        android:id="@+id/btnInfo"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_gravity="bottom|end"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:padding="4dp"
+        android:src="@drawable/ic_info_circle"
+        android:contentDescription="Activity details" />
+
+</FrameLayout>

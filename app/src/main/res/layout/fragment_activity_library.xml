@@ -140,11 +140,13 @@
                 android:gravity="center"
                 android:layout_marginBottom="16dp" />
 
-            <!-- Activity grid -->
+            <!-- Activity grid (unclipped: card badges/buttons straddle edges) -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvActivities"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clipChildren="false"
+                android:clipToPadding="false"
                 android:nestedScrollingEnabled="false"
                 android:layout_marginBottom="32dp" />
 

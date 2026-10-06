@@ -39,7 +39,6 @@ class ActivityGridAdapter(
             val isSelected = selectedIds.contains(activity.activityId)
 
             binding.tvActivityName.text = activity.label
-            binding.tvActivityDuration.text = "${activity.defaultDurationMinutes} min"
 
             ActivityIllustrations.load(binding.ivActivityIcon, activity.label)
 
