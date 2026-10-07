@@ -33,8 +33,32 @@ import kotlinx.coroutines.launch
  *   - REST phase shows a pause icon (ic_pause_rest) instead of the step images.
  *   - Pose lengths changed so each stretch shows its full image sequence.
  *
- * IMPORTANT: computes its own total duration (sum of all step action+rest
- * durations) and passes it into routineViewModel.startCurrentActivityTimer().
+ * Session 5 (R12) — SINGLE TIMER: the VM's activitySecondsRemaining is the
+ * only clock during execution. Phase (action/rest), step, dots, text and the
+ * on-screen countdown are all DERIVED from elapsed = total - remaining, so
+ * the visual can't drift from the real timer, and a paused/stopped VM timer
+ * stops the visual too. The sub-second image loop (200ms frames can't come
+ * from 1s ticks) is cosmetic only: it starts when the VM-derived phase
+ * becomes "action" and is cancelled the moment the phase changes.
+ * The 15s pre-countdown is a separate, untimed intro; the VM timer starts
+ * only after it.
+ *
+ * Session 5 (R13) — new phase structure per exercise:
+ *   PMR:        Instructions (5s) -> Execution (5s) -> Releasing tension (10s)
+ *   Stretching: Instructions (5–15s) -> Preparation (3s) -> Execution (60s)
+ *               -> Break (15s)
+ * Session 5 (R14): the exercise visual (image / image sequence) plays ONLY
+ * during INSTRUCTION. PREP and EXECUTION show no exercise image; REST keeps
+ * the pause icon.
+ * Session 5 (R15): Side Neck Stretch shows text cues during EXECUTION
+ * (Hold Left 25s -> Rest 10s -> Hold Right 25s), derived from the same
+ * single timer. Instruction-screen image timings shortened to fit:
+ * Side Neck 2s/1s/2s, Seated Side 7s/8s.
+ * The Complete Routine button appears when the last rest/break ends
+ * (= the single VM timer hitting 0 on the last routine step).
+ *
+ * IMPORTANT: computes its own total duration (sum of every step's
+ * instruction + prep + execution + rest durations) and passes it into routineViewModel.startCurrentActivityTimer().
  */
 class GenericTimerActivityFragment : Fragment() {
 
@@ -44,56 +68,70 @@ class GenericTimerActivityFragment : Fragment() {
     private val routineViewModel: RoutineViewModel by activityViewModels()
 
     private var preCountdownTimer: CountDownTimer? = null
-    private var stepTimer: CountDownTimer? = null
     private var frameLoopJob: Job? = null
     private var steps: List<StepperStepConfig> = emptyList()
     private var restLabel: String = "Rest."
-    private var currentStepIndex = 0
+
+    /** One phase of one exercise on the timeline (seconds from start). */
+    private enum class Phase { INSTRUCTION, PREP, ACTION, REST }
+    private data class Segment(val stepIndex: Int, val phase: Phase, val start: Int, val end: Int)
+
+    private var segments: List<Segment> = emptyList()
+    private var totalSeconds = 0
+    private var stepPhaseActive = false
+    private var lastSegmentIndex = -1
 
     companion object {
         private const val PRE_COUNTDOWN_SECONDS = 15L
         private const val DEFAULT_FRAME_MILLIS = 1000L
 
-        // TEMPORARY FOR TESTING — true shortens every pose to 1s and rest to
-        // 2s, which is too short to see the image sequences. Kept FALSE so the
-        // new timings can be checked; flip to true only for quick flow tests.
+        // TEMPORARY FOR TESTING — true shortens every phase (instruction 2s,
+        // prep 1s, execution 3s, rest 2s) for quick flow tests. Keep FALSE
+        // for real timings.
         private const val TEST_MODE_SHORT_DURATIONS = false
-        private const val TEST_ACTION_SECONDS = 1
+        private const val TEST_INSTRUCTION_SECONDS = 2
+        private const val TEST_PREP_SECONDS = 1
+        private const val TEST_ACTION_SECONDS = 3
         private const val TEST_REST_SECONDS = 2
 
         // Drawable names without the .png extension.
+        // StepperStepConfig(id, name, instruction, images,
+        //                   instructionSecs, prepSecs, executionSecs, restSecs,
+        //                   frameDurationsMs (instruction visual), executionCues)
         private val STEPS_BY_LABEL: Map<String, Pair<String, List<StepperStepConfig>>> = mapOf(
 
-            // PMR — all static images. Tense 5s, release 10s.
+            // PMR — all static images.
+            // Instructions 5s -> Execution 5s -> Releasing tension 10s. No prep.
             "Progressive Muscle Relaxation" to ("Release." to listOf(
-                StepperStepConfig("hands", "Hands", "Make a fist with your hands as tight as possible for 5 seconds", listOf("hands"), 5, 10),
-                StepperStepConfig("arms", "Arms", "Flex your biceps of your arms as tight as you can for 5 seconds", listOf("arm1"), 5, 10),
-                StepperStepConfig("feet", "Feet", "Curl up your feet's toes as tight as possible for 5 seconds", listOf("toes"), 5, 10),
-                StepperStepConfig("eyebrows", "Eyebrows", "Raise your brows for 5 seconds", listOf("eyebrow"), 5, 10),
-                StepperStepConfig("eyes", "Eyes", "Squeeze your eyes and make a tight smile for 5 seconds", listOf("eye"), 5, 10)
+                StepperStepConfig("hands", "Hands", "Make a fist with your hands as tight as possible for 5 seconds.", listOf("hands"), 5, 0, 5, 10),
+                StepperStepConfig("arms", "Arms", "Flex your biceps of your arms as tight as you can for 5 seconds.", listOf("arm1"), 5, 0, 5, 10),
+                StepperStepConfig("feet", "Feet", "Curl up your feet’s toes as tight as possible for 5 seconds.", listOf("toes"), 5, 0, 5, 10),
+                StepperStepConfig("eyebrows", "Eyebrows", "Raise your brows for 5 seconds.", listOf("eyebrow"), 5, 0, 5, 10),
+                StepperStepConfig("eyes", "Eyes", "Squeeze your eyes and make a tight smile for 5 seconds.", listOf("eye"), 5, 0, 5, 10)
             )),
 
-            // Bedtime Stretching — rest 15s after every pose.
+            // Bedtime Stretching.
+            // Instructions (per exercise) -> Preparation 3s -> Execution 60s -> Break 15s.
             "Bedtime Stretching" to ("Rest." to listOf(
 
                 // Loop: left hold 2s -> left transition 0.2s -> right transition 0.2s
                 //       -> right hold 2s -> right transition 0.2s -> left transition 0.2s
-                // One full loop = 4.8s, so pose = 5s.
+                // One loop = 4.8s, repeats through the 15s instruction screen.
                 StepperStepConfig(
                     "neck_rolls", "Neck Rolls",
                     "Move your head in a slow, continuous half-circle by dropping your chin to your chest and rolling it smoothly from one shoulder to the other.",
                     listOf("neckrolllefthold", "neckrolllefttransition", "neckrollrighttransition",
                         "neckrollrighthold", "neckrollrighttransition", "neckrolllefttransition"),
-                    5, 15,
+                    15, 3, 60, 15,
                     listOf(2000L, 200L, 200L, 2000L, 200L, 200L)
                 ),
 
-                // Loop: up -> back -> down, 0.5s each (1.5s per roll). Pose 3s = 2 rolls.
+                // Loop: up -> back -> down, 0.5s each (1.5s per roll).
                 StepperStepConfig(
                     "shoulder_rolls", "Shoulder Rolls",
                     "Move your shoulders in a slow, continuous circle by lifting them up toward your ears, rolling them backward, and dropping them down in a smooth motion.",
                     listOf("shoulderollup", "shoulderollback", "shoulderolldown"),
-                    3, 15,
+                    15, 3, 60, 15,
                     listOf(500L, 500L, 500L)
                 ),
 
@@ -102,29 +140,41 @@ class GenericTimerActivityFragment : Fragment() {
                     "overhead_arm_reach", "Overhead Arm Reach",
                     "Interlock your fingers with your palms facing up, then push your hands straight toward the ceiling while reaching as high as you can.",
                     listOf("overheadarmreach"),
-                    3, 15
+                    15, 3, 60, 15
                 ),
 
-                // Left 20s -> hold 5s -> right 20s. Pose = 45s (plays once).
+                // FLAG: the R13 spec has NO instruction text for this exercise.
+                // Keeping the previous text as a placeholder until the team
+                // provides the official one.
+                // Instruction visual: left 2s -> hold 1s -> right 2s (= 5s instruction).
+                // Execution text:    Hold Left 25s -> Rest 10s -> Hold Right 25s (= 60s).
                 StepperStepConfig(
                     "side_neck_stretch", "Side Neck Stretch",
                     "Gently tilt your head to one side, bringing your ear toward your shoulder, and hold before slowly returning to center and repeating on the other side.",
                     listOf("sideneckstretchleft", "sideneckstretchhold", "sideneckstretchright"),
-                    45, 15,
-                    listOf(20_000L, 5_000L, 20_000L)
+                    5, 3, 60, 15,
+                    listOf(2_000L, 1_000L, 2_000L),
+                    listOf(25 to "Hold Left", 10 to "Rest", 25 to "Hold Right")
                 ),
 
-                // Left 30s -> right 30s. Pose = 60s (plays once).
+                // Instruction visual: left 7s -> right 8s (= 15s instruction).
                 StepperStepConfig(
                     "seated_side_stretch", "Seated Side Stretch",
                     "Sit down, reach one arm straight up, and lean your upper body to the opposite side until you feel a stretch along your ribs",
                     listOf("seatedsidestretchleft", "seatedsidestretchright"),
-                    60, 15,
-                    listOf(30_000L, 30_000L)
+                    15, 3, 60, 15,
+                    listOf(7_000L, 8_000L)
                 )
             ))
         )
     }
+
+    private fun effectiveInstructionSeconds(step: StepperStepConfig): Int =
+        if (TEST_MODE_SHORT_DURATIONS) TEST_INSTRUCTION_SECONDS else step.instructionDurationSeconds
+
+    private fun effectivePrepSeconds(step: StepperStepConfig): Int =
+        if (step.prepDurationSeconds == 0) 0
+        else if (TEST_MODE_SHORT_DURATIONS) TEST_PREP_SECONDS else step.prepDurationSeconds
 
     private fun effectiveActionSeconds(step: StepperStepConfig): Int =
         if (TEST_MODE_SHORT_DURATIONS) TEST_ACTION_SECONDS else step.actionDurationSeconds
@@ -169,6 +219,7 @@ class GenericTimerActivityFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     routineViewModel.activitySecondsRemaining.collect { secs ->
+                        if (stepPhaseActive) renderTick(secs)
                         if (secs == 0 && routineViewModel.isLastStep) {
                             binding.btnCompleteRoutine.visibility = View.VISIBLE
                         } else {
@@ -186,12 +237,10 @@ class GenericTimerActivityFragment : Fragment() {
     private fun handleNavigationEvent(event: RoutineViewModel.NavigationEvent) {
         when (event) {
             is RoutineViewModel.NavigationEvent.GoToTransition -> {
-                stopStepTimer()
                 stopFrameLoop()
                 findNavController().navigate(R.id.timesUpTransitionFragment)
             }
             is RoutineViewModel.NavigationEvent.GoToCompletion -> {
-                stopStepTimer()
                 stopFrameLoop()
                 findNavController().navigate(R.id.routineCompletionOverlayFragment)
             }
@@ -214,11 +263,25 @@ class GenericTimerActivityFragment : Fragment() {
             return
         }
 
-        val totalDurationSeconds = steps.sumOf { effectiveActionSeconds(it) + effectiveRestSeconds(it) }
-        routineViewModel.startCurrentActivityTimer(totalDurationSeconds)
+        var cursor = 0
+        val built = mutableListOf<Segment>()
+        fun add(i: Int, phase: Phase, secs: Int) {
+            if (secs <= 0) return
+            built += Segment(i, phase, cursor, cursor + secs); cursor += secs
+        }
+        steps.forEachIndexed { i, step ->
+            add(i, Phase.INSTRUCTION, effectiveInstructionSeconds(step))
+            add(i, Phase.PREP, effectivePrepSeconds(step))
+            add(i, Phase.ACTION, effectiveActionSeconds(step))
+            add(i, Phase.REST, effectiveRestSeconds(step))
+        }
+        segments = built
+        totalSeconds = cursor
+        lastSegmentIndex = -1
+        stepPhaseActive = true
 
-        currentStepIndex = 0
-        runStep(currentStepIndex, isAction = true)
+        renderTick(totalSeconds) // paint the first frame before the VM's first tick
+        routineViewModel.startCurrentActivityTimer(totalSeconds)
     }
 
     private fun startPreCountdown() {
@@ -244,51 +307,76 @@ class GenericTimerActivityFragment : Fragment() {
         binding.tvPreTimer.text = String.format("%02d : %02d", mins, secs)
     }
 
-    private fun runStep(index: Int, isAction: Boolean) {
-        if (_binding == null || index >= steps.size) return
-        val step = steps[index]
-        renderStepDots(index)
+    /**
+     * Single render path: everything on screen is a function of the VM's
+     * remaining seconds. Phase-change work (title, dots, images) runs once
+     * per segment; the countdown text runs every tick.
+     */
+    private fun renderTick(remaining: Int) {
+        if (_binding == null || segments.isEmpty()) return
+        val elapsed = (totalSeconds - remaining).coerceIn(0, totalSeconds)
+        val lookup = minOf(elapsed, totalSeconds - 1)
+        val segIndex = segments.indexOfFirst { lookup >= it.start && lookup < it.end }
+        if (segIndex < 0) return
+        val seg = segments[segIndex]
+        val step = steps[seg.stepIndex]
 
-        if (isAction) {
-            binding.tvStepTitle.text = step.name
-            binding.tvStepInstruction.text = step.instruction
-            binding.tvStepInstruction.visibility = View.VISIBLE
-            startFrameLoop(step.imageAssets, step.frameDurationsMs)
-            runStepTimer(effectiveActionSeconds(step), isAction = true) {
-                runStep(index, isAction = false)
-            }
-        } else {
-            binding.tvStepTitle.text = restLabel
-            binding.tvStepInstruction.text = ""
-            binding.tvStepInstruction.visibility = View.INVISIBLE // keeps layout from jumping
-            stopFrameLoop()
-            showRestIcon()
-            runStepTimer(effectiveRestSeconds(step), isAction = false) {
-                val nextIndex = index + 1
-                if (nextIndex < steps.size) {
-                    currentStepIndex = nextIndex
-                    runStep(nextIndex, isAction = true)
+        if (segIndex != lastSegmentIndex) {
+            lastSegmentIndex = segIndex
+            renderStepDots(seg.stepIndex)
+            when (seg.phase) {
+                Phase.INSTRUCTION -> {
+                    // The only phase that shows the exercise visual.
+                    binding.tvStepTitle.text = step.name
+                    binding.tvStepInstruction.text = step.instruction
+                    binding.tvStepInstruction.visibility = View.VISIBLE
+                    binding.imgStepDemo.visibility = View.VISIBLE
+                    startFrameLoop(step.imageAssets, step.frameDurationsMs)
+                }
+                Phase.PREP -> {
+                    binding.tvStepTitle.text = "Get ready."
+                    binding.tvStepInstruction.text = step.name
+                    binding.tvStepInstruction.visibility = View.VISIBLE
+                    stopFrameLoop()
+                    binding.imgStepDemo.visibility = View.INVISIBLE // no visual; keeps layout from jumping
+                }
+                Phase.ACTION -> {
+                    binding.tvStepTitle.text = step.name
+                    binding.tvStepInstruction.text = step.instruction
+                    binding.tvStepInstruction.visibility = View.VISIBLE
+                    stopFrameLoop()
+                    binding.imgStepDemo.visibility = View.INVISIBLE // no visual; keeps layout from jumping
+                }
+                Phase.REST -> {
+                    binding.tvStepTitle.text = restLabel
+                    binding.tvStepInstruction.text = ""
+                    binding.tvStepInstruction.visibility = View.INVISIBLE // keeps layout from jumping
+                    stopFrameLoop()
+                    binding.imgStepDemo.visibility = View.VISIBLE
+                    showRestIcon()
                 }
             }
         }
+
+        if (seg.phase == Phase.ACTION && step.executionCues.isNotEmpty()) {
+            binding.tvStepTitle.text = cueAt(step.executionCues, lookup - seg.start) ?: step.name
+        }
+
+        val segLeft = if (elapsed >= totalSeconds) 0 else seg.end - elapsed
+        updateStepTimer(segLeft.toLong())
+        // Green only while the user is actually doing the exercise.
+        val colorRes = if (seg.phase == Phase.ACTION) R.color.timer_green else R.color.timer_default
+        binding.tvStepTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
     }
 
-    private fun runStepTimer(durationSeconds: Int, isAction: Boolean, onFinish: () -> Unit) {
-        stepTimer?.cancel()
-        stepTimer = object : CountDownTimer(durationSeconds * 1000L, 1000L) {
-            override fun onTick(millisUntilFinished: Long) {
-                if (_binding == null) return
-                val secs = (millisUntilFinished / 1000L).coerceAtMost(durationSeconds.toLong())
-                updateStepTimer(secs)
-                val colorRes = if (isAction) R.color.timer_green else R.color.timer_default
-                binding.tvStepTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
-            }
-            override fun onFinish() {
-                if (_binding == null) return
-                updateStepTimer(0)
-                onFinish()
-            }
-        }.start()
+    /** Text cue for `offsetSecs` into EXECUTION; null if past the last cue. */
+    private fun cueAt(cues: List<Pair<Int, String>>, offsetSecs: Int): String? {
+        var cursor = 0
+        for ((secs, text) in cues) {
+            cursor += secs
+            if (offsetSecs < cursor) return text
+        }
+        return null
     }
 
     private fun updateStepTimer(seconds: Long) {
@@ -298,16 +386,11 @@ class GenericTimerActivityFragment : Fragment() {
         binding.tvStepTimer.text = String.format("%02d : %02d", mins, secs)
     }
 
-    private fun stopStepTimer() {
-        stepTimer?.cancel()
-        stepTimer = null
-    }
-
     /**
-     * Plays `frames` in order during the action phase, each for its own time
-     * from `durationsMs` (same order). Missing/empty durations = 1s each.
-     * 1 frame = static. 2+ frames = loop until the pose timer ends
-     * (stopFrameLoop() is called when rest starts).
+     * Plays `frames` in order during the INSTRUCTION phase, each for its own
+     * time from `durationsMs` (same order). Missing/empty durations = 1s each.
+     * 1 frame = static. 2+ frames = loop until the instruction phase ends
+     * (stopFrameLoop() is called when PREP / EXECUTION starts).
      */
     private fun startFrameLoop(frames: List<String>, durationsMs: List<Long>) {
         stopFrameLoop()
@@ -387,7 +470,7 @@ class GenericTimerActivityFragment : Fragment() {
         super.onDestroyView()
         preCountdownTimer?.cancel()
         preCountdownTimer = null
-        stopStepTimer()
+        stepPhaseActive = false
         stopFrameLoop()
         _binding = null
     }
