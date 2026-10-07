@@ -46,6 +46,12 @@ class ReconciliationAuditUseCase(
             )
         }
 
+        // 2b. Sleep refresh: sweep the trailing 14-day cap for nights
+        // missing sleep rows or flagged partial, and pull each from
+        // Health Connect. Verdicts below then judge on fresh data.
+        // Skips nights with final rows — nothing to heal.
+        refreshSleepWindow(userId)
+
         // 3. Sequential Audit Loop
         for (date in auditDates) {
             currentLedger = auditDate(
@@ -60,6 +66,34 @@ class ReconciliationAuditUseCase(
         rewardRepository.updateRewardLedger(currentLedger.copy(
             lastUpdated = OffsetDateTime.now().toString()
         ))
+    }
+
+    /**
+     * Step 1–2 of the audit: for each night in the trailing 14-day cap
+     * missing a sleep row or flagged partial, pull Health Connect once.
+     * Found data upserts (or finalizes partials); absent data writes
+     * nothing — no empty sleep rows are ever fabricated.
+     */
+    private suspend fun refreshSleepWindow(userId: String) {
+        val today = LocalDate.now()
+        val start = today.minusDays(14)
+        val existingByDate = sleepRecordRepository
+            .getRecordsInRange(userId, start.toString(), today.toString())
+            .associateBy { it.sessionDate }
+        var date = start
+        while (!date.isAfter(today)) {
+            val dateStr = date.toString()
+            val record = existingByDate[dateStr]
+            val needsPull = record == null || record.isPartialData
+            if (needsPull) {
+                try {
+                    sleepSyncManager.syncSessionDate(userId, date)
+                } catch (e: Exception) {
+                    Log.w("ReconciliationAudit", "Sleep refresh failed for $dateStr", e)
+                }
+            }
+            date = date.plusDays(1)
+        }
     }
 
     /**
