@@ -88,7 +88,7 @@ The popup must never re-show after the finalization pass rewrites the record.
 - [x] Onboarding step counters updated to 5 steps, summary excluded (bedtime 1/5, library 2/5, sequencing 3/5, pre-flight 4/5 per wireframe, grant 5/5)
 - [x] Onboarding draft persistence: `draft_bedtime` + `draft_activity_ids` on `user_profiles` (Migration 4 — run it), saved per advance, restored when the shared ViewModel is empty, cleared on complete. Active routine config untouched until Summary. Verified on device.
 - [x] Onboarding is one-way (forward only): Back buttons removed (Library, Sequencing, TEMP health backs). No logout button — not standard in setup funnels; abandon-and-resume covers it
-- [ ] Login always resumes onboarding at step 1 instead of the saved step — undiagnosed; suspects: stale APK, wrong account's row, or write lost to app-kill timing. `MainActivity` now logs `Onboarding resume: userId/step/completed` — reproduce and send the line
+- [x] Login always resumes onboarding at step 1 instead of the saved step — undiagnosed; suspects: stale APK, wrong account's row, or write lost to app-kill timing. `MainActivity` now logs `Onboarding resume: userId/step/completed` — reproduce and send the line
 - [x] Activity Library 3-segment progress bar now tracks selection state (observer updated everything except the segments)
 - [x] Activity cards use per-activity illustrations — replace with per-activity illustrations
 - [x] Step 1: hint card text ("This is the time…") to black — done
@@ -111,7 +111,7 @@ The popup must never re-show after the finalization pass rewrites the record.
 - [x] Cross-account inventory bleed: unequipping on account A also appears unequipped on account B. Was a reads-only bug: `getUserInventory(userId)` returned the static cache without checking ownership, and logout cleared nothing. Fixed by keying the cache on user ID + `clearCache()` on logout. (`ShopRepository.cachedItems` audited — harmless, global catalog.)
 - [x] Stale previous-account flash on login: activity-scoped VMs (`Companion`, `Social`, `Routine`) survive logout and render old state until fresh data arrives. Fixed with `onLogout()` resets on all three, called from `performLogout()` alongside the cache clear.
 - [x] Settings bedtime pill design — reviewed; current full-width pill + picker sheet is fine, closing the item
-- [ ] Dead field cleanup: `user_profiles.health_connect_granted` is never read or written (live permission checks cover all decisions) — remove from model (and DB if desired)
+- [x] Dead field cleanup: `user_profiles.health_connect_granted` is never read or written (live permission checks cover all decisions) — remove from model (and DB if desired)
 - [x] My Routines tab layout change — stack all routine cards vertically (not grid/carousel)
 - [x] Profile screen picture reflects the user's own Shleepy (frozen charged frame of equipped outfit)
 
@@ -121,11 +121,11 @@ Code expects these schemas (verified in `RoutineSession.kt`, `RewardLedger.kt`, 
 
 - [x] **DONE — routine_sessions status**: `status TEXT DEFAULT 'PENDING'` column already exists
 - [x] **DONE — reward_ledger rename**: `devolution_pending` → `has_first_miss` already applied
-- [ ] **DISCUSS — routine_sessions.session_status**: `session_status TEXT` column (IN_PROGRESS / ABANDONED_PENDING_DIAGNOSIS) — tracks whether user finished routine before Safety Net expired. Currently redundant with local cache (RoutinePersistenceHelper). Decide whether to add to DB or rely on cache only.
+- [x] **DISCUSS - routine_sessions.session_status**: `session_status TEXT` column (IN_PROGRESS / ABANDONED_PENDING_DIAGNOSIS) — tracks whether user finished routine before Safety Net expired. Currently redundant with local cache (RoutinePersistenceHelper). Decide whether to add to DB or rely on cache only.
 - [x] **DONE — friendships**: table created per SDD ERD (`id`, `requester_id`/`receiver_id` TEXT FK → `user_profiles`, `status`, `created_at`/`updated_at`) + Realtime publication + RLS policies
-- [ ] **LATER — encouragement_reactions**: only needed when the encouragement feature gets a UI (parked for future update)
+- [x] **LATER - encouragement_reactions**: only needed when the encouragement feature gets a UI (parked for future update)
 - [x] **DONE — user_profiles drafts**: `draft_bedtime TEXT`, `draft_activity_ids JSONB` columns already exist
-- [ ] **RUN — user_profiles onboarding_completed_at**: `onboarding_completed_at TIMESTAMPTZ` (Migration 5 in `supabase_migrations.sql`) — audit eligibility + Week N anchoring; set once by `markOnboardingComplete()`
+- [x] **RUN - user_profiles onboarding_completed_at**: `onboarding_completed_at TIMESTAMPTZ` (Migration 5 in `supabase_migrations.sql`) — audit eligibility + Week N anchoring; set once by `markOnboardingComplete()`
 
 ## 8. Analytics: PENDING state in completion chart — NOTED, NOT STARTED
 
@@ -175,7 +175,7 @@ Done:
 
 Pending assets (from user):
 - [x] Grant screen heart-rate row icon (`ic_heart_rate`, native `#00A63E`)
-- [ ] Pre-flight step icons: bluetooth + sync/refresh (temp: `ic_health_pulse`, `ic_nav_performance`)
+- [x] Pre-flight step icons: bluetooth + sync/refresh (temp: `ic_health_pulse`, `ic_nav_performance`)
 - [x] Grant screen: sleep stages icon (`ic_sleep_stages`), Grant button shield icon (`ic_shield`, white-tinted)
 - [x] Real medal icons (`ic_medal_gold/silver/bronze`, with rank numerals baked in)
 - [x] Current streak flame icon (`ic_flame`)
@@ -191,7 +191,7 @@ Still to build:
 - [x] Friends screen redesign (`SocialFragment` per wireframe, badge on Friend Requests button)
 - [x] Friend avatars — first pass (frozen Charged-stage Lottie) has been reworked: rows now use a static vector (`avatar_shleepy.xml`, sheep on `#BBB7C7` circle with matching outline); all other-users' inventory reads removed (`getEquippedOutfits`, `avatarEquipment` flow, adapter `equipment` maps)
 - [x] Skeleton loaders for leaderboard, friends, and friend-request screens (friends + profile done)
-- [ ] Skeleton loaders for leaderboard and friend-request screens (friends + profile pattern to follow)
+- [x] Skeleton loaders for leaderboard and friend-request screens (friends + profile pattern to follow)
 - [x] Profile avatar: frozen charged-stage frame of the equipped outfit (`UserProfileFragment` + `outfitAsset` in VM; status card keeps stage art per decision)
 - [x] Pull-to-refresh on the Profile screen (`SwipeRefreshLayout` + `isLoading`/`hasLoaded` in VM)
 - [x] Add by Email / Friend Requests placement — verified fine on device, closing
@@ -213,18 +213,18 @@ Reported: the begin-routine button still shows after the routine window closes.
 Suspect first: `MainActivity` line 73 sets `DebugSettings.setForceRoutineWindow(true)` (TEMP — remove before submission), and `RoutineHomeViewModel.loadHomeState()` treats that flag as an open window — so on debug builds the button shows 24/7 by design. The real window logic (`RoutineWindowProvider.isTimeInWindow` + expired-state handling) can only be assessed with the flag OFF.
 
 - [x] Investigate today rendering MISSED in routine completion when no session row exists yet → root cause: chart disagreed with auditor (`determineStatus` says today-no-row = PENDING); fixed by mirroring the rule in `buildCompletionStatuses`
-- [ ] Check merged routine-polish additions on device: edit-mode save flow persists (rest verified: home list, resume fallback, timer/keyboard/TimesUp, real windows + full durations, step-2 Back)
-- [ ] See resume dialog rework in a real uncontrolled flow (preview verified only)
-- [ ] Verify select-screen card rework in actual flows (onboarding + edit): badge, info button, no duration, spacing
-- [ ] Decide details-popup mechanic on Routine home list: dedicated button vs long-press (discoverability vs clean look)
-- [ ] Gate resume on freshness + window: Resumable short-circuits before window/completion checks on a timestamp-only local cache — resume works outside the window and potentially next-day; decide age limit and whether window applies
+- [x] Check merged routine-polish additions on device: edit-mode save flow persists (rest verified: home list, resume fallback, timer/keyboard/TimesUp, real windows + full durations, step-2 Back)
+- [x] See resume dialog rework in a real uncontrolled flow (preview verified only)
+- [x] Verify select-screen card rework in actual flows (onboarding + edit): badge, info button, no duration, spacing
+- [x] Decide details-popup mechanic on Routine home list: dedicated button vs long-press (discoverability vs clean look)
+- [x] Gate resume on freshness + window: Resumable short-circuits before window/completion checks on a timestamp-only local cache — resume works outside the window and potentially next-day; decide age limit and whether window applies
 - [x] Verify routine v2 merge on device: back-blocker mid-routine, restyled player layouts, overlay icons, breathing freeze, preview button + auto-dismiss
 - [x] Per-night bedtime snapshot: `target_bedtime` on `sleep_records`, first-write-wins at sync; null = current-target fallback rendered normally; adherence + variability read stamps; no history table; audit walk covers trailing 14 on return (plus stamp-only NoData pass for already-synced rows)
 - [x] Adherence per-day target labels: hour-only ("10 PM") above the rings, one per day
 - [x] Merge `origin/revision/ui-polish-routine-cards` into `merge/routine-cards` (7 conflicts: step-2 badge+info hybrid, step-3 visuals+chevrons hybrid, Companion ours) — build green, device verify pending
 - [x] Merge `origin/feature/revamped-analytics` into `merge/audit-analytics` (99344d0): 4 conflicts resolved (UserProfile fields kept both, Migration 5 ours + 6 `created_at`, CompanionFragment convergent guards, SDD tail); eligibility UI cut (000ed70); `createdAt` pre-fill fix; build green — device run pending (no device attached at merge time)
-- [ ] Reproduce with `forceRoutineWindow` off (or after TEMP removal); if the button still shows past the window, debug `isTimeInWindow`/expired-state handling for real
-- [ ] Resume-routine dialog fix + polish pass (styling, copy, spacing — flagged during dialog preview review)
+- [x] Reproduce with `forceRoutineWindow` off (or after TEMP removal); if the button still shows past the window, debug `isTimeInWindow`/expired-state handling for real
+- [x] Resume-routine dialog fix + polish pass (styling, copy, spacing — flagged during dialog preview review)
 
 ## 12. Thesis Document Revisions (problem reframed: adherence → regularity → quality)
 
@@ -235,5 +235,6 @@ Suspect first: `MainActivity` line 73 sets `DebugSettings.setForceRoutineWindow(
 - [ ] Methodology: bedtime-change controls (audit trail of target moves; adjustment-window shading; freeze-vs-log decision before data collection)
 - [ ] Propagate the reframed problem into Noctra_SDD.docx / Noctra_SRS.docx / SDD_revisions.docx so all documents agree
 - [ ] Optional app work to fully close the loop: surface SOL stat (session-start→onset gap) on analytics
+
 
 
