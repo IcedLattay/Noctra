@@ -578,3 +578,13 @@ The analytics requirements live exclusively in ANALYTICS_SPEC.md (authoritative 
 - **Took as-is:** step-2 Back button, edit-mode save flow, home single-column list + resume fallback, timer/keyboard/TimesUp polish, all illustration assets.
 - **Side effect noted:** auto-merge took their testing flags — real routine windows and full exercise durations by default now (our force-window/short-duration conveniences live only behind debug toggles).
 
+### Post-freeze additions (debug/sleep-sync-gap and after)
+
+- **Sleep refresh before verdicts.** Every open sweeps the trailing 14 nights first: missing sleep rows and partial-flagged rows get one Health Connect pull each; final rows are skipped, and absent data writes nothing. The verdict walk (unchanged rules) then judges on fresh data.
+- **One wind-down pop per app-day.** The fire date is stamped on pop; reschedules landing in the same cycle roll to the next night. App-day ends at 2 AM, so a 1:30 AM pop counts as yesterday.
+- **Routine screen resets at 3 AM.** The completed check reads the 3 AM day (before 3 = yesterday), covering the latest possible window (2 AM bedtime + 60 min). Session dating (4 AM) and the audit are untouched.
+- **Select cards (final).** Badge top-right inside the card (8dp), grey-circle info bottom-right opening the info dialog, no duration text, 12sp names, illustrations uncropped, no fade at max (clicks just stop). Continue always reads Continue; Back is edit-only, 56dp grey with black text.
+- **Home cards (final).** No adapter: three cards inflate directly with equal weights and real 20dp gutters (margins live in code, since replaced params drop XML ones). Number badge overlays each illustration corner; content vertically centered; container lifted 96dp off the buttons.
+- **Journal typing (final).** Scroll container (login pattern); textbox wraps 120dp–12 lines with internal-scroll priority; timer above the input; card hugs content. Pan mode tried and reverted.
+- **Scroll button (final).** Plain 48dp `ImageView`, centered, full-bleed asset (radial glow + `#522ABE` + centered arrow), slides up past mid-travel. No FAB, no offset shadow.
+
