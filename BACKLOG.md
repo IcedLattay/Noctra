@@ -26,7 +26,7 @@ The syncer must fetch raw data from Health Connect and store scored sleep record
 - [x] `calculateScores()` accepts nullable HR/movement with weight redistribution (0.5/0.3/0.2 → 0.7/0.3 → duration-only)
 - [x] Connect the health UI flow to real permission requests — DONE, see section 1b below
 - [x] Background reads: `android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND` declared in the manifest (Android 14+ requirement for WorkManager-driven syncs) — on-device verification still pending (see device test below)
-- [ ] DB safety net: add a unique constraint on `sleep_records(user_id, session_date)` in Supabase (code-side idempotency works without it, but the constraint guards against races)
+- [x] DB safety net: add a unique constraint on `sleep_records(user_id, session_date)` in Supabase (code-side idempotency works without it, but the constraint guards against races)
 - [ ] Empirical device test: sync one real night per target device (Mi Fitness, Zepp, realme, Nothing X) and verify stages/HR arrive as expected
 
 ### 1b. Permission UI — DONE
@@ -81,7 +81,7 @@ The popup must never re-show after the finalization pass rewrites the record.
 
 - [x] Verify step-5 fixes on device — done (all fixes verified, navigation crash fixed)
 
-- [ ] `backend/` directory is empty (only `.idea/`) — confirm whether a backend service is planned or Supabase-only is final
+- [x] `backend/` directory is empty (only `.idea/`) - confirm whether a backend service is planned or Supabase-only is final
 - [x] Onboarding skipped Health Connect screens on resume: step mapping predated them (3 → summary). Renumbered with health steps (3 → Pre-flight, 4 → Grant, 5 → Summary) + step saves on all health exits
 - [x] Sequencing Confirm crashed (`action_routineSequencing_to_healthEducation` not found): `nav_graph.xml` carried a stale inline copy of the whole onboarding graph without health screens, shadowing `onboarding_graph.xml`. Replaced with `<include>`, ported the `editMode` arg, made Confirm edit-aware (edit flow pops back to Routine tab instead of entering onboarding-only health flow)
 - [x] Edit Routine flow persists the re-sequenced routine (pre-existing gap, noted in code as next phase) — fix: call `updateRoutineConfiguration` on edit-mode Confirm
