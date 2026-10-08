@@ -1,15 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Session 5 (R8): shown on PMR / Stretching during the REST phase.
-     Soft lavender circle with two purple pause bars, drawn small inside a
-     larger viewport so it doesn't fill the whole demo image box. -->
+<!-- Session 5 (R16): pause symbol only, no circle background.
+     Shown on PMR / Stretching during the REST phase. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="150dp"
     android:height="150dp"
     android:viewportWidth="150"
     android:viewportHeight="150">
-    <path
-        android:fillColor="#EDE8FF"
-        android:pathData="M35,75 a40,40 0 1,0 80,0 a40,40 0 1,0 -80,0 z" />
     <path
         android:fillColor="#4B2FB5"
         android:pathData="M61,56 h9 v38 h-9 z M80,56 h9 v38 h-9 z" />

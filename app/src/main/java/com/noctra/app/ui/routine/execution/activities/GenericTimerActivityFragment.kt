@@ -54,6 +54,9 @@ import kotlinx.coroutines.launch
  * (Hold Left 25s -> Rest 10s -> Hold Right 25s), derived from the same
  * single timer. Instruction-screen image timings shortened to fit:
  * Side Neck 2s/1s/2s, Seated Side 7s/8s.
+ * Session 5 (R16): EXECUTION shows a big red "EXECUTE" in the demo area.
+ * REST shows the pause symbol alone (no circle, no grey box) and a green
+ * "Rest." / "Release." title.
  * The Complete Routine button appears when the last rest/break ends
  * (= the single VM timer hitting 0 on the last routine step).
  *
@@ -80,6 +83,7 @@ class GenericTimerActivityFragment : Fragment() {
     private var totalSeconds = 0
     private var stepPhaseActive = false
     private var lastSegmentIndex = -1
+    private var demoBoxBackground: android.graphics.drawable.Drawable? = null
 
     companion object {
         private const val PRE_COUNTDOWN_SECONDS = 15L
@@ -201,6 +205,7 @@ class GenericTimerActivityFragment : Fragment() {
         binding.tvPreTitle.text = label
         binding.tvPreInstruction.text = activity?.instruction ?: ""
         binding.tvStepActivityLabel.text = label
+        demoBoxBackground = binding.imgStepDemo.background // grey box; hidden during REST
 
         setupListeners()
         showPreCountdownPanel()
@@ -324,6 +329,10 @@ class GenericTimerActivityFragment : Fragment() {
         if (segIndex != lastSegmentIndex) {
             lastSegmentIndex = segIndex
             renderStepDots(seg.stepIndex)
+            // Defaults for every phase; REST / ACTION override below.
+            binding.tvStepTitle.setTextColor(android.graphics.Color.parseColor("#2C1769")) // layout default
+            binding.tvExecuteBadge.visibility = View.GONE
+            binding.imgStepDemo.background = demoBoxBackground
             when (seg.phase) {
                 Phase.INSTRUCTION -> {
                     // The only phase that shows the exercise visual.
@@ -346,13 +355,16 @@ class GenericTimerActivityFragment : Fragment() {
                     binding.tvStepInstruction.visibility = View.VISIBLE
                     stopFrameLoop()
                     binding.imgStepDemo.visibility = View.INVISIBLE // no visual; keeps layout from jumping
+                    binding.tvExecuteBadge.visibility = View.VISIBLE
                 }
                 Phase.REST -> {
                     binding.tvStepTitle.text = restLabel
+                    binding.tvStepTitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.timer_green))
                     binding.tvStepInstruction.text = ""
                     binding.tvStepInstruction.visibility = View.INVISIBLE // keeps layout from jumping
                     stopFrameLoop()
                     binding.imgStepDemo.visibility = View.VISIBLE
+                    binding.imgStepDemo.background = null // symbol only, no grey box
                     showRestIcon()
                 }
             }

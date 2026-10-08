@@ -37,6 +37,11 @@ import kotlinx.coroutines.launch
  *
  * Session 5: keyboard-inset handling (R3), and typing is locked once the
  * journal timer reaches 0 (R7).
+ *
+ * Session 5 (R16): the time's-up lock used `isEnabled = false`, and a
+ * disabled EditText ignores ALL touches — so the journal stopped scrolling
+ * once the timer hit 0. It now becomes read-only instead (no typing, no
+ * keyboard, no cursor) but stays enabled, so it can still be scrolled.
  */
 class GratitudeJournalingActivityFragment : Fragment() {
 
@@ -174,11 +179,18 @@ class GratitudeJournalingActivityFragment : Fragment() {
         }
     }
 
-    /** Session 5 (R7): time's up — stop typing and close the keyboard. */
+    /**
+     * Session 5 (R7/R16): time's up — stop typing and close the keyboard,
+     * but keep the text scrollable (do NOT use isEnabled = false).
+     */
     private fun lockJournalEntry() {
         if (_binding == null) return
-        binding.etJournalEntry.isEnabled = false
-        binding.etJournalEntry.clearFocus()
+        val et = binding.etJournalEntry
+        et.keyListener = null          // no more typing
+        et.showSoftInputOnFocus = false // tapping won't reopen the keyboard
+        et.isCursorVisible = false
+        et.isLongClickable = false      // no paste menu
+        et.clearFocus()
         val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(binding.etJournalEntry.windowToken, 0)
     }

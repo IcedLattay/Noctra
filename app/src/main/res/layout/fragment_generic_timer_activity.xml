@@ -190,6 +190,25 @@
             app:layout_constraintTop_toBottomOf="@id/tvStepActivityLabel"
             tools:src="@drawable/shleepybody" />
 
+        <!-- Session 5 (R16): big red "EXECUTE" shown over the (empty) demo
+             image area during the EXECUTION phase only. -->
+        <TextView
+            android:id="@+id/tvExecuteBadge"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:fontFamily="@font/poppinsbold"
+            android:gravity="center"
+            android:letterSpacing="0.12"
+            android:text="EXECUTE"
+            android:textColor="@color/timer_red"
+            android:textSize="40sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/imgStepDemo"
+            app:layout_constraintEnd_toEndOf="@id/imgStepDemo"
+            app:layout_constraintStart_toStartOf="@id/imgStepDemo"
+            app:layout_constraintTop_toTopOf="@id/imgStepDemo" />
+
         <TextView
             android:id="@+id/tvStepTitle"
             android:layout_width="wrap_content"
