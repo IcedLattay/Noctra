@@ -84,17 +84,17 @@ The popup must never re-show after the finalization pass rewrites the record.
 - [ ] `backend/` directory is empty (only `.idea/`) — confirm whether a backend service is planned or Supabase-only is final
 - [x] Onboarding skipped Health Connect screens on resume: step mapping predated them (3 → summary). Renumbered with health steps (3 → Pre-flight, 4 → Grant, 5 → Summary) + step saves on all health exits
 - [x] Sequencing Confirm crashed (`action_routineSequencing_to_healthEducation` not found): `nav_graph.xml` carried a stale inline copy of the whole onboarding graph without health screens, shadowing `onboarding_graph.xml`. Replaced with `<include>`, ported the `editMode` arg, made Confirm edit-aware (edit flow pops back to Routine tab instead of entering onboarding-only health flow)
-- [ ] Edit Routine flow doesn't persist the re-sequenced routine (pre-existing gap, noted in code as next phase) — fix: call `updateRoutineConfiguration` on edit-mode Confirm
+- [x] Edit Routine flow persists the re-sequenced routine (pre-existing gap, noted in code as next phase) — fix: call `updateRoutineConfiguration` on edit-mode Confirm
 - [x] Onboarding step counters updated to 5 steps, summary excluded (bedtime 1/5, library 2/5, sequencing 3/5, pre-flight 4/5 per wireframe, grant 5/5)
 - [x] Onboarding draft persistence: `draft_bedtime` + `draft_activity_ids` on `user_profiles` (Migration 4 — run it), saved per advance, restored when the shared ViewModel is empty, cleared on complete. Active routine config untouched until Summary. Verified on device.
 - [x] Onboarding is one-way (forward only): Back buttons removed (Library, Sequencing, TEMP health backs). No logout button — not standard in setup funnels; abandon-and-resume covers it
 - [ ] Login always resumes onboarding at step 1 instead of the saved step — undiagnosed; suspects: stale APK, wrong account's row, or write lost to app-kill timing. `MainActivity` now logs `Onboarding resume: userId/step/completed` — reproduce and send the line
 - [x] Activity Library 3-segment progress bar now tracks selection state (observer updated everything except the segments)
-- [ ] Activity cards still use purple circle placeholders — replace with per-activity illustrations
+- [x] Activity cards use per-activity illustrations — replace with per-activity illustrations
 - [x] Step 1: hint card text ("This is the time…") to black — done
 - [x] Step 2: activity names on cards to black — done
 - [x] Step 2: move the activity details dialog here from step 3 (info icon button at top-right of cards); info button + dialog removed from Sequencing — done
-- [ ] Step 2 wireframe update needed: info icon button on activity cards (replaces long-press)
+- [x] Step 2 wireframe update needed: info icon button on activity cards (replaces long-press)
 - [x] Step 5 "skipped popup": investigated — not a bug. Both permissions were already granted, so HC instantly returns the full set and one-shot flow advances. Behaves correctly.
 - [x] Step 5 auto-skip: if all permissions already granted when step 5 opens, skips straight to Summary — done
 - [x] Step 3: removed "Tap ⓘ for details" from instructions — done
@@ -106,13 +106,13 @@ The popup must never re-show after the finalization pass rewrites the record.
 - [x] Step 4 + 5: Skip this step button → black text, same style both screens — done
 - [x] Summary → Main navigation crash: nested graphs can't cross-navigate; fixed by rebuilding nav graph — done
 - [x] Summary: permissions-status card UI — rebuilt with Health Settings rows (icon circles, Granted pills, dividers, no outline)
-- [ ] Activity details dialog, fleshed-out design (a basic name + description + duration dialog exists on Sequencing via the info button; long-press is reserved for drag, so the dialog opens from ⓘ only)
+- [x] Activity details dialog, fleshed-out design (a basic name + description + duration dialog exists on Sequencing via the info button; long-press is reserved for drag, so the dialog opens from ⓘ only)
 - [x] Checkmark badge on selected cards removed (selected = purple stroke only); dimmed unselectable cards no longer ripple
 - [x] Cross-account inventory bleed: unequipping on account A also appears unequipped on account B. Was a reads-only bug: `getUserInventory(userId)` returned the static cache without checking ownership, and logout cleared nothing. Fixed by keying the cache on user ID + `clearCache()` on logout. (`ShopRepository.cachedItems` audited — harmless, global catalog.)
 - [x] Stale previous-account flash on login: activity-scoped VMs (`Companion`, `Social`, `Routine`) survive logout and render old state until fresh data arrives. Fixed with `onLogout()` resets on all three, called from `performLogout()` alongside the cache clear.
 - [x] Settings bedtime pill design — reviewed; current full-width pill + picker sheet is fine, closing the item
 - [ ] Dead field cleanup: `user_profiles.health_connect_granted` is never read or written (live permission checks cover all decisions) — remove from model (and DB if desired)
-- [ ] My Routines tab layout change — stack all routine cards vertically (not grid/carousel)
+- [x] My Routines tab layout change — stack all routine cards vertically (not grid/carousel)
 - [x] Profile screen picture reflects the user's own Shleepy (frozen charged frame of equipped outfit)
 
 ## 7. DB migrations (validated against code — user to run in Supabase)
@@ -131,9 +131,9 @@ Code expects these schemas (verified in `RoutineSession.kt`, `RewardLedger.kt`, 
 
 `routine_sessions.status` is now three-state, but the chart mapping (`AnalyticsDashboardFragment.buildCompletionStatuses`, ~line 192) collapses PENDING into pink INCOMPLETE — mislabeling not-yet-decided days (today all day, yesterday during grace period) as failures.
 
-- [ ] Add `PENDING` to `RoutineCompletionRowView.DayStatus` + amber color (`noctra_health_yellow` #FFC90E) in `colorForStatus`
-- [ ] Map `session.status == "PENDING" -> PENDING` before the else in `buildCompletionStatuses`
-- [ ] (Optional) append "· N pending" to the completion summary label
+- [x] Add `PENDING` to `RoutineCompletionRowView.DayStatus` + amber color (`noctra_health_yellow` #FFC90E) in `colorForStatus`
+- [x] Map `session.status == "PENDING" -> PENDING` before the else in `buildCompletionStatuses`
+- [x] (Optional) append "· N pending" to the completion summary label
 - [x] Analytics loading state — decided: keep batched `loadWeek` with a single centered purple spinner (see ANALYTICS_SPEC.md)
 - Already correct, no change needed: summary count (`count { COMPLETED }`) and insight generation (`filter { COMPLETED }`) — PENDING is invisible to both, which is the right semantics until the auditor resolves it
 
@@ -235,3 +235,5 @@ Suspect first: `MainActivity` line 73 sets `DebugSettings.setForceRoutineWindow(
 - [ ] Methodology: bedtime-change controls (audit trail of target moves; adjustment-window shading; freeze-vs-log decision before data collection)
 - [ ] Propagate the reframed problem into Noctra_SDD.docx / Noctra_SRS.docx / SDD_revisions.docx so all documents agree
 - [ ] Optional app work to fully close the loop: surface SOL stat (session-start→onset gap) on analytics
+
+
