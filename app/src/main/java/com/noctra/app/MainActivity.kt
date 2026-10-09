@@ -424,8 +424,14 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
 
                 val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
 
+                // Reuse today's row id when one exists: upsert matches on
+                // id, so a random id per tap would pile duplicate rows.
+                val existingId = SleepRecordRepository()
+                    .getRecordsInRange(userId, today, today)
+                    .firstOrNull()?.id
+
                 val mockRecord = SleepRecord(
-                    id = UUID.randomUUID().toString(),
+                    id = existingId ?: UUID.randomUUID().toString(),
                     userId = userId,
                     sessionDate = today,
                     sleepOnsetTime = Instant.now().minusSeconds((durationMinutes * 60).toLong()).toString(),
@@ -520,8 +526,24 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     }
 
     override fun onPreviewMorningRecap() {
-        MorningSleepPopupDialog.newInstance(82, 7)
-            .show(supportFragmentManager, "MorningPreview")
+        val dialog = MorningSleepPopupDialog.newInstance(82, 7)
+        dialog.setOnViewDetailsCallback {
+            try {
+                val navHost =
+                    supportFragmentManager.findFragmentById(R.id.nav_host) as androidx.navigation.fragment.NavHostFragment
+                navHost.navController.navigate(R.id.action_companion_to_analytics)
+            } catch (e: Exception) {
+                try {
+                    val navHost =
+                        supportFragmentManager.findFragmentById(R.id.nav_host) as androidx.navigation.fragment.NavHostFragment
+                    navHost.navController.popBackStack()
+                    navHost.navController.navigate(R.id.analyticsDashboardFragment)
+                } catch (e2: Exception) {
+                    Toast.makeText(applicationContext, "Preview failed: ${e2.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+        dialog.show(supportFragmentManager, "MorningPreview")
     }
 
     override fun onPreviewStreakRestored() {
