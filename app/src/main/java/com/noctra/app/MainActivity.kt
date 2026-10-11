@@ -528,20 +528,9 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     override fun onPreviewMorningRecap() {
         val dialog = MorningSleepPopupDialog.newInstance(82, 7)
         dialog.setOnViewDetailsCallback {
-            try {
-                val navHost =
-                    supportFragmentManager.findFragmentById(R.id.nav_host) as androidx.navigation.fragment.NavHostFragment
-                navHost.navController.navigate(R.id.action_companion_to_analytics)
-            } catch (e: Exception) {
-                try {
-                    val navHost =
-                        supportFragmentManager.findFragmentById(R.id.nav_host) as androidx.navigation.fragment.NavHostFragment
-                    navHost.navController.popBackStack()
-                    navHost.navController.navigate(R.id.analyticsDashboardFragment)
-                } catch (e2: Exception) {
-                    Toast.makeText(applicationContext, "Preview failed: ${e2.message}", Toast.LENGTH_LONG).show()
-                }
-            }
+            // Same tab-switch as the real path (never a push).
+            findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottom_nav)
+                ?.selectedItemId = R.id.analyticsDashboardFragment
         }
         dialog.show(supportFragmentManager, "MorningPreview")
     }
@@ -795,7 +784,16 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
             }
         }
     }
-    /** Debug preview navigation with pop-then-direct fallback. */
+
+    override fun onResetMorningPopup() {
+        // Clears the persisted shown-flag so the REAL morning popup fires
+        // again on next companion open. Writes nothing. (The VM's
+        // in-memory guard clears on process restart; force-stop the app
+        // after tapping this for a fully fresh replay.)
+        getSharedPreferences("noctra_prefs", MODE_PRIVATE).edit()
+            .remove("last_shown_sleep_date").apply()
+        Toast.makeText(applicationContext, "Morning popup reset — force-stop and reopen", Toast.LENGTH_LONG).show()
+    }    /** Debug preview navigation with pop-then-direct fallback. */
     private fun previewNavigate(actionId: Int, args: android.os.Bundle? = null) {
         try {
             val navHost =

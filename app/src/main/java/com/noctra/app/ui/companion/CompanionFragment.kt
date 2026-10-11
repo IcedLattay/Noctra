@@ -82,7 +82,13 @@ class CompanionFragment : Fragment() {
                 val dialog = MorningSleepPopupDialog.newInstance(next.score, next.xp)
                 dialog.setOnDismissCallback { onDialogClosed() }
                 dialog.setOnViewDetailsCallback {
-                    findNavController().navigate(R.id.action_companion_to_analytics)
+                    // Switch to the Performance TAB (not a push): analytics
+                    // then lives on its own back stack and the companion
+                    // tab stays pristine — returning to it can never
+                    // restore an analytics screen on top.
+                    requireActivity().findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(
+                        R.id.bottom_nav
+                    ).selectedItemId = R.id.analyticsDashboardFragment
                 }
                 dialog.show(childFragmentManager, "MorningSleepPopup")
             }
