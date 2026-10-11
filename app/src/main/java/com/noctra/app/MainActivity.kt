@@ -101,6 +101,12 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
 
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
 
+        // Pre-select Companion: the bar defaults its highlight to the first
+        // menu item (Routines) until setupWithNavController syncs it after
+        // the async auth check — this removes the startup flicker. No
+        // listener is attached yet, so this is visual only, no navigation.
+        bottomNav.selectedItemId = R.id.companionFragment
+
         // Handle deep links from Supabase (e.g. password recovery)
         handleDeeplinks(intent)
 
