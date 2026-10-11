@@ -309,6 +309,10 @@
                         android:id="@+id/btn_preview_routine_start"
                         style="@style/DebugButton"
                         android:text="Preview Routine Start" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_reset_morning_popup"
+                        style="@style/DebugButton"
+                        android:text="Reset Morning Popup" />
                     <TextView
                         style="@style/DebugDescription"
                         android:text="Opens step-3 arrange with your active routine, Confirm hidden — look and reorder freely, nothing is saved." />
