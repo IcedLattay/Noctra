@@ -251,9 +251,8 @@ class CompanionFragment : Fragment() {
                         // TEMP (XP economy): mornings pay by sleep tier at
                         // collect time — once per date by construction above.
                         // Poor deducts (floored at zero inside addXp).
-                        val tierXp = if (score >= 50) 100 else -100
                         UserSession.getUserId(requireContext())?.let { uid ->
-                            viewModel.addXp(uid, tierXp)
+                            viewModel.addXp(uid, xp)
                         }
 
                         enqueueDialog(PendingDialog.MorningRecap(score, xp))

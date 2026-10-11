@@ -238,7 +238,11 @@ class CompanionViewModel(
                         morningPopupEmittedForDate != recapSessionDate
                     ) {
                         morningPopupEmittedForDate = recapSessionDate
-                        _showMorningPopup.emit(Pair(latestSleep.compositeScore ?: 0, 7))
+                        // TEMP (XP economy): the emitted bonus IS the award —
+                        // one tier value, displayed and paid identically.
+                        val score = latestSleep.compositeScore ?: 0
+                        val tierXp = if (score >= 50) 100 else -100
+                        _showMorningPopup.emit(Pair(score, tierXp))
                     }
                 }
             }
