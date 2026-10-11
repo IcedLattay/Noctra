@@ -1,6 +1,8 @@
 # Noctra — Backlog
 
 - [ ] Finalize XP economy with group: routine pays streaks + Dream Tokens only (strip the 100 XP); mornings pay XP by sleep tier (Good ≥75 / Moderate 50–74 / Poor <50 → +X/+Y/−Z, floored at zero) — numbers open
+- [ ] Decide popup XP display with group: settled total, last night's portion, or both
+- [ ] RUN Migration 8: `xp_accrued INT DEFAULT 0` + `xp_settled BOOLEAN DEFAULT false` on `sleep_records`
 
 **NEXT SESSION**: Merge remote branch into local branch to continue where we left off.
 
