@@ -1,5 +1,7 @@
 # Noctra — Backlog
 
+- [ ] Finalize XP economy with group: routine pays streaks + Dream Tokens only (strip the 100 XP); mornings pay XP by sleep tier (Good ≥75 / Moderate 50–74 / Poor <50 → +X/+Y/−Z, floored at zero) — numbers open
+
 **NEXT SESSION**: Merge remote branch into local branch to continue where we left off.
 
 Tracked items from the sleep-data sync design discussion (auditor/syncer flow).
