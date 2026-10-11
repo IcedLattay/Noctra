@@ -248,6 +248,14 @@ class CompanionFragment : Fragment() {
                         requireContext().getSharedPreferences("noctra_prefs", Context.MODE_PRIVATE)
                             .edit(commit = false) { putString("last_shown_sleep_date", sessionDate) }
 
+                        // TEMP (XP economy): mornings pay by sleep tier at
+                        // collect time — once per date by construction above.
+                        // Poor deducts (floored at zero inside addXp).
+                        val tierXp = if (score >= 50) 100 else -100
+                        UserSession.getUserId(requireContext())?.let { uid ->
+                            viewModel.addXp(uid, tierXp)
+                        }
+
                         enqueueDialog(PendingDialog.MorningRecap(score, xp))
                     }
                 }
