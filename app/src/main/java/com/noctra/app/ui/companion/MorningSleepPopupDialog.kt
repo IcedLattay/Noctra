@@ -44,10 +44,33 @@ class MorningSleepPopupDialog : DialogFragment() {
         
         val score = arguments?.getInt(ARG_SCORE) ?: 0
         val xpBonus = arguments?.getInt(ARG_XP_BONUS) ?: 0
+        val xpTotal = arguments?.getInt(ARG_XP_TOTAL) ?: xpBonus
+        val xpNights = arguments?.getInt(ARG_XP_NIGHTS) ?: 1
 
         binding.tvScoreValue.text = score.toString()
         binding.pbSleepGauge.progress = score
-        binding.tvXpBonus.text = getString(R.string.morning_dialog_sleep_points_bonus, xpBonus)
+
+        // Portion row always shows; total row (double star) only when the
+        // tally bundles more than last night — repeating it would read as a bug.
+        binding.tvXpPortion.text = signedPts(xpBonus)
+        if (xpNights > 1) {
+            binding.tvXpTotal.text = signedPts(xpTotal)
+            binding.tvXpTotal.visibility = View.VISIBLE
+            binding.ivTotalStar1.visibility = View.VISIBLE
+            binding.ivTotalStar2.visibility = View.VISIBLE
+        }
+
+        // Full sentence multi-night, short form single-night. Words, no symbols.
+        val portionVerb = if (xpBonus >= 0) "earned" else "lost"
+        val portionPts = kotlin.math.abs(xpBonus)
+        binding.tvXpSentence.text = if (xpNights <= 1) {
+            "You $portionVerb $portionPts sleep points from last night."
+        } else {
+            val totalPart = if (xpTotal >= 0) "a total of $xpTotal points"
+            else "a total loss of ${kotlin.math.abs(xpTotal)} points"
+            "You $portionVerb $portionPts sleep points from last night " +
+                "and $totalPart across $xpNights mornings."
+        }
 
         binding.tvSleepQualityLabel.text = when {
             score >= 75 -> getString(R.string.companion_good_sleep_quality)
@@ -78,6 +101,8 @@ class MorningSleepPopupDialog : DialogFragment() {
         super.onDestroyView()
         _binding = null
     }
+
+    private fun signedPts(v: Int) = (if (v >= 0) "+" else "-") + kotlin.math.abs(v) + " pts"
 
     companion object {
         private const val ARG_SCORE = "score"

@@ -532,7 +532,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     }
 
     override fun onPreviewMorningRecap() {
-        val dialog = MorningSleepPopupDialog.newInstance(82, 100)
+        val dialog = MorningSleepPopupDialog.newInstance(82, 160, 60, 4)
         dialog.setOnViewDetailsCallback {
             // Same tab-switch as the real path (never a push).
             findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottom_nav)

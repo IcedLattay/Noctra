@@ -97,19 +97,14 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/gaugeContainer" />
 
-                <!-- Reward Pill -->
+                <!-- Reward rows: portion always, total only multi-night -->
                 <LinearLayout
-                    android:id="@+id/rewardPill"
+                    android:id="@+id/rewardRows"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:background="@drawable/bg_token_pill"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingStart="16dp"
-                    android:paddingTop="8dp"
-                    android:paddingEnd="20dp"
-                    android:paddingBottom="8dp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/tvSleepQualityLabel">
@@ -118,18 +113,63 @@
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:contentDescription="@null"
-                        android:src="@drawable/dream_token_icon" />
+                        android:src="@drawable/ic_star" />
 
                     <TextView
-                        android:id="@+id/tvXpBonus"
+                        android:id="@+id/tvXpPortion"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:fontFamily="sans-serif-medium"
                         android:textColor="@color/noctra_purple_dark"
                         android:textSize="16sp"
-                        tools:text="+7 Sleep Points" />
+                        tools:text="+160 pts" />
+
+                    <ImageView
+                        android:id="@+id/ivTotalStar2"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginStart="16dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_star"
+                        android:visibility="gone" />
+
+                    <ImageView
+                        android:id="@+id/ivTotalStar1"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginStart="-12dp"
+                        android:alpha="0.45"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_star"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tvXpTotal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:textColor="@color/noctra_purple_dark"
+                        android:textSize="16sp"
+                        android:visibility="gone"
+                        tools:text="-60 pts"
+                        tools:visibility="visible" />
                 </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvXpSentence"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginHorizontal="8dp"
+                    android:gravity="center"
+                    android:textColor="@color/noctra_text_muted"
+                    android:textSize="13sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/rewardRows"
+                    tools:text="You earned 160 sleep points from last night and a total loss of 60 points across 4 mornings." />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.cardview.widget.CardView>
