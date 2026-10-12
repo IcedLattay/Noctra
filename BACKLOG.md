@@ -1,8 +1,12 @@
 # Noctra — Backlog
 
 - [x] Finalize XP economy with group: routine pays streaks + Dream Tokens only (no routine XP); mornings pay XP by sleep tier (Good ≥75: +160 / Moderate 50–74: +80 / Poor <50: −100, floored at zero)
-- [ ] Decide popup XP display with group: settled total, last night's portion, or both
-- [ ] RUN Migration 8: `xp_accrued INT DEFAULT 0` + `xp_settled BOOLEAN DEFAULT false` on `sleep_records`
+- [x] Decide popup XP display with group: settled total, last night's portion, or both — both (portion star row always + double-star total + sentence when >1 night); implemented and device-verified
+- [x] RUN Migration 8: `xp_accrued INT DEFAULT 0` + `xp_settled BOOLEAN DEFAULT false` on `sleep_records` — run (settlement verified on device)
+
+Low priority (do only if time allows):
+- [ ] Wind-down notification tapped outside the routine window: routine start screen flashes for a split second before exiting to the routine home fragment — find why the start screen renders before the window check bounces it (likely nav-then-validate instead of validate-then-nav), then guard it
+- [ ] Star icon on the XP card in the companion fragment — update the wireframe first, then implement in the app UI (asset: reuse `ic_star`/`ic_star_double`)
 
 **NEXT SESSION**: Merge remote branch into local branch to continue where we left off.
 
