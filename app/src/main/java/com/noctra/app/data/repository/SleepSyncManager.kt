@@ -261,12 +261,16 @@ class SleepSyncManager {
     }
 
     /**
-     * TEMP (XP economy): tier payout from a composite score.
-     * Good and Moderate +100, Poor −100. Group sets final numbers.
+     * XP economy (final): tier payout from a composite score.
+     * Good ≥75: +160 · Moderate 50–74: +80 · Poor <50: −100.
      */
     private fun tierXp(compositeScore: Int?): Int {
         val score = compositeScore ?: 0
-        return if (score >= 50) 100 else -100
+        return when {
+            score >= 75 -> 160
+            score >= 50 -> 80
+            else -> -100
+        }
     }
 
     // ---------------------------------------------------------------------

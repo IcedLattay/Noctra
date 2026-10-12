@@ -47,8 +47,7 @@ class RewardCalculationUseCase(
         val tierLabel  = getTierLabel(newStreak)
 
         val tokensEarned = (BASE_TOKENS * multiplier).toInt()
-        // TEMP (XP economy): routine pays no XP — mornings pay by sleep
-        // tier instead. Restored to BASE_XP if the group decides otherwise.
+        // XP economy: routine pays no XP — mornings pay by sleep tier.
         val xpEarned     = 0
 
         return RewardResult(
