@@ -573,7 +573,8 @@ The analytics requirements live exclusively in ANALYTICS_SPEC.md (authoritative 
 ### XP economy (feature/xp-economy)
 
 - **Split:** routine completion pays streaks + Dream Tokens (no XP); mornings pay XP by sleep tier — Good ≥75: +160, Moderate 50–74: +80, Poor <50: −100, floored at zero. Reverses SDD §2.1.2 (routine paid both tokens and flat XP).
-- **Accrue at sync, settle at popup** (`Migration 8`: `xp_accrued INT`, `xp_settled BOOLEAN`): each night's amount frozen at first computation (finalization never reprices); popup collect sums unsettled rows, applies once, marks settled; display reads last night's stored portion. Catch-up bounded by the 14-day window, no separate cap.
+- **Accrue at sync, settle at popup** (`Migration 8`: `xp_accrued INT`, `xp_settled BOOLEAN`): each night's amount frozen at first computation (finalization never reprices); popup collect sums unsettled rows, applies once, marks settled; catch-up bounded by the 14-day window, no separate cap.
+- **Popup display**: portion row (single `ic_star`) always; net-total row (`ic_star_double`, double star) plus a full sentence only when the tally bundles >1 night ("You earned/lost N sleep points from last night and a total [of N | loss of N] points across N mornings."); single-night shows short form. Verified on device incl. once-only settlement across replays.
 
 ### Routine polish merge (merge/routine-cards)
 
