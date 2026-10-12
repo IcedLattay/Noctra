@@ -44,7 +44,12 @@ class CompanionFragment : Fragment() {
     
     // Dialog Queue Logic
     private sealed class PendingDialog {
-        data class MorningRecap(val score: Int, val xp: Int) : PendingDialog()
+        data class MorningRecap(
+            val score: Int,
+            val xp: Int,
+            val xpTotal: Int = xp,
+            val xpNights: Int = 1
+        ) : PendingDialog()
         data class StreakNotice(val type: CompanionViewModel.CompanionNotice) : PendingDialog()
         data class Evolution(val oldLevel: Int, val newLevel: Int) : PendingDialog()
     }
@@ -78,8 +83,10 @@ class CompanionFragment : Fragment() {
         try {
             isDialogShowing = true
             when (next) {
-            is PendingDialog.MorningRecap -> {
-                val dialog = MorningSleepPopupDialog.newInstance(next.score, next.xp)
+                is PendingDialog.MorningRecap -> {
+                    val dialog = MorningSleepPopupDialog.newInstance(
+                        next.score, next.xp, next.xpTotal, next.xpNights
+                    )
                 dialog.setOnDismissCallback { onDialogClosed() }
                 dialog.setOnViewDetailsCallback {
                     // Switch to the Performance TAB (not a push): analytics
@@ -250,11 +257,18 @@ class CompanionFragment : Fragment() {
 
                         // TEMP (XP economy): settle every unsettled row at
                         // collect time — once per date by construction above.
-                        UserSession.getUserId(requireContext())?.let { uid ->
+                        // The settlement travels with the dialog for display.
+                        val settlement = UserSession.getUserId(requireContext())?.let { uid ->
                             viewModel.settleMorningXp(uid)
                         }
 
-                        enqueueDialog(PendingDialog.MorningRecap(score, xp))
+                        enqueueDialog(
+                            PendingDialog.MorningRecap(
+                                score, xp,
+                                settlement?.total ?: xp,
+                                settlement?.nights ?: 1
+                            )
+                        )
                     }
                 }
                 launch {

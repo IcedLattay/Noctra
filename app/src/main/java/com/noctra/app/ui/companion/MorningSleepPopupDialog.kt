@@ -82,11 +82,20 @@ class MorningSleepPopupDialog : DialogFragment() {
     companion object {
         private const val ARG_SCORE = "score"
         private const val ARG_XP_BONUS = "xp_bonus"
+        private const val ARG_XP_TOTAL = "xp_total"
+        private const val ARG_XP_NIGHTS = "xp_nights"
 
-        fun newInstance(score: Int, xpBonus: Int): MorningSleepPopupDialog {
+        fun newInstance(
+            score: Int,
+            xpBonus: Int,
+            xpTotal: Int = xpBonus,
+            xpNights: Int = 1
+        ): MorningSleepPopupDialog {
             val args = Bundle().apply {
                 putInt(ARG_SCORE, score)
                 putInt(ARG_XP_BONUS, xpBonus)
+                putInt(ARG_XP_TOTAL, xpTotal)
+                putInt(ARG_XP_NIGHTS, xpNights)
             }
             return MorningSleepPopupDialog().apply {
                 arguments = args

@@ -344,11 +344,13 @@ class CompanionViewModel(
 
     /**
      * TEMP (XP economy): sums every unsettled row's frozen amount, applies
-     * once, marks settled. Returns the total applied.
+     * once, marks settled. Returns total applied and nights settled.
      */
-    suspend fun settleMorningXp(userId: String): Int {
+    data class Settlement(val total: Int, val nights: Int)
+
+    suspend fun settleMorningXp(userId: String): Settlement {
         val rows = sleepRecordRepository.getUnsettledRecords(userId)
-        if (rows.isEmpty()) return 0
+        if (rows.isEmpty()) return Settlement(0, 0)
         val total = rows.sumOf { it.xpAccrued }
         if (total != 0) {
             applyXp(userId, total)
@@ -360,7 +362,7 @@ class CompanionViewModel(
                 Log.e("CompanionVM", "Mark settled failed for ${row.sessionDate}", e)
             }
         }
-        return total
+        return Settlement(total, rows.size)
     }
 
     private suspend fun applyXp(userId: String, amount: Int) {
