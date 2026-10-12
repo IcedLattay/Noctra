@@ -22,5 +22,8 @@ data class SleepRecord(
     @SerialName("data_capture_success") val dataCaptureSuccess: Boolean = true,
     // Bedtime live when the night synced ("HH:mm:ss"). Null on pre-feature
     // rows = fall back to the current profile target when judging.
-    @SerialName("target_bedtime") val targetBedtime: String? = null
+    @SerialName("target_bedtime") val targetBedtime: String? = null,
+    // TEMP (XP economy): frozen at first computation, paid at popup.
+    @SerialName("xp_accrued") val xpAccrued: Int = 0,
+    @SerialName("xp_settled") val xpSettled: Boolean = false
 )

@@ -233,6 +233,10 @@ class SleepSyncManager {
                 userId = userId,
                 sessionDate = dateStr,
                 targetBedtime = existing?.targetBedtime ?: profileBedtime,
+                // TEMP (XP economy): frozen at first computation — later
+                // finalizations must not reprice the night.
+                xpAccrued = existing?.xpAccrued ?: tierXp(scores.compositeScore),
+                xpSettled = existing?.xpSettled ?: false,
                 sleepOnsetTime = aggregated.onset.toString(),
                 wakeTime = aggregated.wake.toString(),
                 sleepDurationMinutes = aggregated.durationMinutes,
@@ -254,6 +258,15 @@ class SleepSyncManager {
             Log.e(TAG, "Sync failed", e)
             SyncResult.Failed(e)
         }
+    }
+
+    /**
+     * TEMP (XP economy): tier payout from a composite score.
+     * Good and Moderate +100, Poor −100. Group sets final numbers.
+     */
+    private fun tierXp(compositeScore: Int?): Int {
+        val score = compositeScore ?: 0
+        return if (score >= 50) 100 else -100
     }
 
     // ---------------------------------------------------------------------

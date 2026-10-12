@@ -149,6 +149,44 @@ class SleepRecordRepository {
     }
 
     /**
+     * TEMP (XP economy): rows whose frozen payout hasn't been settled.
+     */
+    suspend fun getUnsettledRecords(userId: String): List<SleepRecord> {
+        return try {
+            getRecordsInRange(userId, "2000-01-01", java.time.LocalDate.now().toString())
+                .filter { !it.xpSettled }
+        } catch (e: Exception) {
+            Log.w(tag, "Unsettled fetch failed", e)
+            emptyList()
+        }
+    }
+
+    /**
+     * TEMP (XP economy): marks one night's payout settled. Never touches
+     * the amount.
+     */
+    suspend fun markXpSettled(userId: String, sessionDate: String) {
+        try {
+            client.from("sleep_records").update(
+                {
+                    set("xp_settled", true)
+                }
+            ) {
+                filter {
+                    eq("user_id", userId)
+                    eq("session_date", sessionDate)
+                }
+            }
+        } catch (e: IOException) {
+            Log.e(tag, "Network error marking settled", e)
+            throw e
+        } catch (e: SocketTimeoutException) {
+            Log.e(tag, "Timeout marking settled", e)
+            throw e
+        }
+    }
+
+    /**
      * Fills only the bedtime stamp on one night's row. Used by the sync's
      * NoData path to converge pre-feature rows — never overwrites, never
      * touches scores or times.

@@ -248,11 +248,10 @@ class CompanionFragment : Fragment() {
                         requireContext().getSharedPreferences("noctra_prefs", Context.MODE_PRIVATE)
                             .edit(commit = false) { putString("last_shown_sleep_date", sessionDate) }
 
-                        // TEMP (XP economy): mornings pay by sleep tier at
+                        // TEMP (XP economy): settle every unsettled row at
                         // collect time — once per date by construction above.
-                        // Poor deducts (floored at zero inside addXp).
                         UserSession.getUserId(requireContext())?.let { uid ->
-                            viewModel.addXp(uid, xp)
+                            viewModel.settleMorningXp(uid)
                         }
 
                         enqueueDialog(PendingDialog.MorningRecap(score, xp))

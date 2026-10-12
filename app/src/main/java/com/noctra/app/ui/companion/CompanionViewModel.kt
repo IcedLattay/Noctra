@@ -238,11 +238,9 @@ class CompanionViewModel(
                         morningPopupEmittedForDate != recapSessionDate
                     ) {
                         morningPopupEmittedForDate = recapSessionDate
-                        // TEMP (XP economy): the emitted bonus IS the award —
-                        // one tier value, displayed and paid identically.
-                        val score = latestSleep.compositeScore ?: 0
-                        val tierXp = if (score >= 50) 100 else -100
-                        _showMorningPopup.emit(Pair(score, tierXp))
+                        // TEMP (XP economy): the emitted bonus IS the stored
+                        // frozen amount — display and award can't disagree.
+                        _showMorningPopup.emit(Pair(latestSleep.compositeScore ?: 0, latestSleep.xpAccrued))
                     }
                 }
             }
@@ -340,24 +338,49 @@ class CompanionViewModel(
 
     fun addXp(userId: String, amount: Int) {
         viewModelScope.launch {
+            applyXp(userId, amount)
+        }
+    }
+
+    /**
+     * TEMP (XP economy): sums every unsettled row's frozen amount, applies
+     * once, marks settled. Returns the total applied.
+     */
+    suspend fun settleMorningXp(userId: String): Int {
+        val rows = sleepRecordRepository.getUnsettledRecords(userId)
+        if (rows.isEmpty()) return 0
+        val total = rows.sumOf { it.xpAccrued }
+        if (total != 0) {
+            applyXp(userId, total)
+        }
+        rows.forEach { row ->
             try {
-                val ledger = rewardRepository.getRewardLedger(userId)
-                if (ledger != null) {
-                    val newXp = (ledger.totalXp + amount).coerceAtLeast(0)
-                    
-                    val updatedLedger = ledger.copy(
-                        totalXp = newXp,
-                        hasFirstMiss = false, // xp tweak silences warning
-                        lastUpdated = OffsetDateTime.now().toString()
-                    )
-                    rewardRepository.updateRewardLedger(updatedLedger)
-                    
-                    // Force refresh without triggering the morning/tired popups
-                    refreshData(userId, null, triggerMorningPopup = false)
-                }
+                sleepRecordRepository.markXpSettled(userId, row.sessionDate)
             } catch (e: Exception) {
-                Log.e("CompanionVM", "XP tweak failed", e)
+                Log.e("CompanionVM", "Mark settled failed for ${row.sessionDate}", e)
             }
+        }
+        return total
+    }
+
+    private suspend fun applyXp(userId: String, amount: Int) {
+        try {
+            val ledger = rewardRepository.getRewardLedger(userId)
+            if (ledger != null) {
+                val newXp = (ledger.totalXp + amount).coerceAtLeast(0)
+
+                val updatedLedger = ledger.copy(
+                    totalXp = newXp,
+                    hasFirstMiss = false, // xp tweak silences warning
+                    lastUpdated = OffsetDateTime.now().toString()
+                )
+                rewardRepository.updateRewardLedger(updatedLedger)
+
+                // Force refresh without triggering the morning/tired popups
+                refreshData(userId, null, triggerMorningPopup = false)
+            }
+        } catch (e: Exception) {
+            Log.e("CompanionVM", "XP tweak failed", e)
         }
     }
 }
