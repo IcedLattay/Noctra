@@ -56,8 +56,7 @@ class MorningSleepPopupDialog : DialogFragment() {
         if (xpNights > 1) {
             binding.tvXpTotal.text = signedPts(xpTotal)
             binding.tvXpTotal.visibility = View.VISIBLE
-            binding.ivTotalStar1.visibility = View.VISIBLE
-            binding.ivTotalStar2.visibility = View.VISIBLE
+            binding.ivTotalStar.visibility = View.VISIBLE
         }
 
         // Full sentence multi-night, short form single-night. Words, no symbols.
