@@ -176,8 +176,8 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
     fun previewReward() {
         previewMode = true
         _rewardResult.value = RewardCalculationUseCase.RewardResult(
-            tokensEarned = 50,
-            xpEarned = 100,
+            tokensEarned = 100,
+            xpEarned = 0,
             multiplierApplied = 1.0,
             streakTier = "Rested",
             newStreak = 6

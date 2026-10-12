@@ -27,7 +27,7 @@ class RewardCalculationUseCase(
 
     companion object {
         /** Base Dream Tokens earned per completed session before multiplier. */
-        const val BASE_TOKENS = 50
+        const val BASE_TOKENS = 100
 
         /** Flat Growth Points (XP) earned per completed session. */
         const val BASE_XP = 100

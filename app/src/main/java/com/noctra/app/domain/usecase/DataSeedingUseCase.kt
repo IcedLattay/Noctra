@@ -106,8 +106,8 @@ class DataSeedingUseCase(
                 startTimestamp = dateString + "T21:30:00Z",
                 completionTimestamp = if (isCompleted) dateString + "T21:55:00Z" else null,
                 status = if (isCompleted) "COMPLETED" else "MISSED",
-                tokensEarned = if (isCompleted) 50 else null,
-                xpEarned = if (isCompleted) 100 else null
+                tokensEarned = if (isCompleted) 100 else null,
+                xpEarned = if (isCompleted) 0 else null
             ))
         }
 
