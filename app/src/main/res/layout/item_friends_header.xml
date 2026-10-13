@@ -14,7 +14,7 @@
         android:clickable="true"
         android:focusable="true"
         android:foreground="?attr/selectableItemBackground"
-        app:cardBackgroundColor="#3D1FA3"
+        app:cardBackgroundColor="@color/noctra_purple"
         app:cardCornerRadius="20dp"
         app:cardElevation="0dp">
 
@@ -36,7 +36,7 @@
                     android:layout_height="20dp"
                     android:layout_gravity="center"
                     android:src="@drawable/ic_friend_requests"
-                    android:tint="#3D1FA3"
+                    android:tint="#5C25F0"
                     android:contentDescription="@null" />
             </FrameLayout>
 

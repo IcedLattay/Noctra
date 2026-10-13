@@ -99,7 +99,7 @@
         android:layout_height="52dp"
         android:layout_marginHorizontal="24dp"
         android:layout_marginTop="20dp"
-        android:backgroundTint="@color/noctra_purple_dark"
+        android:backgroundTint="@color/noctra_purple"
         android:text="Send Friend Request"
         android:textColor="@color/white"
         android:textSize="15sp"

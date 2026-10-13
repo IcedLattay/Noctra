@@ -480,16 +480,17 @@
 
             <Button
                 android:id="@+id/btn_sign_out"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="52dp"
                 android:layout_marginTop="24dp"
+                android:backgroundTint="@color/noctra_destructive_red"
                 android:text="Sign Out"
                 android:textSize="15sp"
-                android:textColor="@color/noctra_destructive_red"
+                android:textColor="@color/white"
                 android:textAllCaps="false"
                 android:letterSpacing="0"
-                android:fontFamily="@font/poppinsbold" />
+                android:fontFamily="@font/poppinsbold"
+                app:cornerRadius="26dp" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
