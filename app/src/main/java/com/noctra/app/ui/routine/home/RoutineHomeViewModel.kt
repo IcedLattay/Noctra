@@ -8,7 +8,9 @@ import com.noctra.app.data.model.RoutineConfiguration
 import com.noctra.app.data.repository.RoutineRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.data.repository.UserProfileRepository
+import com.noctra.app.utils.NetworkObserver
 import com.noctra.app.utils.DebugSettings
+import com.noctra.app.data.utils.RoutinePersistenceHelper
 import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +25,8 @@ import java.time.format.DateTimeFormatter
  *
  * Drives RoutineHomeFragment state. Determines:
  *   - Whether the user has a configured routine
- *   - The current routine window state (before / in window / completed)
+ *   - The current routine window state (before / in window / completed /
+ *     resumable)
  *   - The activity list preview for the home screen
  *   - The current streak count
  *
@@ -33,6 +36,11 @@ import java.time.format.DateTimeFormatter
  *   - Outside window  → BeforeWindow (Edit Routine button)
  *   - Inside window   → InWindow (Begin Routine button)
  *   - Already done    → Completed (Routine Complete state)
+ *   - Session left mid-routine → Resumable (Resume Routine button) — NEW,
+ *     Flag 26. Checked via RoutinePersistenceHelper.hasActiveSession(),
+ *     same local cache the Resume Dialog (MainActivity) reads. This gives
+ *     users a way back into an unfinished routine even if they dismissed
+ *     the dialog with "Not Now" and didn't reopen the app to re-trigger it.
  *
  * Window can cross midnight (e.g. bedtime 23:30 + 30min activities → window 23:00–00:30).
  * The isTimeInWindow() helper handles this rollover.
@@ -44,16 +52,18 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
     private val routineRepository        = RoutineRepository()
     private val routineSessionRepository = RoutineSessionRepository()
     private val userProfileRepository    = UserProfileRepository()
+    private val networkObserver          = NetworkObserver(getApplication())
 
     // ─── User ID ─────────────────────────────────────────────────────────────
 
-    private val userId: String
+    private val userId: String?
         get() = UserSession.getUserId(getApplication())
 
     // ─── UI State ────────────────────────────────────────────────────────────
 
     sealed class RoutineHomeState {
         object Loading : RoutineHomeState()
+        object Offline : RoutineHomeState()
         object NoRoutine : RoutineHomeState()
 
         data class BeforeWindow(
@@ -70,6 +80,18 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
             val targetBedtime: String,
             val routineStartTime: String,
             val currentStreak: Int
+        ) : RoutineHomeState()
+
+        /**
+         * NEW (Flag 26): there's an unfinished routine session cached
+         * locally. resumeStepIndex is 0-based, matching what
+         * RoutineViewModel.confirmResume() will actually resume at.
+         */
+        data class Resumable(
+            val activities: List<Activity>,
+            val totalDurationMinutes: Int,
+            val currentStreak: Int,
+            val resumeStepIndex: Int
         ) : RoutineHomeState()
 
         data class Completed(val currentStreak: Int) : RoutineHomeState()
@@ -91,6 +113,26 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
     init {
         loadHomeState()
         observeDebugSettings()
+        observeConnectivity()
+    }
+
+    /**
+     * Live connectivity (push, not poll): disconnect → Offline state
+     * immediately; reconnect while showing it → auto-retry.
+     */
+    private fun observeConnectivity() {
+        viewModelScope.launch {
+            var lastOnline = com.noctra.app.utils.ConnectivityMonitor.isOnline.value
+            com.noctra.app.utils.ConnectivityMonitor.isOnline.collect { online ->
+                if (online == lastOnline) return@collect
+                lastOnline = online
+                if (!online) {
+                    _state.value = RoutineHomeState.Offline
+                } else if (_state.value == RoutineHomeState.Offline) {
+                    retry()
+                }
+            }
+        }
     }
 
     private fun observeDebugSettings() {
@@ -106,6 +148,11 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
         loadHomeState()
     }
 
+    fun retry() {
+        _state.value = RoutineHomeState.Loading
+        loadHomeState()
+    }
+
     fun forceResetForDemo() {
         DebugSettings.setSkipCompletionCheck(true)
     }
@@ -114,7 +161,12 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
 
     private fun loadHomeState() {
         viewModelScope.launch {
+            if (!networkObserver.checkNow()) {
+                _state.value = RoutineHomeState.Offline
+                return@launch
+            }
             _state.value = RoutineHomeState.Loading
+            val userId = userId ?: return@launch
 
             try {
                 val profile = userProfileRepository.getOrCreateProfile(userId)
@@ -131,8 +183,28 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
                 val activities = routineRepository.hydrateActivitySequence(entries)
                 val totalDuration = activeRoutine.totalDurationMinutes
 
+                // FLAG 26 — Resumable check. Runs before the completion/window
+                // checks below: if there's a session cached locally, it can't
+                // also be "already completed today" (the cache is cleared in
+                // RoutineViewModel.completeSession()), so there's no conflict
+                // to resolve — this just short-circuits straight to the
+                // Resumable state.
+                if (RoutinePersistenceHelper.hasActiveSession()) {
+                    val streak = routineSessionRepository.getCurrentStreak(userId)
+                    _state.value = RoutineHomeState.Resumable(
+                        activities = activities,
+                        totalDurationMinutes = totalDuration,
+                        currentStreak = streak,
+                        resumeStepIndex = RoutinePersistenceHelper.getCurrentStepIndex()
+                    )
+                    return@launch
+                }
+
                 // Check tonight's completion BEFORE window logic — completion wins.
-                val todayDate = routineSessionRepository.getTodayDateString()
+                // "Tonight" runs to 3 AM (latest window closes then), so a
+                // post-midnight open still sees the completed state.
+                val todayDate = com.noctra.app.utils.RoutineWindowProvider
+                    .resolveRoutineScreenDate().toString()
                 val alreadyCompleted = if (DebugSettings.skipCompletionCheck.value) false else {
                     routineSessionRepository.hasCompletedSessionForDate(userId, todayDate)
                 }
@@ -145,57 +217,45 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
                 }
 
                 // Compute the routine window.
-                val targetBedtime = parseTime(targetBedtimeRaw)
-                val windowOpen    = targetBedtime.minusMinutes(totalDuration.toLong())
-                val windowClose   = targetBedtime.plusMinutes(60)
-
                 val inWindow = DebugSettings.forceRoutineWindow.value ||
-                        isTimeInWindow(LocalTime.now(), windowOpen, windowClose)
+                        com.noctra.app.utils.RoutineWindowProvider.isTimeInWindow(
+                            now = LocalTime.now(),
+                            targetBedtime = targetBedtimeRaw,
+                            routineDurationMinutes = totalDuration
+                        )
 
                 _state.value = if (inWindow) {
+                    val targetBedtimeParsed = parseTime(targetBedtimeRaw)
+                    val windowOpen = targetBedtimeParsed.minusMinutes(totalDuration.toLong())
                     RoutineHomeState.InWindow(
                         activities           = activities,
                         totalDurationMinutes = totalDuration,
-                        targetBedtime        = formatTime(targetBedtime),
+                        targetBedtime        = formatTime(targetBedtimeParsed),
                         routineStartTime     = formatTime(windowOpen),
                         currentStreak        = streak
                     )
                 } else {
+                    val targetBedtimeParsed = parseTime(targetBedtimeRaw)
+                    val windowOpen = targetBedtimeParsed.minusMinutes(totalDuration.toLong())
                     RoutineHomeState.BeforeWindow(
                         activities           = activities,
                         totalDurationMinutes = totalDuration,
-                        targetBedtime        = formatTime(targetBedtime),
+                        targetBedtime        = formatTime(targetBedtimeParsed),
                         routineStartTime     = formatTime(windowOpen),
                         currentStreak        = streak
                     )
                 }
 
             } catch (e: Exception) {
-                _state.value = RoutineHomeState.Error(
-                    message = e.message ?: "Something went wrong loading your routine."
-                )
+                android.util.Log.e("RoutineHomeVM", "Load failed: ${e.javaClass.simpleName}: ${e.message}", e)
+                if (!networkObserver.checkNow()) {
+                    _state.value = RoutineHomeState.Offline
+                } else {
+                    _state.value = RoutineHomeState.Error(
+                        message = e.message ?: "Something went wrong loading your routine."
+                    )
+                }
             }
-        }
-    }
-
-    // ─── Window check (handles midnight rollover) ────────────────────────────
-
-    /**
-     * Returns true if `now` falls within [open, close], correctly handling the
-     * case where the window crosses midnight.
-     *
-     * Examples:
-     *   open=21:30 close=23:00  → simple within-day check
-     *   open=23:00 close=00:30  → crosses midnight; now must be ≥23:00 OR ≤00:30
-     *   open=00:30 close=02:00  → simple within-day check (early-morning bedtime)
-     */
-    private fun isTimeInWindow(now: LocalTime, open: LocalTime, close: LocalTime): Boolean {
-        return if (!open.isAfter(close)) {
-            // No midnight crossing (open <= close)
-            !now.isBefore(open) && !now.isAfter(close)
-        } else {
-            // Window crosses midnight (open > close)
-            !now.isBefore(open) || !now.isAfter(close)
         }
     }
 

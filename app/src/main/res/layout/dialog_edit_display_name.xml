@@ -40,7 +40,7 @@
             android:hint="Display name"
             android:inputType="textPersonName|textCapWords"
             android:maxLength="30"
-            android:textColor="@color/noctra_purple_dark"
+            android:textColor="@color/black"
             android:textSize="16sp" />
     </com.google.android.material.textfield.TextInputLayout>
 

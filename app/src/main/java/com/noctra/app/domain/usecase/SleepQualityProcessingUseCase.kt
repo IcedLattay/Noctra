@@ -8,43 +8,56 @@ class SleepQualityProcessingUseCase {
     data class SleepScores(
         val durationScore: Int,
         val heartRateScore: Int?,
-        val movementScore: Int,
+        val movementScore: Int?,
         val compositeScore: Int
     )
 
+    /**
+     * Calculates per-night sleep quality scores.
+     *
+     * Heart rate and movement inputs are nullable: real Health Connect data may
+     * lack a learned HR baseline (first ~7 nights) or stage data entirely
+     * (coarse devices). Missing components are excluded and their weight is
+     * redistributed to the remaining components rather than assumed perfect.
+     */
     fun calculateScores(
         durationMinutes: Int,
-        avgHeartRate: Double,
-        movementCount: Int,
+        avgHeartRate: Double?,
+        movementCount: Int?,
         hrBaseline: Double?
     ): SleepScores {
         val hours = durationMinutes / 60.0
-        
+
         val durationScore = when {
             hours in 7.0..9.0 -> 100
             hours < 7.0 -> ((hours / 7.0) * 100).toInt()
             else -> max(0, (100 - (hours - 9.0) * 20).toInt())
         }
 
-        val heartRateScore = hrBaseline?.let {
-            max(0, (100 - abs(avgHeartRate - it) * 5).toInt())
+        val heartRateScore = if (avgHeartRate != null && hrBaseline != null) {
+            max(0, (100 - abs(avgHeartRate - hrBaseline) * 5).toInt())
+        } else {
+            null
         }
 
-        val movementScore = if (movementCount <= 10) {
-            100
-        } else {
-            max(0, (100 - (movementCount - 10) * 0.5).toInt())
+        val movementScore = movementCount?.let { count ->
+            if (count <= 10) {
+                100
+            } else {
+                max(0, (100 - (count - 10) * 0.5).toInt())
+            }
         }
 
-        // Composite score calculation
-        val compositeScore = if (heartRateScore != null) {
-            (durationScore * 0.5 + heartRateScore * 0.3 + movementScore * 0.2).toInt()
-        } else {
-            // If no HR baseline, redistribute weights? 
-            // PDF says null during first 7 nights. Let's assume 0.7/0.3 or similar if null, 
-            // or just use 0.5/0.2 and normalize.
-            // Let's use 0.7/0.3 for duration/movement as a fallback.
-            (durationScore * 0.7 + movementScore * 0.3).toInt()
+        // Composite score: weights redistributed over the available components
+        val compositeScore = when {
+            heartRateScore != null && movementScore != null ->
+                (durationScore * 0.5 + heartRateScore * 0.3 + movementScore * 0.2).toInt()
+            movementScore != null ->
+                (durationScore * 0.7 + movementScore * 0.3).toInt()
+            heartRateScore != null ->
+                (durationScore * 0.7 + heartRateScore * 0.3).toInt()
+            else ->
+                durationScore
         }
 
         return SleepScores(

@@ -5,58 +5,56 @@
     android:id="@+id/btnItemCard"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="6dp"
-    app:cardBackgroundColor="@color/white"
-    app:cardCornerRadius="16dp"
+    android:layout_marginStart="6dp"
+    android:layout_marginEnd="6dp"
+    android:layout_marginTop="6dp"
+    android:layout_marginBottom="6dp"
+    app:cardBackgroundColor="@android:color/transparent"
+    app:cardCornerRadius="14dp"
     app:cardElevation="2dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/shopItemContent"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:padding="6dp">
 
-        <!-- Fixed size container for the image to prevent collapsing -->
-        <FrameLayout
-            android:id="@+id/imageContainer"
+        <!-- Outfit SVG illustration -->
+        <ImageView
+            android:id="@+id/ivOutfitPreview"
             android:layout_width="0dp"
-            android:layout_height="0dp"
-            app:layout_constraintDimensionRatio="1:1"
+            android:layout_height="100dp"
+            android:layout_marginTop="4dp"
+            android:adjustViewBounds="true"
+            android:contentDescription="@null"
+            android:scaleType="fitCenter"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintTop_toTopOf="parent"
+            tools:src="@drawable/outfit_default" />
 
-            <ImageView
-                android:id="@+id/ivItemPreview"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:contentDescription="@null"
-                android:padding="12dp"
-                android:scaleType="centerInside"
-                tools:src="@drawable/hat_cloud_icon" />
-
-        </FrameLayout>
-
-        <!-- Price pill -->
+        <!-- Price pill overlay at bottom-right -->
         <LinearLayout
             android:id="@+id/priceContainer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="2dp"
+            android:layout_marginBottom="2dp"
             android:background="@drawable/bg_token_pill"
             android:backgroundTint="#F5F5F5"
             android:gravity="center"
             android:orientation="horizontal"
-            android:paddingStart="8dp"
+            android:paddingStart="6dp"
             android:paddingTop="2dp"
-            android:paddingEnd="10dp"
+            android:paddingEnd="8dp"
             android:paddingBottom="2dp"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/imageContainer">
+            app:layout_constraintEnd_toEndOf="parent">
 
             <ImageView
-                android:layout_width="14dp"
-                android:layout_height="14dp"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
                 android:contentDescription="@null"
                 android:src="@drawable/dream_token_icon" />
 
@@ -64,24 +62,12 @@
                 android:id="@+id/tvTokenCost"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
+                android:layout_marginStart="3dp"
                 android:textColor="@color/noctra_purple_dark"
-                android:textSize="11sp"
+                android:textSize="10sp"
                 android:textStyle="bold"
                 tools:text="200" />
         </LinearLayout>
-
-        <!-- Checkmark icon -->
-        <ImageView
-            android:id="@+id/ivEquippedCheck"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_margin="8dp"
-            android:contentDescription="@null"
-            android:src="@drawable/ic_equipped_check"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

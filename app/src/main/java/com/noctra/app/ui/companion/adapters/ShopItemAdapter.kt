@@ -3,11 +3,13 @@ package com.noctra.app.ui.companion.adapters
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.noctra.app.R
 import com.noctra.app.databinding.ItemShopBinding
-import com.noctra.app.ui.companion.CustomizationViewModel.ShopItemUiModel
+import com.noctra.app.ui.companion.CompanionViewModel.ShopItemUiModel
 
 class ShopItemAdapter(
     private val onItemClick: (ShopItemUiModel) -> Unit
@@ -24,34 +26,30 @@ class ShopItemAdapter(
 
     inner class ViewHolder(private val binding: ItemShopBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(model: ShopItemUiModel) {
-            
-            // Handle Equipped state
-            if (model.isEquipped) {
-                binding.ivEquippedCheck.visibility = View.VISIBLE
-                binding.priceContainer.visibility = View.GONE
-            } else if (model.isOwned) {
-                binding.ivEquippedCheck.visibility = View.GONE
-                binding.priceContainer.visibility = View.GONE
+
+            // 1. Reset defaults for recycling
+            binding.priceContainer.visibility = View.GONE
+            binding.shopItemContent.setBackgroundResource(R.drawable.bg_shop_item_card)
+
+            // 2. Set outfit preview drawable
+            val drawableName = "outfit_${model.item.label.lowercase()}"
+            val ctx = binding.root.context
+            val drawableRes = ctx.resources.getIdentifier(
+                drawableName, "drawable", ctx.packageName
+            )
+            if (drawableRes != 0) {
+                binding.ivOutfitPreview.setImageResource(drawableRes)
+                binding.ivOutfitPreview.visibility = View.VISIBLE
             } else {
-                binding.ivEquippedCheck.visibility = View.GONE
-                binding.priceContainer.visibility = View.VISIBLE
-                binding.tvTokenCost.text = model.item.tokenCost.toString()
-                
-                binding.btnItemCard.alpha = if (model.canAfford) 1.0f else 0.5f
+                binding.ivOutfitPreview.visibility = View.GONE
             }
 
-            // Robust Icon Loading
-            val context = binding.root.context
-            val assetName = model.item.previewAsset.removeSuffix(".png").removeSuffix(".jpg").removeSuffix(".webp")
-            val resId = context.resources.getIdentifier(
-                assetName, "drawable", context.packageName
-            )
-            
-            if (resId != 0) {
-                binding.ivItemPreview.setImageResource(resId)
-            } else {
-                // Set a placeholder if the specific icon is missing to avoid a blank card
-                binding.ivItemPreview.setImageResource(android.R.drawable.ic_menu_help)
+            // 3. Set state based on ownership
+            if (model.isEquipped) {
+                binding.shopItemContent.setBackgroundResource(R.drawable.bg_shop_item_card_equipped)
+            } else if (!model.isOwned) {
+                binding.priceContainer.visibility = View.VISIBLE
+                binding.tvTokenCost.text = model.item.tokenCost.toString()
             }
 
             binding.root.setOnClickListener { onItemClick(model) }

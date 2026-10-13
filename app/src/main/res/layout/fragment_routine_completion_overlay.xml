@@ -81,18 +81,20 @@
                 android:paddingTop="16dp"
                 android:paddingBottom="16dp">
 
-                <!-- Gold circle icon -->
-                <FrameLayout
+                <!-- Session 5 (R11): Dream Tokens icon (dreamtokens.jpg), rounded -->
+                <androidx.cardview.widget.CardView
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:background="@drawable/bg_reward_circle_gold">
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="0dp">
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_shleepy_head"
-                        android:contentDescription="tokens icon" />
-                </FrameLayout>
+                        android:id="@+id/iv_tokens_icon"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/dreamtokens"
+                        android:contentDescription="Dream Tokens" />
+                </androidx.cardview.widget.CardView>
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -131,68 +133,6 @@
                 android:layout_marginEnd="20dp"
                 android:background="#F0F0F0" />
 
-            <!-- Row 2: Growth Points -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="20dp"
-                android:paddingEnd="20dp"
-                android:paddingTop="16dp"
-                android:paddingBottom="16dp">
-
-                <!-- Dark purple circle icon -->
-                <FrameLayout
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:background="@drawable/bg_reward_circle_purple">
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_nav_performance"
-                        android:contentDescription="XP icon"
-                        android:tint="@color/white" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="16dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Growth Points Earned"
-                        android:textColor="#888888"
-                        android:textSize="12sp"
-                        android:fontFamily="@font/poppinsregular" />
-
-                    <TextView
-                        android:id="@+id/tv_xp_earned"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/noctra_purple_dark"
-                        android:textSize="22sp"
-                        android:textStyle="bold"
-                        android:fontFamily="@font/poppinsbold"
-                        tools:text="+50" />
-
-                </LinearLayout>
-
-            </LinearLayout>
-
-            <!-- Divider -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginStart="20dp"
-                android:layout_marginEnd="20dp"
-                android:background="#F0F0F0" />
-
             <!-- Row 3: Current Streak -->
             <LinearLayout
                 android:layout_width="match_parent"
@@ -204,19 +144,14 @@
                 android:paddingTop="16dp"
                 android:paddingBottom="16dp">
 
-                <!-- Orange circle icon -->
-                <FrameLayout
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:background="@drawable/bg_reward_circle_orange">
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_alarm_clock"
-                        android:contentDescription="streak icon"
-                        android:tint="@color/white" />
-                </FrameLayout>
+                <!-- Session 5 (R11): Current Streak icon (streakprofile vector, no tint) -->
+                <ImageView
+                    android:id="@+id/iv_streak_icon"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/streakprofile"
+                    android:contentDescription="Current Streak" />
 
                 <LinearLayout
                     android:layout_width="0dp"

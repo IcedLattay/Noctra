@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Soft warm glow circle behind the alarm clock on the Time's Up screen -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <gradient
+        android:type="radial"
+        android:gradientRadius="75dp"
+        android:startColor="#FBE9C8"
+        android:centerColor="#F6EEFB"
+        android:endColor="#00FFFFFF" />
+</shape>

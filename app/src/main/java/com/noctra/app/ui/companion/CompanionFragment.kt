@@ -2,9 +2,13 @@ package com.noctra.app.ui.companion
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
 import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -12,9 +16,16 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.transition.AutoTransition
+import androidx.transition.ChangeBounds
+import androidx.transition.Fade
+import androidx.transition.Slide
+import androidx.transition.TransitionManager
+import androidx.transition.TransitionSet
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import com.noctra.app.R
 import com.noctra.app.databinding.FragmentCompanionBinding
-import com.noctra.app.utils.ShleepyAssetHelper
+import com.noctra.app.ui.companion.adapters.ShopItemAdapter
 import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -25,6 +36,112 @@ class CompanionFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: CompanionViewModel by activityViewModels()
+    private lateinit var shopAdapter: ShopItemAdapter
+
+    private var currentStageLevel: Int = -1
+    private var previousOutfitAsset: String? = null
+    private var isCustomizeMode = false
+    
+    // Dialog Queue Logic
+    private sealed class PendingDialog {
+        data class MorningRecap(
+            val score: Int,
+            val xp: Int,
+            val xpTotal: Int = xp,
+            val xpNights: Int = 1
+        ) : PendingDialog()
+        data class StreakNotice(val type: CompanionViewModel.CompanionNotice) : PendingDialog()
+        data class Evolution(val oldLevel: Int, val newLevel: Int) : PendingDialog()
+    }
+
+    private val dialogQueue = mutableListOf<PendingDialog>()
+    private var isDialogShowing = false
+
+    private fun enqueueDialog(dialog: PendingDialog) {
+        dialogQueue.add(dialog)
+        // Sort by Priority: Recap(0) > Notice(1) > Evolution(2)
+        dialogQueue.sortWith(compareBy { 
+            when(it) {
+                is PendingDialog.MorningRecap -> 0
+                is PendingDialog.StreakNotice -> 1
+                is PendingDialog.Evolution -> 2
+            }
+        })
+        processNextDialog()
+    }
+
+    private fun processNextDialog() {
+        if (isDialogShowing || dialogQueue.isEmpty()) return
+        // Collectors can fire while detached (mid-navigation) — showing then
+        // crashes. Return WITHOUT clearing: the queue survives for next time.
+        if (!isAdded) return
+
+        val next = dialogQueue.removeAt(0)
+
+        // NOTE: no .apply{} here — inside apply, bare childFragmentManager
+        // resolves to the DIALOG's (unattached) manager instead of ours.
+        try {
+            isDialogShowing = true
+            when (next) {
+                is PendingDialog.MorningRecap -> {
+                    val dialog = MorningSleepPopupDialog.newInstance(
+                        next.score, next.xp, next.xpTotal, next.xpNights
+                    )
+                dialog.setOnDismissCallback { onDialogClosed() }
+                dialog.setOnViewDetailsCallback {
+                    // Switch to the Performance TAB (not a push): analytics
+                    // then lives on its own back stack and the companion
+                    // tab stays pristine — returning to it can never
+                    // restore an analytics screen on top.
+                    requireActivity().findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(
+                        R.id.bottom_nav
+                    ).selectedItemId = R.id.analyticsDashboardFragment
+                }
+                dialog.show(childFragmentManager, "MorningSleepPopup")
+            }
+            is PendingDialog.StreakNotice -> {
+                val dialog = StreakNoticeDialogFragment.newInstance(next.type)
+                dialog.setOnDismissCallback { onDialogClosed() }
+                dialog.show(childFragmentManager, "StreakNoticePopup")
+            }
+            is PendingDialog.Evolution -> {
+                val dialog = EvolutionDialogFragment.newInstance(next.oldLevel, next.newLevel)
+                dialog.setOnDismissCallback { onDialogClosed() }
+                dialog.show(childFragmentManager, "EvolutionPopup")
+            }
+            }
+        } catch (e: Exception) {
+            // Never leave the queue wedged: a dropped dialog must still let the
+            // next one through, otherwise every later dialog is silently lost.
+            android.util.Log.e("CompanionFragment", "Failed to show ${next::class.simpleName}", e)
+            isDialogShowing = false
+            dialogQueue.add(0, next)
+        }
+    }
+
+    private fun onDialogClosed() {
+        isDialogShowing = false
+        // Delay slightly to avoid window focus flickers.
+        val v = view
+        if (v != null) {
+            v.postDelayed({ processNextDialog() }, 300)
+        } else {
+            // The view went away between dismiss and this callback, so the
+            // postDelayed anchor is gone. Drop the backlog rather than leave
+            // isDialogShowing latched and every queued dialog stranded.
+            dialogQueue.clear()
+        }
+    }
+
+    private val shleepyStates = mapOf(
+        1 to ShleepyState("DEPRIVED"),
+        2 to ShleepyState("AWAKENING"),
+        3 to ShleepyState("CHARGED"),
+        4 to ShleepyState("OVERDRIVE"),
+        5 to ShleepyState("ZEN")
+    )
+
+    data class ShleepyState(val name: String)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -38,19 +155,83 @@ class CompanionFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val userId = UserSession.getUserId(requireContext())
-        val lastShownSleepDate = requireContext().getSharedPreferences("noctra_prefs", Context.MODE_PRIVATE)
-            .getString("last_shown_sleep_date", null)
-            
-        viewModel.loadData(userId, lastShownSleepDate)
-
-        observeUiState()
+        setupRecyclerView()
         setupListeners()
+        setupBackNavigation()
+        observeUiState()
+
+        // Start skeleton animations: spinner spins natively, placeholders pulse
+        binding.skeletonSpinner.visibility = View.VISIBLE
+        val pulseAnim = android.view.animation.AnimationUtils.loadAnimation(requireContext(), R.anim.pulse_skeleton)
+        binding.skeletonTokenPill.startAnimation(pulseAnim)
+        binding.skeletonStageLabel.startAnimation(pulseAnim)
+        binding.skeletonXpCard.startAnimation(pulseAnim)
+        binding.skeletonCustomize.startAnimation(pulseAnim)
+
+        // NOTE: no loadData here — onResume() always follows onViewCreated()
+        // and loads. Calling both double-fires loadData on cold open, which
+        // used to emit the morning popup twice (dismiss → pops again).
+    }
+
+    private fun setupBackNavigation() {
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (isCustomizeMode) {
+                    toggleCustomizeMode(false)
+                } else {
+                    isEnabled = false
+                    requireActivity().onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
+    }
+
+    private fun setupRecyclerView() {
+        shopAdapter = ShopItemAdapter { model ->
+            handleItemClick(model)
+        }
+        binding.rvShopItems.adapter = shopAdapter
+    }
+
+    private fun handleItemClick(model: CompanionViewModel.ShopItemUiModel) {
+        val userId = UserSession.getUserId(requireContext()) ?: return
+        if (model.isOwned) {
+            viewModel.equipItem(userId, model.item)
+        } else if (model.canAfford) {
+            showPurchaseConfirmation(model.item)
+        } else {
+            android.widget.Toast.makeText(requireContext(), "Insufficient Dream Tokens", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showPurchaseConfirmation(item: com.noctra.app.data.model.ShopItem) {
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("Purchase Item")
+            .setMessage("Buy ${item.label} for ${item.tokenCost} Dream Tokens?")
+            .setPositiveButton("Purchase") { _, _ ->
+                val userId = UserSession.getUserId(requireContext()) ?: return@setPositiveButton
+                viewModel.purchaseAndEquip(userId, item)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showAllItems() {
+        val allItems = viewModel.uiState.value.shopItems
+        shopAdapter.submitList(allItems)
+
+        if (allItems.isEmpty()) {
+            binding.rvShopItems.visibility = View.GONE
+            binding.tvComingSoon.visibility = View.VISIBLE
+        } else {
+            binding.rvShopItems.visibility = View.VISIBLE
+            binding.tvComingSoon.visibility = View.GONE
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        val userId = UserSession.getUserId(requireContext())
+        val userId = UserSession.getUserId(requireContext()) ?: return
         val lastShownSleepDate = requireContext().getSharedPreferences("noctra_prefs", Context.MODE_PRIVATE)
             .getString("last_shown_sleep_date", null)
         viewModel.loadData(userId, lastShownSleepDate)
@@ -66,104 +247,248 @@ class CompanionFragment : Fragment() {
                 }
                 launch {
                     viewModel.showMorningPopup.collectLatest { (score, xp) ->
-                        showMorningPopup(score, xp)
+                        // Mark this session date's recap as shown. Keyed to the
+                        // SESSION date (last night), not today — records are
+                        // written twice (provisional + finalization), so the
+                        // flag, not record existence, prevents re-showing.
+                        val sessionDate = java.time.LocalDate.now().minusDays(1).toString()
+                        requireContext().getSharedPreferences("noctra_prefs", Context.MODE_PRIVATE)
+                            .edit(commit = false) { putString("last_shown_sleep_date", sessionDate) }
+
+                        // TEMP (XP economy): settle every unsettled row at
+                        // collect time — once per date by construction above.
+                        // The settlement travels with the dialog for display.
+                        val settlement = UserSession.getUserId(requireContext())?.let { uid ->
+                            viewModel.settleMorningXp(uid)
+                        }
+
+                        enqueueDialog(
+                            PendingDialog.MorningRecap(
+                                score, xp,
+                                settlement?.total ?: xp,
+                                settlement?.nights ?: 1
+                            )
+                        )
                     }
                 }
                 launch {
-                    viewModel.showEvolutionPopup.collectLatest { evolution ->
-                        showEvolutionPopup(evolution.stageName)
+                    viewModel.showNoticePopup.collectLatest { notice ->
+                        enqueueDialog(PendingDialog.StreakNotice(notice))
                     }
                 }
                 launch {
-                    viewModel.showDevolutionPopup.collectLatest {
-                        showDevolutionPenalty()
+                    viewModel.showEvolutionPopup.collectLatest { event ->
+                        enqueueDialog(PendingDialog.Evolution(event.oldLevel, event.newStage.stageLevel))
                     }
                 }
             }
         }
     }
 
-    private fun showMorningPopup(score: Int, xp: Int) {
-        val dialog = MorningSleepPopupDialog.newInstance(score, xp)
-        dialog.show(childFragmentManager, "MorningSleepPopup")
-        
-        val today = java.time.LocalDate.now().toString()
-        requireContext().getSharedPreferences("noctra_prefs", Context.MODE_PRIVATE)
-            .edit(commit = false) {
-                putString("last_shown_sleep_date", today)
-            }
-    }
-
-    private fun showEvolutionPopup(stageName: String) {
-        val dialog = EvolutionDialogFragment.newInstance(stageName)
-        dialog.show(childFragmentManager, "EvolutionPopup")
-    }
-
-    private fun showDevolutionPenalty() {
-        androidx.appcompat.app.AlertDialog.Builder(requireContext())
-            .setTitle("Shleepy looks tired...")
-            .setMessage("Your companion needs you — complete tonight's routine to start recovering.")
-            .setPositiveButton("I will!") { _, _ -> }
-            .show()
-    }
-
     private fun updateUi(state: CompanionViewModel.CompanionUiState) {
+        val noInternetView = view?.findViewById<View>(R.id.noInternetView)
+        val companionRoot = view?.findViewById<View>(R.id.companionRoot)
+
+        if (state.isOffline) {
+            noInternetView?.visibility = View.VISIBLE
+            companionRoot?.visibility = View.GONE
+            setupRetryButton()
+            return
+        } else {
+            noInternetView?.visibility = View.GONE
+            companionRoot?.visibility = View.VISIBLE
+        }
+
         with(binding) {
             tvTokenBalance.text = state.tokenBalance.toString()
-            
+            // Only swap token skeleton once data has actually loaded
+            if (state.evolutionState != null) {
+                tokenContainer.visibility = View.VISIBLE
+                skeletonTokenPill.clearAnimation()
+                skeletonTokenPill.visibility = View.GONE
+            } else {
+                tokenContainer.visibility = View.GONE
+                skeletonTokenPill.visibility = View.VISIBLE
+            }
+
             state.evolutionState?.let { evolution ->
                 tvStageLabel.text = evolution.stageName
                 tvXpValue.text = getString(R.string.companion_xp_unit, evolution.totalXp)
                 pbXpProgress.progress = (evolution.progressPercent * 100).toInt()
 
-                // 1. Update Shleepy Base
-                val shleepyResId = when (evolution.stageLevel) {
-                    1 -> R.drawable.shleepy_depleted
-                    2 -> R.drawable.shleepy_awakening
-                    3 -> R.drawable.shleepy_charged
-                    4 -> R.drawable.shleepy_overdrive
-                    5 -> R.drawable.shleepy_zenmaster
-                    else -> R.drawable.shleepy_depleted
-                }
-                ivShleepy.setImageResource(shleepyResId)
+                // Show data components and hide their skeletons
+                tvStageLabel.visibility = View.VISIBLE
+                cvXpCard.visibility = View.VISIBLE
+                btnCustomize.visibility = View.VISIBLE
+                skeletonStageLabel.clearAnimation()
+                skeletonXpCard.clearAnimation()
+                skeletonCustomize.clearAnimation()
+                skeletonStageLabel.visibility = View.GONE
+                skeletonXpCard.visibility = View.GONE
+                skeletonCustomize.visibility = View.GONE
 
-                // 2. Update Equipped Items (Hats, Outfits, Accessories)
-                val categories = mapOf(
-                    "HAT" to ivEquippedHatCompanion,
-                    "OUTFIT" to ivEquippedOutfitCompanion,
-                    "ACCESSORY" to ivEquippedAccessoryCompanion
-                )
-
-                val stageSuffix = when (evolution.stageLevel) {
-                    1 -> "depleted"
-                    2 -> "awakening"
-                    3 -> "charged"
-                    4 -> "overdrive"
-                    5 -> "zenmaster"
-                    else -> "depleted"
+                // 1. Update Shleepy Animation if stage changed
+                if (currentStageLevel != evolution.stageLevel) {
+                    currentStageLevel = evolution.stageLevel
+                    applyIdleAnimation(playSmoke = false)
                 }
 
-                categories.forEach { (category, imageView) ->
-                    val item = state.equippedItems[category]
-                    if (item != null) {
-                        // Using helper for ALL accessories now since they are full-frame
-                        ShleepyAssetHelper.applyAccessory(imageView, item, stageSuffix)
-                    } else {
-                        imageView.visibility = View.GONE
-                    }
+                // 2. Update outfit animation if equipped outfit changed
+                val currentOutfitAsset = viewModel.uiState.value.equippedOutfit?.itemAsset
+                val outfitChanged = previousOutfitAsset != null && previousOutfitAsset != currentOutfitAsset
+                applyIdleAnimation(playSmoke = outfitChanged)
+                previousOutfitAsset = currentOutfitAsset
+                
+                // 3. Update Shop Items if in customize mode
+                if (isCustomizeMode) {
+                    showAllItems()
                 }
+            }
+            
+            if (state.error != null) {
+                android.widget.Toast.makeText(requireContext(), state.error, android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun setupRetryButton() {
+        val noInternetView = view?.findViewById<View>(R.id.noInternetView) ?: return
+        val btnRetry = noInternetView.findViewById<android.widget.ImageButton>(R.id.btnRetry)
+        val progressRetry = noInternetView.findViewById<android.widget.ProgressBar>(R.id.progressRetry)
+        val tvRetry = noInternetView.findViewById<TextView>(R.id.tvRetry)
+
+        btnRetry.setOnClickListener {
+            btnRetry.visibility = View.GONE
+            progressRetry.visibility = View.VISIBLE
+            tvRetry.text = "retrying..."
+
+            val userId = UserSession.getUserId(requireContext()) ?: return@setOnClickListener
+            viewModel.retry(userId)
+        }
+    }
+
+    private fun applyIdleAnimation(playSmoke: Boolean = false) {
+        val state = shleepyStates[currentStageLevel] ?: shleepyStates[1]!!
+        val stageName = state.name.lowercase()
+        val outfitAsset = viewModel.uiState.value.equippedOutfit?.itemAsset ?: "default"
+
+        val resId = resources.getIdentifier(
+            "shleepy_${stageName}_${outfitAsset}", "raw", requireContext().packageName
+        )
+
+        if (resId != 0) {
+            binding.petAnimationView.apply {
+                setAnimation(resId)
+                repeatCount = -1
+                playAnimation()
+            }
+            // Hide skeleton spinner once pet animation is ready
+            binding.skeletonSpinner.visibility = View.GONE
+        } else {
+            binding.petAnimationView.cancelAnimation()
+            binding.petAnimationView.progress = 0f
+        }
+
+        if (playSmoke) {
+            val smokeResId = resources.getIdentifier("smoke", "raw", requireContext().packageName)
+            if (smokeResId != 0) {
+                binding.smokeOverlay.setAnimation(smokeResId)
+                binding.smokeOverlay.playAnimation()
             }
         }
     }
 
     private fun setupListeners() {
         binding.btnCustomize.setOnClickListener {
-            findNavController().navigate(R.id.action_companion_to_customization)
+            toggleCustomizeMode(true)
+        }
+
+        binding.btnBack.setOnClickListener {
+            toggleCustomizeMode(false)
+        }
+    }
+
+    private fun toggleCustomizeMode(enabled: Boolean) {
+        isCustomizeMode = enabled
+        
+        val activityRoot = requireActivity().findViewById<ViewGroup>(R.id.mainActivityRoot) ?: return
+        val bottomNav = requireActivity().findViewById<View>(R.id.bottom_nav)
+
+        // Single coordinated transition for EVERYTHING (Activity root + Fragment contents)
+        val consolidatedTransition = TransitionSet().apply {
+            // Handle Bottom Nav: Slide + Fade to prevent "white bar"
+            addTransition(Slide(Gravity.BOTTOM).addTarget(bottomNav))
+            addTransition(Fade().addTarget(bottomNav))
+            
+            // Handle Fragment internal UI: Panels
+            addTransition(Slide(Gravity.BOTTOM).addTarget(binding.shopPanel))
+            addTransition(Fade(Fade.IN).addTarget(binding.shopPanel))
+            addTransition(Fade(Fade.OUT).addTarget(binding.shopPanel))
+            addTransition(Fade(Fade.OUT).addTarget(binding.companionPanel))
+            addTransition(Fade(Fade.IN).addTarget(binding.companionPanel))
+            
+            // Smoothly animate the expansion/movement of everything else
+            addTransition(ChangeBounds())
+            
+            ordering = TransitionSet.ORDERING_TOGETHER
+            duration = 450 // Slightly longer to let the curve feel smooth
+            interpolator = FastOutSlowInInterpolator()
+        }
+        
+        TransitionManager.beginDelayedTransition(activityRoot, consolidatedTransition)
+        
+        // Update Bottom Nav Visibility
+        bottomNav?.visibility = if (enabled) View.GONE else View.VISIBLE
+
+        if (enabled) {
+            // Hide companion elements
+            binding.companionPanel.visibility = View.GONE
+            
+            // Show shop elements
+            binding.shopPanel.visibility = View.VISIBLE
+            binding.btnBack.visibility = View.VISIBLE
+            
+            // Re-constrain shleepyFrame bottom to shopPanel (companionPanel is GONE)
+            val shleepyParams = binding.shleepyFrame.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            shleepyParams.bottomToTop = R.id.shopPanel
+            shleepyParams.topMargin = (16 * resources.displayMetrics.density).toInt()
+            binding.shleepyFrame.layoutParams = shleepyParams
+            
+            // Extend floor upward
+            val floorParams = binding.companionFloor.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            floorParams.height = (510 * resources.displayMetrics.density).toInt()
+            binding.companionFloor.layoutParams = floorParams
+            
+            showAllItems()
+        } else {
+            // Show companion elements
+            binding.companionPanel.visibility = View.VISIBLE
+            
+            // Hide shop elements
+            binding.shopPanel.visibility = View.GONE
+            binding.btnBack.visibility = View.GONE
+            
+            // Restore shleepyFrame bottom to companionPanel
+            val shleepyParams = binding.shleepyFrame.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            shleepyParams.bottomToTop = R.id.companionPanel
+            shleepyParams.topMargin = (100 * resources.displayMetrics.density).toInt()
+            binding.shleepyFrame.layoutParams = shleepyParams
+            
+            // Shrink floor back
+            val floorParams = binding.companionFloor.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            floorParams.height = (340 * resources.displayMetrics.density).toInt()
+            binding.companionFloor.layoutParams = floorParams
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        // Ensure Bottom Nav is restored if we leave while in customize mode
+        if (isCustomizeMode) {
+            requireActivity().findViewById<View>(R.id.bottom_nav)?.visibility = View.VISIBLE
+        }
+        currentStageLevel = -1
+        previousOutfitAsset = null
         _binding = null
     }
 }

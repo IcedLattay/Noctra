@@ -1,9 +1,12 @@
 package com.noctra.app.ui.profile
 
+import android.app.Application
 import android.content.Context
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.noctra.app.data.repository.UserProfileRepository
+import com.noctra.app.utils.NetworkObserver
 import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,22 +16,47 @@ import com.noctra.app.R
 
 import com.noctra.app.data.repository.RewardLedgerRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
+import com.noctra.app.data.repository.ShopRepository
 import com.noctra.app.domain.usecase.CompanionEvolutionUseCase
 
-class UserProfileViewModel : ViewModel() {
+class UserProfileViewModel(application: Application) : AndroidViewModel(application) {
 
     private val userProfileRepository = UserProfileRepository()
     private val rewardLedgerRepository = RewardLedgerRepository()
     private val routineSessionRepository = RoutineSessionRepository()
+    private val shopRepository = ShopRepository()
     private val evolutionUseCase = CompanionEvolutionUseCase()
+    private val networkObserver = NetworkObserver(application)
 
     private val _profileData = MutableStateFlow(ProfileUiState())
     val profileData = _profileData.asStateFlow()
 
+    init {
+        // Live connectivity (push): disconnect → placeholder immediately;
+        // reconnect while showing it → auto-reload.
+        viewModelScope.launch {
+            var lastOnline = com.noctra.app.utils.ConnectivityMonitor.isOnline.value
+            com.noctra.app.utils.ConnectivityMonitor.isOnline.collect { online ->
+                if (online == lastOnline) return@collect
+                lastOnline = online
+                if (!online) {
+                    _profileData.value = _profileData.value.copy(isOffline = true, isLoading = false)
+                } else if (_profileData.value.isOffline) {
+                    retry(getApplication())
+                }
+            }
+        }
+    }
+
     fun loadProfile(context: Context) {
         viewModelScope.launch {
+            _profileData.value = _profileData.value.copy(isLoading = true, isOffline = false)
+            if (!networkObserver.checkNow()) {
+                _profileData.value = _profileData.value.copy(isOffline = true, isLoading = false)
+                return@launch
+            }
             try {
-                val userId = UserSession.getUserId(context)
+                val userId = UserSession.getUserId(context) ?: return@launch
                 val profile = userProfileRepository.getOrCreateProfile(userId)
                 val ledger = rewardLedgerRepository.getRewardLedger(userId)
 
@@ -39,6 +67,16 @@ class UserProfileViewModel : ViewModel() {
 
                 val evolution = evolutionUseCase.execute(totalXp)
                 val stageAvatarRes = getAvatarResForStage(evolution.stageLevel)
+
+                // Resolve the equipped outfit asset for the profile avatar
+                // (always rendered with the charged-stage animation, frozen).
+                val outfitAsset = try {
+                    shopRepository.getAllShopItems()
+                        .find { it.itemId == profile.outfitEquipped }
+                        ?.itemAsset ?: "default"
+                } catch (e: Exception) {
+                    "default"
+                }
                 
                 val nextStageXp = when (evolution.stageLevel) {
                     1 -> 1500
@@ -64,11 +102,17 @@ class UserProfileViewModel : ViewModel() {
                     stageName = evolution.stageName,
                     xpToNextStageMessage = xpMessage,
                     stageAvatarRes = stageAvatarRes,
-                    mainAvatarRes = R.drawable.ic_shleepy_avatar // Detailed artwork
+                    outfitAsset = outfitAsset,
+                    isLoading = false,
+                    hasLoaded = true
                 )
             } catch (e: Exception) {
-                // Log and keep default empty state
-                e.printStackTrace()
+                if (!networkObserver.checkNow()) {
+                    _profileData.value = _profileData.value.copy(isOffline = true, isLoading = false)
+                } else {
+                    e.printStackTrace()
+                    _profileData.value = _profileData.value.copy(isLoading = false)
+                }
             }
         }
     }
@@ -76,11 +120,11 @@ class UserProfileViewModel : ViewModel() {
     @DrawableRes
     private fun getAvatarResForStage(stageNumber: Int): Int {
         return when (stageNumber) {
-            1 -> R.drawable.ic_shleepy_stage_1  // The Depleted
-            2 -> R.drawable.ic_shleepy_stage_2  // The Awakening
-            3 -> R.drawable.ic_shleepy_stage_3  // The Charged
-            4 -> R.drawable.ic_shleepy_stage_4  // The Peak Overdrive
-            5 -> R.drawable.ic_shleepy_stage_5  // The Zen Master
+            1 -> R.drawable.ic_shleepy_stage_1  // Depleted
+            2 -> R.drawable.ic_shleepy_stage_2  // Awakening
+            3 -> R.drawable.ic_shleepy_stage_3  // Charged
+            4 -> R.drawable.ic_shleepy_stage_4  // Overdrive
+            5 -> R.drawable.ic_shleepy_stage_5  // Zen Master
             else -> R.drawable.ic_shleepy_stage_1
         }
     }
@@ -88,7 +132,7 @@ class UserProfileViewModel : ViewModel() {
     fun updateDisplayName(context: Context, newName: String) {
         viewModelScope.launch {
             try {
-                val userId = UserSession.getUserId(context)
+                val userId = UserSession.getUserId(context) ?: return@launch
                 userProfileRepository.updateDisplayName(userId, newName)
                 // Update local state so the UI reflects the change immediately
                 _profileData.value = _profileData.value.copy(displayName = newName)
@@ -96,6 +140,11 @@ class UserProfileViewModel : ViewModel() {
                 e.printStackTrace()
             }
         }
+    }
+
+    fun retry(context: Context) {
+        _profileData.value = _profileData.value.copy(isOffline = false)
+        loadProfile(context)
     }
 }
 
@@ -106,8 +155,11 @@ data class ProfileUiState(
     val longestStreak: Int = 0,
     val routinesCompleted: Int = 0,
     val stageNumber: Int = 1,
-    val stageName: String = "The Depleted",
+    val stageName: String = "Depleted",
     val xpToNextStageMessage: String = "",
     @DrawableRes val stageAvatarRes: Int = R.drawable.ic_shleepy_stage_1,
-    @DrawableRes val mainAvatarRes: Int = R.drawable.ic_shleepy_avatar
+    val outfitAsset: String = "default",
+    val isOffline: Boolean = false,
+    val isLoading: Boolean = true,
+    val hasLoaded: Boolean = false
 )

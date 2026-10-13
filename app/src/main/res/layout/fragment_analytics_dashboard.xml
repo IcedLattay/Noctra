@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+<androidx.core.widget.NestedScrollView
+    android:id="@+id/mainContent"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/white"
@@ -14,7 +18,7 @@
         android:orientation="vertical"
         android:paddingHorizontal="20dp"
         android:paddingTop="20dp"
-        android:paddingBottom="32dp">
+        android:paddingBottom="64dp">
 
         <!-- Screen header -->
         <TextView
@@ -26,12 +30,15 @@
             android:textStyle="bold" />
 
         <!-- ─── LAST NIGHT CARD ──────────────────────────────────────── -->
+        <!-- ANALYTICS_SPEC.md §2.4 + §6 item 3: score #7746FF is the only
+             coloured element; label, date, classification and all four values
+             are black, the four stat labels are analytics_muted. -->
         <LinearLayout
             android:id="@+id/card_last_night"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:background="@drawable/card_status_outline"
+            android:background="@drawable/bg_analytics_card"
             android:orientation="vertical"
             android:padding="20dp">
 
@@ -46,8 +53,9 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:fontFamily="@font/poppins"
                     android:letterSpacing="0.05"
-                    android:text="LAST NIGHT"
+                    android:text="@string/analytics_last_night"
                     android:textColor="@color/black"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -56,34 +64,67 @@
                     android:id="@+id/last_night_date"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins"
                     android:textColor="@color/black"
                     android:textSize="14sp"
                     android:textStyle="bold"
-                    tools:text="May 24, 2026" />
+                    tools:text="June 20, 2026" />
             </LinearLayout>
 
-            <!-- Composite score -->
+            <!-- Composite score — the only coloured element in this card -->
             <TextView
                 android:id="@+id/last_night_score"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:fontFamily="@font/poppins"
+                android:textColor="@color/analytics_score"
                 android:textSize="48sp"
                 android:textStyle="bold"
-                tools:text="82"
-                tools:textColor="#2E9F66" />
+                tools:text="82" />
 
             <!-- Quality label -->
             <TextView
                 android:id="@+id/last_night_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/noctra_purple_dark"
+                android:layout_marginTop="24dp"
+                android:fontFamily="@font/poppins"
+                android:textColor="@color/black"
                 android:textSize="15sp"
+                android:textStyle="bold"
                 tools:text="Good sleep quality" />
+
+            <!-- Empty state: illustration + sync hint, no-data branch only -->
+            <LinearLayout
+                android:id="@+id/last_night_empty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="96dp"
+                    android:layout_height="96dp"
+                    android:contentDescription="@string/analytics_no_sleep_data"
+                    android:src="@drawable/last_night_empty_illustration" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:fontFamily="@font/poppins"
+                    android:gravity="center"
+                    android:text="@string/analytics_last_night_hint"
+                    android:textColor="@color/analytics_muted"
+                    android:textSize="13sp" />
+            </LinearLayout>
 
             <!-- 2x2 stat grid -->
             <LinearLayout
+                android:id="@+id/last_night_stats_top"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
@@ -98,7 +139,7 @@
 
                     <TextView
                         style="@style/StatTileLabel"
-                        android:text="Duration" />
+                        android:text="@string/analytics_label_duration" />
 
                     <TextView
                         android:id="@+id/stat_duration"
@@ -115,7 +156,7 @@
 
                     <TextView
                         style="@style/StatTileLabel"
-                        android:text="Sleep onset time" />
+                        android:text="@string/analytics_label_onset" />
 
                     <TextView
                         android:id="@+id/stat_sleep_onset"
@@ -125,6 +166,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/last_night_stats_bottom"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -139,7 +181,7 @@
 
                     <TextView
                         style="@style/StatTileLabel"
-                        android:text="Avg heart rate" />
+                        android:text="@string/analytics_label_hr" />
 
                     <TextView
                         android:id="@+id/stat_avg_hr"
@@ -156,7 +198,7 @@
 
                     <TextView
                         style="@style/StatTileLabel"
-                        android:text="Restlessness" />
+                        android:text="@string/analytics_label_restlessness" />
 
                     <TextView
                         android:id="@+id/stat_restlessness"
@@ -166,7 +208,11 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ─── WEEK NAVIGATION ──────────────────────────────────────── -->
+        <!-- ═══════════════════════════════════════════════════════════
+             SEVEN-DAY DETAIL BLOCK  (ANALYTICS_SPEC.md §2.1)
+             One control moves all three charts one day per tap. No
+             calendar framing: the header states a plain date range.
+        ═══════════════════════════════════════════════════════════ -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -178,148 +224,37 @@
                 android:id="@+id/btn_week_prev"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
-                android:contentDescription="Previous week"
+                android:contentDescription="@string/analytics_nav_earlier"
                 android:padding="4dp"
                 android:rotation="180"
                 android:src="@drawable/ic_chevron_right" />
 
+            <!-- §7 locked range format -->
             <TextView
                 android:id="@+id/text_week_range"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:textColor="@color/noctra_label_grey"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                tools:text="May 19 - May 25, 2026" />
+                style="@style/AnalyticsRangeLabel"
+                tools:text="Jun 14, 2026 - Jun 20, 2026" />
 
             <ImageView
                 android:id="@+id/btn_week_next"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
-                android:contentDescription="Next week"
+                android:contentDescription="@string/analytics_nav_later"
                 android:padding="4dp"
                 android:src="@drawable/ic_chevron_right" />
         </LinearLayout>
 
-        <!-- ─── BEDTIME ADHERENCE & SLEEP ONSET ──────────────────────── -->
+        <!-- ─── SLEEP SCORE ────────────────────────────────────────────── -->
         <TextView
-            style="@style/AnalyticsSectionLabel"
+            style="@style/AnalyticsSectionHeading"
             android:layout_marginTop="24dp"
-            android:text="BEDTIME ADHERENCE &amp; SLEEP ONSET" />
-
-        <!-- Custom chart view (placeholder for now, real implementation Day 3) -->
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="180dp"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/chart_lavender_background"
-            android:padding="12dp">
-
-            <com.noctra.app.ui.analytics.BedtimeAdherenceChartView
-                android:id="@+id/chart_bedtime_adherence"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-        </FrameLayout>
-
-        <!-- Legend row 1: Target / On-time / Slight delay -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <View
-                android:layout_width="10dp"
-                android:layout_height="10dp"
-                android:background="@drawable/legend_dot_target" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:text="Target"
-                android:textColor="@color/noctra_purple_dark"
-                android:textSize="12sp" />
-
-            <View
-                android:layout_width="10dp"
-                android:layout_height="10dp"
-                android:layout_marginStart="14dp"
-                android:background="@drawable/legend_dot_on_time" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:text="On-time"
-                android:textColor="@color/noctra_purple_dark"
-                android:textSize="12sp" />
-
-            <View
-                android:layout_width="10dp"
-                android:layout_height="10dp"
-                android:layout_marginStart="14dp"
-                android:background="@drawable/legend_dot_slight_delay" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:text="Slight delay"
-                android:textColor="@color/noctra_purple_dark"
-                android:textSize="12sp" />
-        </LinearLayout>
-
-        <!-- Legend row 2: Late / No data -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <View
-                android:layout_width="10dp"
-                android:layout_height="10dp"
-                android:background="@drawable/legend_dot_late" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:text="Late"
-                android:textColor="@color/noctra_purple_dark"
-                android:textSize="12sp" />
-
-            <View
-                android:layout_width="10dp"
-                android:layout_height="10dp"
-                android:layout_marginStart="14dp"
-                android:background="@drawable/legend_dot_no_data_adherence" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:text="No data"
-                android:textColor="@color/noctra_purple_dark"
-                android:textSize="12sp" />
-        </LinearLayout>
-
-        <!-- ─── SLEEP QUALITY SCORE ──────────────────────────────────── -->
-        <TextView
-            style="@style/AnalyticsSectionLabel"
-            android:layout_marginTop="24dp"
-            android:text="SLEEP QUALITY SCORE" />
+            android:text="@string/analytics_section_sleep_score" />
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="220dp"
+            android:layout_height="190dp"
             android:layout_marginTop="12dp"
-            android:background="@drawable/card_status_outline"
+            android:background="@drawable/bg_analytics_card"
             android:padding="12dp">
 
             <com.github.mikephil.charting.charts.LineChart
@@ -336,59 +271,56 @@
             android:orientation="horizontal">
 
             <View
-                android:layout_width="10dp"
-                android:layout_height="10dp"
-                android:background="@drawable/legend_dot_good" />
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/legend_dot_completed" />
 
             <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                style="@style/AnalyticsLegendLabel"
                 android:layout_marginStart="6dp"
-                android:text="Good (≥75)"
-                android:textColor="@color/noctra_purple_dark"
-                android:textSize="12sp" />
+                android:text="@string/analytics_legend_good" />
 
             <View
-                android:layout_width="10dp"
-                android:layout_height="10dp"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
                 android:layout_marginStart="14dp"
-                android:background="@drawable/legend_dot_moderate" />
+                android:background="@drawable/legend_dot_pending" />
 
             <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                style="@style/AnalyticsLegendLabel"
                 android:layout_marginStart="6dp"
-                android:text="Moderate (50-74)"
-                android:textColor="@color/noctra_purple_dark"
-                android:textSize="12sp" />
+                android:text="@string/analytics_legend_moderate" />
 
             <View
-                android:layout_width="10dp"
-                android:layout_height="10dp"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
                 android:layout_marginStart="14dp"
-                android:background="@drawable/legend_dot_poor" />
+                android:background="@drawable/legend_dot_incomplete" />
 
             <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                style="@style/AnalyticsLegendLabel"
                 android:layout_marginStart="6dp"
-                android:text="Poor (&lt;50)"
-                android:textColor="@color/noctra_purple_dark"
-                android:textSize="12sp" />
+                android:text="@string/analytics_legend_poor" />
         </LinearLayout>
 
-        <!-- ─── ROUTINE COMPLETION ───────────────────────────────────── -->
+        <!-- ─── BEDTIME ADHERENCE ──────────────────────────────────────── -->
         <TextView
-            android:id="@+id/label_routine_completion"
-            style="@style/AnalyticsSectionLabel"
-            android:layout_marginTop="24dp"
-            tools:text="ROUTINE COMPLETION - 5 OF 7 NIGHTS (71%)" />
+            style="@style/AnalyticsSectionHeading"
+            android:layout_marginTop="28dp"
+            android:text="@string/analytics_section_bedtime" />
 
-        <com.noctra.app.ui.analytics.RoutineCompletionRowView
-            android:id="@+id/routine_completion_chart"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="120dp"
-            android:layout_marginTop="12dp" />
+            android:layout_height="150dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_analytics_card"
+            android:padding="12dp">
+
+            <com.noctra.app.ui.analytics.BedtimeAdherenceChartView
+                android:id="@+id/chart_bedtime_adherence"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </FrameLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -398,53 +330,241 @@
             android:orientation="horizontal">
 
             <View
-                android:layout_width="10dp"
-                android:layout_height="10dp"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/legend_ring_target" />
+
+            <TextView
+                style="@style/AnalyticsLegendLabel"
+                android:layout_marginStart="6dp"
+                android:text="@string/analytics_legend_target" />
+
+            <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:layout_marginStart="14dp"
                 android:background="@drawable/legend_dot_completed" />
 
             <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                style="@style/AnalyticsLegendLabel"
                 android:layout_marginStart="6dp"
-                android:text="Completed"
-                android:textColor="@color/black"
-                android:textSize="12sp" />
+                android:text="@string/analytics_legend_ontime" />
 
             <View
-                android:layout_width="10dp"
-                android:layout_height="10dp"
-                android:layout_marginStart="16dp"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:layout_marginStart="14dp"
+                android:background="@drawable/legend_dot_slight_delay" />
+
+            <TextView
+                style="@style/AnalyticsLegendLabel"
+                android:layout_marginStart="6dp"
+                android:text="@string/analytics_legend_slight" />
+
+            <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:layout_marginStart="14dp"
                 android:background="@drawable/legend_dot_incomplete" />
 
             <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                style="@style/AnalyticsLegendLabel"
                 android:layout_marginStart="6dp"
-                android:text="Incomplete"
-                android:textColor="@color/black"
-                android:textSize="12sp" />
-
-            <View
-                android:layout_width="10dp"
-                android:layout_height="10dp"
-                android:layout_marginStart="16dp"
-                android:background="@drawable/legend_dot_no_data" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:text="No data"
-                android:textColor="@color/black"
-                android:textSize="12sp" />
+                android:text="@string/analytics_legend_late" />
         </LinearLayout>
 
-        <!-- ─── INSIGHT CARD ─────────────────────────────────────────── -->
+        <!-- §7 locked caption: variability of the nights currently displayed -->
+        <TextView
+            android:id="@+id/text_variability"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="@font/poppins"
+            android:textColor="@color/black"
+            android:textSize="13sp"
+            tools:text="Bedtimes varied ±42 min this week." />
+
+        <!-- ─── ROUTINE COMPLETION ─────────────────────────────────────── -->
+        <TextView
+            style="@style/AnalyticsSectionHeading"
+            android:layout_marginTop="28dp"
+            android:text="@string/analytics_section_completion" />
+
+        <!-- §2.1: the cells speak — no totals, no percentages, so the old
+             "5 OF 7 NIGHTS (71%)" summary label is gone for good.
+             [MEASURE] height is 92dp so the cells land at the wireframe's
+             ~38x50dp (12dp padding + 50dp cell + 18dp date labels). -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="92dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_analytics_card"
+            android:padding="12dp">
+
+            <com.noctra.app.ui.analytics.RoutineCompletionRowView
+                android:id="@+id/routine_completion_chart"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/legend_dot_completed" />
+
+            <TextView
+                style="@style/AnalyticsLegendLabel"
+                android:layout_marginStart="6dp"
+                android:text="@string/analytics_legend_completed" />
+
+            <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:layout_marginStart="14dp"
+                android:background="@drawable/legend_dot_pending" />
+
+            <TextView
+                style="@style/AnalyticsLegendLabel"
+                android:layout_marginStart="6dp"
+                android:text="@string/analytics_legend_pending" />
+
+            <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:layout_marginStart="14dp"
+                android:background="@drawable/legend_dot_incomplete" />
+
+            <TextView
+                style="@style/AnalyticsLegendLabel"
+                android:layout_marginStart="6dp"
+                android:text="@string/analytics_legend_missed" />
+        </LinearLayout>
+
+<!-- ═══════════════════════════════════════════════════════════
+             THIRTY-DAY TREND  (ANALYTICS_SPEC.md §2.2)
+             Its OWN range control moving ±7 days. Never shares state with
+             the 7-day block above.
+        ═══════════════════════════════════════════════════════════ -->
+        <LinearLayout
+            android:id="@+id/trend_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="36dp"
+            android:orientation="vertical">
+
+            <!-- Own range control -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/btn_trend_prev"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="@string/analytics_nav_earlier"
+                    android:padding="4dp"
+                    android:rotation="180"
+                    android:src="@drawable/ic_chevron_right" />
+
+                <TextView
+                    android:id="@+id/text_trend_range"
+                    style="@style/AnalyticsRangeLabel"
+                    tools:text="Jun 14, 2026 - July 13, 2026" />
+
+                <ImageView
+                    android:id="@+id/btn_trend_next"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="@string/analytics_nav_later"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_chevron_right" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/AnalyticsSectionHeading"
+                android:layout_marginTop="16dp"
+                android:text="@string/analytics_section_trend" />
+
+            <!-- Gated until ~2 weeks of history exist (§2.2 "show early,
+                 gate late" — only the trend waits). 260dp so the view's
+                 200dp minimum plot area plus axis labels always fits. -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="260dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_analytics_card">
+
+                <com.noctra.app.ui.analytics.SleepTrendChartView
+                    android:id="@+id/chart_trend"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="12dp" />
+
+                <TextView
+                    android:id="@+id/trend_placeholder"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:fontFamily="@font/poppins"
+                    android:gravity="center"
+                    android:paddingHorizontal="32dp"
+                    android:text="@string/analytics_trend_placeholder"
+                    android:textColor="@color/analytics_muted"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/legend_dot_score" />
+
+                <TextView
+                    style="@style/AnalyticsLegendLabel"
+                    android:layout_marginStart="6dp"
+                    android:text="@string/analytics_legend_score" />
+
+                <View
+                    android:layout_width="14dp"
+                    android:layout_height="2dp"
+                    android:layout_marginStart="16dp"
+                    android:background="@drawable/legend_line_avg" />
+
+                <TextView
+                    style="@style/AnalyticsLegendLabel"
+                    android:layout_marginStart="6dp"
+                    android:text="@string/analytics_legend_weekly_avg" />
+            </LinearLayout>
+        </LinearLayout>
+        <!-- ─── INSIGHT CARD ───────────────────────────────────────────
+             §6 "Insight card": light-lavender fill (#EDE9FB), bulb icon
+             #8457FF, 14sp dark body. Section 2.3 adds no headline verdict —
+             the trend's average line already carries the direction. -->
+        <TextView
+            style="@style/AnalyticsSectionHeading"
+            android:layout_marginTop="36dp"
+            android:text="@string/analytics_section_insights" />
+
         <LinearLayout
             android:id="@+id/card_insight"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="12dp"
             android:background="@drawable/insight_card_background"
             android:gravity="center_vertical"
             android:orientation="horizontal"
@@ -454,6 +574,7 @@
                 android:layout_width="32dp"
                 android:layout_height="32dp"
                 android:layout_marginEnd="12dp"
+                android:contentDescription="@string/analytics_insight_icon_desc"
                 android:padding="6dp"
                 android:src="@drawable/ic_lightbulb" />
 
@@ -462,10 +583,48 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textColor="@color/noctra_purple_dark"
+                android:fontFamily="@font/poppins"
+                android:textColor="@color/black"
                 android:textSize="14sp"
-                tools:text="Your sleep quality was 18% higher on nights you completed your routine. Try to maintain your routine every night this week for better sleep quality!" />
+                tools:text="Your sleep quality is about 18 points higher on nights you complete your routine. Try to keep it up for better sleep!" />
         </LinearLayout>
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
+
+<!-- BATCHED LOADING — §3: "a centered purple (#522ABE) spinner while the
+     batch resolves … every analytics card awaits the same backend round
+     trip, so nothing meaningful arrives early." One spinner for the whole
+     content block, not one per card. -->
+<ProgressBar
+    android:id="@+id/loadingSpinner"
+    android:layout_width="48dp"
+    android:layout_height="48dp"
+    android:layout_gravity="center"
+    android:indeterminateTint="@color/analytics_loading"
+    android:visibility="gone" />
+
+<!-- SCROLL TO TOP — ANALYTICS_SPEC.md §8: 56dp circle, noctra_purple
+     #5C25F0, white ↑, 16dp from the bottom nav and the screen end.
+     The fragment container already sits above the bottom nav, so 16dp here
+     clears both. -->
+<ImageView
+    android:id="@+id/btn_scroll_top"
+    android:layout_width="48dp"
+    android:layout_height="48dp"
+    android:layout_gravity="bottom|center_horizontal"
+    android:layout_margin="16dp"
+    android:clickable="true"
+    android:contentDescription="@string/analytics_scroll_to_top"
+    android:focusable="true"
+    android:src="@drawable/ic_scroll_to_top"
+    android:visibility="gone" />
+
+<include
+    android:id="@+id/noInternetView"
+    layout="@layout/layout_no_internet"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:visibility="gone" />
+
+</FrameLayout>

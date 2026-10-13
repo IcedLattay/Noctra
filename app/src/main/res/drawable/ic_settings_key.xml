@@ -1,0 +1,24 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="23dp"
+    android:height="23dp"
+    android:viewportWidth="23"
+    android:viewportHeight="23">
+    <path
+        android:pathData="M14.5312,7.0312L16.6875,9.1875C16.8627,9.3593 17.0984,9.4555 17.3437,9.4555C17.5891,9.4555 17.8248,9.3593 18,9.1875L19.9687,7.2187C20.1405,7.0435 20.2367,6.8079 20.2367,6.5625C20.2367,6.3171 20.1405,6.0815 19.9687,5.9062L17.8125,3.75"
+        android:strokeWidth="1.875"
+        android:strokeColor="@color/noctra_icon_grey"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+    <path
+        android:pathData="M19.6875,1.875L10.6875,10.875"
+        android:strokeWidth="1.875"
+        android:strokeColor="@color/noctra_icon_grey"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+    <path
+        android:pathData="M7.0312,19.6875C9.879,19.6875 12.1875,17.379 12.1875,14.5312C12.1875,11.6835 9.879,9.375 7.0312,9.375C4.1835,9.375 1.875,11.6835 1.875,14.5312C1.875,17.379 4.1835,19.6875 7.0312,19.6875Z"
+        android:strokeWidth="1.875"
+        android:strokeColor="@color/noctra_icon_grey"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+</vector>

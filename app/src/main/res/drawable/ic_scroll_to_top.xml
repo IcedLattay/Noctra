@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Scroll-to-top button: soft radial glow (zero-offset shadow) behind the
+     crisp core. The glow's gradient falloff is what reads as a real shadow;
+     a flat ring never does. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/scroll_top_glow" />
+    <item
+        android:bottom="8dp"
+        android:drawable="@drawable/scroll_top_core"
+        android:left="8dp"
+        android:right="8dp"
+        android:top="8dp" />
+</layer-list>

@@ -7,8 +7,11 @@ import android.os.Build
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.noctra.app.data.utils.RoutinePersistenceHelper
+import com.noctra.app.workers.AuditBackfillWorker
 import com.noctra.app.workers.MissedSessionCheckerWorker
 import com.noctra.app.workers.MorningSyncWorker
+import com.noctra.app.workers.SleepFinalizationWorker
 import java.time.Duration
 import java.time.LocalTime
 import java.util.concurrent.TimeUnit
@@ -17,8 +20,20 @@ class NoctraApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
+
+        // Initialize Supabase with session persistence
+        com.noctra.app.data.supabase.SupabaseClient.init(this)
+
+        RoutinePersistenceHelper.init(this)
+
+        // Live connectivity: one observer for the process, feeding the
+        // StateFlow every ViewModel watches (push — not per-load polling).
+        com.noctra.app.utils.ConnectivityMonitor.start(this)
         setupMorningSyncWorker()
         setupMissedSessionWorker()
+        setupSleepFinalizationWorker()
+        setupAuditBackfillWorker()
         createNotificationChannels()
     }
 
@@ -37,6 +52,11 @@ class NoctraApplication : Application() {
 
     private fun setupMissedSessionWorker() {
         val missedSessionRequest = PeriodicWorkRequestBuilder<MissedSessionCheckerWorker>(24, TimeUnit.HOURS)
+            .setConstraints(
+                androidx.work.Constraints.Builder()
+                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                    .build()
+            )
             .setInitialDelay(calculateDelayUntil(9, 30), TimeUnit.MILLISECONDS)
             .addTag("MissedSessionCheckerWorker")
             .build()
@@ -45,6 +65,37 @@ class NoctraApplication : Application() {
             "MissedSessionCheckerWorker",
             ExistingPeriodicWorkPolicy.KEEP,
             missedSessionRequest
+        )
+    }
+
+    private fun setupSleepFinalizationWorker() {
+        val finalizationRequest = PeriodicWorkRequestBuilder<SleepFinalizationWorker>(24, TimeUnit.HOURS)
+            .setInitialDelay(calculateDelayUntil(17, 0), TimeUnit.MILLISECONDS)
+            .addTag("SleepFinalizationWorker")
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "SleepFinalizationWorker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            finalizationRequest
+        )
+    }
+
+    private fun setupAuditBackfillWorker() {
+        val backfillRequest = PeriodicWorkRequestBuilder<AuditBackfillWorker>(24, TimeUnit.HOURS)
+            .setConstraints(
+                androidx.work.Constraints.Builder()
+                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                    .build()
+            )
+            .setInitialDelay(calculateDelayUntil(22, 0), TimeUnit.MILLISECONDS)
+            .addTag("AuditBackfillWorker")
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "AuditBackfillWorker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            backfillRequest
         )
     }
 
@@ -89,5 +140,8 @@ class NoctraApplication : Application() {
     companion object {
         const val CHANNEL_WIND_DOWN = "wind_down_reminders"
         const val CHANNEL_MORNING = "morning_sleep_score"
+
+        lateinit var instance: NoctraApplication
+            private set
     }
 }

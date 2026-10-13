@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Legend swatch for the pale weekly-average line — ANALYTICS_SPEC.md §6 item 6. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/analytics_trend_avg" />
+    <corners android:radius="1dp" />
+</shape>

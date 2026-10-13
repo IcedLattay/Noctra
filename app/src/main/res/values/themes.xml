@@ -13,6 +13,12 @@
 
     <style name="Theme.Noctra" parent="Base.Theme.Noctra" />
 
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/white</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Noctra</item>
+    </style>
+
     <!-- Debug Panel Styles -->
     <style name="DebugSectionHeader">
         <item name="android:layout_width">wrap_content</item>

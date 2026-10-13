@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Session 5 (R11): Complete Routine button — plain #522ABE (no gradient).
+     Slightly darker when pressed. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#3F1F96" />
+            <corners android:radius="28dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#522ABE" />
+            <corners android:radius="28dp" />
+        </shape>
+    </item>
+</selector>

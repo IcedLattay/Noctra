@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Session 5 (R5): primary pill button (Begin / Start / Confirm / Continue).
+     Purple gradient; darker when pressed; muted lavender when disabled. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <solid android:color="#C9C2E6" />
+            <corners android:radius="28dp" />
+        </shape>
+    </item>
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <gradient android:angle="0" android:startColor="#46299F" android:endColor="#2C1769" />
+            <corners android:radius="28dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient android:angle="0" android:startColor="#5B3CC4" android:endColor="#3A2296" />
+            <corners android:radius="28dp" />
+        </shape>
+    </item>
+</selector>

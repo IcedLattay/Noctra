@@ -1,18 +1,25 @@
 package com.noctra.app.utils
 
 import android.content.Context
-import java.util.UUID
+import com.noctra.app.data.supabase.SupabaseClient
+import io.github.jan.supabase.gotrue.auth
 
 object UserSession {
-    private const val PREF_NAME = "noctra_prefs"
-    private const val KEY_USER_ID = "anonymous_user_id"
-
-    fun getUserId(context: Context): String {
-        val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_USER_ID, null) ?: run {
-            val newId = UUID.randomUUID().toString()
-            prefs.edit().putString(KEY_USER_ID, newId).apply()
-            newId
-        }
+    /**
+     * Returns the user ID. On the very first launch, it waits for the 
+     * persistence layer to initialize to ensure we don't return null incorrectly.
+     */
+    fun getUserId(context: Context): String? {
+        val auth = SupabaseClient.client.auth
+        
+        // If we are currently loading, this might be null.
+        // We return the current user if available.
+        return auth.currentUserOrNull()?.id
+    }
+    
+    suspend fun getUserIdAsync(context: Context): String? {
+        val auth = SupabaseClient.client.auth
+        auth.awaitInitialization()
+        return auth.currentUserOrNull()?.id
     }
 }

@@ -10,17 +10,23 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.noctra.app.R
 import com.noctra.app.data.model.Activity
+import com.noctra.app.utils.ActivityIllustrations
 
 /**
  * RoutineStepAdapter
  *
- * Drives the ordered activity step list on RoutineStartFragment.
- * Each row shows step number, activity name, duration, and icon.
+ * Drives the ordered activity step list on RoutineStartFragment's
+ * "Ready for Tonight's Routine?" panel.
+ *
+ * Session 5 (R2): real illustration thumbnail per row (replaces the generic
+ * type icons), and long-press -> onLongPress(activity, stepNumber) for the
+ * info dialog, same as the Routines tab cards.
  *
  * File location: com/noctra/app/ui/routine/home/RoutineStepAdapter.kt
  */
-class RoutineStepAdapter :
-    ListAdapter<Activity, RoutineStepAdapter.StepViewHolder>(StepDiffCallback()) {
+class RoutineStepAdapter(
+    private val onLongPress: ((activity: Activity, stepNumber: Int) -> Unit)? = null
+) : ListAdapter<Activity, RoutineStepAdapter.StepViewHolder>(StepDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StepViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -29,7 +35,14 @@ class RoutineStepAdapter :
     }
 
     override fun onBindViewHolder(holder: StepViewHolder, position: Int) {
-        holder.bind(getItem(position), position + 1)
+        val activity = getItem(position)
+        val stepNumber = position + 1
+        holder.bind(activity, stepNumber)
+
+        holder.itemView.setOnLongClickListener {
+            onLongPress?.invoke(activity, stepNumber)
+            onLongPress != null
+        }
     }
 
     // ─── ViewHolder ───────────────────────────────────────────────────────────
@@ -46,13 +59,7 @@ class RoutineStepAdapter :
             tvActivityLabel.text = activity.label
             tvDuration.text      = "${activity.defaultDurationMinutes} minutes"
 
-            val iconRes = when (activity.activityType.lowercase()) {
-                "breathing"           -> R.drawable.bg_breathing_circle
-                "audio", "audioscape" -> R.drawable.ic_nav_companion
-                "journaling"          -> R.drawable.ic_book
-                else                  -> R.drawable.ic_clock
-            }
-            ivIcon.setImageResource(iconRes)
+            ActivityIllustrations.load(ivIcon, activity.label)
         }
     }
 

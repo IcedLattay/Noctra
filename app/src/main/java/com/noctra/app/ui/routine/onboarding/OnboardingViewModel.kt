@@ -2,6 +2,7 @@
 package com.noctra.app.ui.routine.onboarding
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.noctra.app.data.model.Activity
 import com.noctra.app.data.model.RoutineActivityEntry
 import com.noctra.app.data.repository.RoutineRepository
@@ -9,8 +10,12 @@ import com.noctra.app.data.repository.UserProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class OnboardingViewModel : ViewModel() {
+
+    private val profileRepository = UserProfileRepository()
+    private val routineRepository = RoutineRepository()
 
     // Step 1
     private val _targetBedtime = MutableStateFlow("22:00") // default 10:00 PM
@@ -25,6 +30,121 @@ class OnboardingViewModel : ViewModel() {
     val orderedActivities: StateFlow<List<Activity>> = _orderedActivities.asStateFlow()
 
     var isEditMode: Boolean = false
+
+    // ─── Edit-mode save (FIX: Confirm in edit mode never saved) ──────────────
+
+    sealed class SaveState {
+        object Idle : SaveState()
+        object Saving : SaveState()
+        object Saved : SaveState()
+        data class Error(val message: String) : SaveState()
+    }
+
+    private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
+    val saveState: StateFlow<SaveState> = _saveState.asStateFlow()
+
+    /**
+     * Saves the edited routine to Supabase (deactivates the old config,
+     * inserts the new one as active). Only used in edit mode — first-time
+     * onboarding still saves through its own flow.
+     */
+    fun saveEditedRoutine(userId: String) {
+        if (_saveState.value is SaveState.Saving) return // ignore double taps
+        viewModelScope.launch {
+            _saveState.value = SaveState.Saving
+            try {
+                routineRepository.updateRoutineConfiguration(
+                    userId = userId,
+                    activitySequence = getActivitySequence(),
+                    totalDurationMinutes = getTotalDurationMinutes()
+                )
+                _saveState.value = SaveState.Saved
+            } catch (e: Exception) {
+                android.util.Log.e("OnboardingViewModel", "Failed to save edited routine", e)
+                _saveState.value = SaveState.Error("Couldn't save your routine. Check your connection and try again.")
+            }
+        }
+    }
+
+    fun resetSaveState() {
+        _saveState.value = SaveState.Idle
+    }
+
+    /**
+     * This VM is scoped to the whole nav_graph, so it outlives the edit
+     * screens. Clear the edit data when leaving edit mode so the next
+     * "Edit Routine" re-loads fresh from the DB instead of showing
+     * leftover (possibly unsaved) changes.
+     */
+    fun resetEditSession() {
+        _selectedActivities.value = emptyList()
+        _orderedActivities.value = emptyList()
+        _saveState.value = SaveState.Idle
+        isEditMode = false
+    }
+
+    // ─── Onboarding steps ───────────────────────────────────────────────────
+
+    fun updateStep(userId: String, step: Int) {
+        viewModelScope.launch {
+            profileRepository.updateOnboardingStep(userId, step)
+        }
+    }
+
+    // ─── Draft persistence ────────────────────────────────────────────────
+    // Each step saves its own data on advance so a resume (fresh process,
+    // empty ViewModel) can restore real picks instead of blanks. The active
+    // routine config is untouched — only the Summary writes that.
+
+    private var draftRestored = false
+
+    fun saveDraft(userId: String) {
+        viewModelScope.launch {
+            try {
+                val ids = _orderedActivities.value
+                    .ifEmpty { _selectedActivities.value }
+                    .map { it.activityId }
+                profileRepository.saveDraft(userId, _targetBedtime.value, ids)
+            } catch (e: Exception) {
+                // Drafts are best-effort; the in-memory state is authoritative
+                // until Summary persists everything
+            }
+        }
+    }
+
+    // Restores bedtime + activities from the draft once per ViewModel
+    // lifetime. No-op when state already exists (normal forward flow) or
+    // when no draft was ever saved. Never overwrites edit-mode preloads —
+    // callers must skip this in edit mode.
+    suspend fun restoreDraftIfEmpty(userId: String): Boolean {
+        if (draftRestored) return false
+        draftRestored = true
+
+        if (_selectedActivities.value.isNotEmpty()) return false
+
+        return try {
+            val profile = profileRepository.getOrCreateProfile(userId)
+            val draftIds = profile.draftActivityIds.orEmpty()
+            val draftBedtime = profile.draftBedtime
+
+            if (draftBedtime != null) {
+                _targetBedtime.value = draftBedtime
+            }
+
+            if (draftIds.isEmpty()) return draftBedtime != null
+
+            val library = routineRepository.getActivityLibrary()
+            val byId = library.associateBy { it.activityId }
+            val ordered = draftIds.mapNotNull { byId[it] }
+            if (ordered.isEmpty()) return draftBedtime != null
+
+            _selectedActivities.value = ordered.toList()
+            _orderedActivities.value = ordered.toList()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
 
     fun setBedtime(hhmm: String) {
         _targetBedtime.value = hhmm
@@ -73,6 +193,26 @@ class OnboardingViewModel : ViewModel() {
         _targetBedtime.value = bedtime
         _selectedActivities.value = activities.toList()
         _orderedActivities.value = activities.toList()
+    }
+
+    /**
+     * Debug preview only: loads the active routine into memory so the
+     * arrange screen has something to show. Read-only — nothing is
+     * written; callers must keep the confirm button hidden.
+     */
+    suspend fun previewActiveRoutine(userId: String): Boolean {
+        if (_orderedActivities.value.isNotEmpty()) return true
+        return try {
+            val active = routineRepository.getActiveRoutine(userId) ?: return false
+            val entries = routineRepository.parseActivitySequence(active.activitySequence)
+            val activities = routineRepository.hydrateActivitySequence(entries)
+            if (activities.isEmpty()) return false
+            val profile = profileRepository.getOrCreateProfile(userId)
+            loadExistingRoutine(activities, profile.targetBedtime ?: "22:00")
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 
     fun getTotalDurationMinutes(): Int =

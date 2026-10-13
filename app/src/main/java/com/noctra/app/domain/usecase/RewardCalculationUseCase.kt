@@ -27,7 +27,7 @@ class RewardCalculationUseCase(
 
     companion object {
         /** Base Dream Tokens earned per completed session before multiplier. */
-        const val BASE_TOKENS = 50
+        const val BASE_TOKENS = 100
 
         /** Flat Growth Points (XP) earned per completed session. */
         const val BASE_XP = 100
@@ -47,7 +47,8 @@ class RewardCalculationUseCase(
         val tierLabel  = getTierLabel(newStreak)
 
         val tokensEarned = (BASE_TOKENS * multiplier).toInt()
-        val xpEarned     = BASE_XP
+        // XP economy: routine pays no XP — mornings pay by sleep tier.
+        val xpEarned     = 0
 
         return RewardResult(
             tokensEarned     = tokensEarned,
@@ -91,7 +92,7 @@ class RewardCalculationUseCase(
             longestStreak = max(ledger.longestStreak, newStreak),
             lastSessionDate = today.format(dateFormatter),
             lastUpdated = OffsetDateTime.now().toString(),
-            devolutionPending = false
+            hasFirstMiss = false
         )
 
         repo.updateRewardLedger(updatedLedger)

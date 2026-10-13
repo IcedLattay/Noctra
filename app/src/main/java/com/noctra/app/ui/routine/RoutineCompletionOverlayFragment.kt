@@ -40,7 +40,6 @@ class RoutineCompletionOverlayFragment : Fragment() {
     // ─── Views ────────────────────────────────────────────────────────────────
 
     private lateinit var tvTokensEarned: TextView
-    private lateinit var tvXpEarned: TextView
     private lateinit var tvStreak: TextView
 
     // ─── Constants ────────────────────────────────────────────────────────────
@@ -79,7 +78,6 @@ class RoutineCompletionOverlayFragment : Fragment() {
 
     private fun bindViews(view: View) {
         tvTokensEarned = view.findViewById(R.id.tv_tokens_earned)
-        tvXpEarned     = view.findViewById(R.id.tv_xp_earned)
         tvStreak       = view.findViewById(R.id.tv_streak)
     }
 
@@ -112,7 +110,6 @@ class RoutineCompletionOverlayFragment : Fragment() {
 
     private fun populateRewards(result: RewardCalculationUseCase.RewardResult) {
         tvTokensEarned.text = "+${result.tokensEarned}"
-        tvXpEarned.text     = "+${result.xpEarned}"
 
         // Streak = currentStreak + 1 (tonight counts)
         val newStreak = (routineViewModel.currentStreak + 1)

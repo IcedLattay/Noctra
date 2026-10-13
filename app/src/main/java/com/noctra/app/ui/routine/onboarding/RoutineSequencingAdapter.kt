@@ -10,27 +10,43 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.noctra.app.data.model.Activity
 import com.noctra.app.databinding.ItemSequencingRowBinding
+import com.noctra.app.utils.ActivityIllustrations
 
-class RoutineSequencingAdapter() : ListAdapter<Activity, RoutineSequencingAdapter.ViewHolder>(DIFF) {
-
-    var touchHelper: ItemTouchHelper? = null
+/**
+ * RoutineSequencingAdapter — "Arrange Your Routine" list (onboarding + Edit Routine).
+ * Hybrid (merge/routine-cards):
+ *   - their visuals: illustration thumbnail per row, drag handle
+ *   - our chevrons: tap to move one slot (exact, accessible moves)
+ *   - reorder by chevron tap (exact) or row long-press drag
+ *   - moves commit through onMove only — never notifyItemMoved manually
+ *     (manual + DiffUtil double-handling cancels the move out)
+ */
+class RoutineSequencingAdapter(
+    private val onMove: (from: Int, to: Int) -> Unit
+) : ListAdapter<Activity, RoutineSequencingAdapter.ViewHolder>(DIFF) {
 
     inner class ViewHolder(val binding: ItemSequencingRowBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
-        @SuppressLint("ClickableViewAccessibility")
         fun bind(activity: Activity, position: Int) {
             binding.tvStepNumber.text = "${position + 1}"
             binding.tvActivityLabel.text = activity.label
             binding.tvActivityDuration.text = "${activity.defaultDurationMinutes} minutes"
 
-            // Drag handle — start drag on touch down
-            binding.ivDragHandle.setOnTouchListener { _, event ->
-                if (event.actionMasked == MotionEvent.ACTION_DOWN) {
-                    touchHelper?.startDrag(this)
-                }
-                false
+            ActivityIllustrations.load(binding.ivActivityIllustration, activity.label)
+
+            // Chevron steppers — tap to move one slot
+            binding.btnMoveUp.setOnClickListener {
+                val from = adapterPosition
+                if (from != RecyclerView.NO_POSITION && from > 0) onMove(from, from - 1)
             }
+            binding.btnMoveDown.setOnClickListener {
+                val from = adapterPosition
+                if (from != RecyclerView.NO_POSITION && from < itemCount - 1) onMove(from, from + 1)
+            }
+
+            // No row long-press action: info dialogs live on the selection
+            // screen, not here — ItemTouchHelper owns long-press for drag.
         }
     }
 

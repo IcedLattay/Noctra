@@ -3,7 +3,6 @@ package com.noctra.app.ui.analytics
 import android.content.Context
 import androidx.core.content.ContextCompat
 import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.LimitLine
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
@@ -12,128 +11,145 @@ import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.noctra.app.R
 
 /**
- * One-time configuration for the Sleep Quality LineChart.
- * Call [setData] each time the data needs to update.
+ * Configuration for the 7-day sleep-score line (ANALYTICS_SPEC.md §2.1, §6).
+ *
+ * Two behaviours here are load-bearing and easy to get wrong:
+ *
+ *  1. **Gaps are real gaps.** §2.1 requires that "missing nights leave a gap —
+ *     the line never connects across gaps or fills them with zeros." A single
+ *     MPAndroidChart [LineDataSet] draws between its outermost points no matter
+ *     how far apart they are in x, so one dataset would quietly draw a straight
+ *     line straight through a missing night. [setData] therefore emits one
+ *     dataset per *contiguous run* of scored nights, which makes a gap
+ *     structurally impossible rather than merely unlikely.
+ *
+ *  2. **Read-only.** §3 says dots "take no taps". The tap marker and all
+ *     touch/zoom are off — the only controls on this screen are the range
+ *     arrows.
  */
 object SleepQualityChartConfig {
 
-    private val dayLabels = arrayOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    // [MEASURE] against NEW_ANALYTICS_UI.png: the 7-day score dots read ~12dp
+    // across, and the connector ~2dp.
+    private const val DOT_RADIUS_DP = 6f
+    private const val LINE_WIDTH_DP = 2f
+    private const val GRID_STEPS = 5           // 0 / 25 / 50 / 75 / 100
 
     /**
-     * Apply all the chart's static configuration (axes, legend, interaction, etc.).
-     * Only needs to be called once after the LineChart is inflated.
+     * Static configuration. Safe to call once per chart instance.
      */
     fun configure(chart: LineChart, context: Context) {
-        // Description (the watermark text in the bottom-right) — we don't want it
         chart.description.isEnabled = false
-
-        // Built-in legend — we're using our own legend below the chart
-        chart.legend.isEnabled = false
-
-        // Right Y-axis is redundant; disable it
+        chart.legend.isEnabled = false          // we render our own legend
         chart.axisRight.isEnabled = false
 
-        // Left Y-axis: no labels per design, but we need a range
         chart.axisLeft.apply {
             axisMinimum = 0f
             axisMaximum = 100f
-            setDrawLabels(false)
+            // §6: faint grey gridlines at 0/25/50/75/100
+            setDrawGridLines(true)
+            gridColor = ContextCompat.getColor(context, R.color.analytics_axis)
             setDrawAxisLine(false)
-            setDrawGridLines(false)
-
-            // Reference line at 75 (the "Good" threshold)
-            removeAllLimitLines()
-            val limitLine = LimitLine(75f, "").apply {
-                lineColor = ContextCompat.getColor(context, R.color.quality_reference_line)
-                lineWidth = 1f
-                enableDashedLine(8f, 6f, 0f)  // dashed: 8px on, 6px off
-            }
-            addLimitLine(limitLine)
+            setDrawLabels(false)
+            granularity = 100f / GRID_STEPS
+            axisMaximum = 100f
         }
 
-        // X-axis: day labels along the bottom
         chart.xAxis.apply {
             position = XAxis.XAxisPosition.BOTTOM
             setDrawGridLines(false)
-            setDrawAxisLine(false)
+            setDrawAxisLine(true)
+            axisLineColor = ContextCompat.getColor(context, R.color.analytics_axis)
             granularity = 1f
-            valueFormatter = IndexAxisValueFormatter(dayLabels)
-            textColor = ContextCompat.getColor(context, R.color.noctra_purple_dark)
-            textSize = 12f
+            // Same seven real dates as the bedtime + completion charts below:
+            // 11sp muted, one per slot.
+            setDrawLabels(true)
+            textColor = ContextCompat.getColor(context, R.color.analytics_muted)
+            textSize = 11f
+            // Breathing room above the labels (axis-to-label gap).
+            yOffset = 8f
         }
 
-        // Touch and zoom behavior
-        chart.setTouchEnabled(true)
-        chart.setScaleEnabled(false)        // no zoom
-        chart.setPinchZoom(false)
+        // §3 read-only charts: no taps, no drag, no zoom, no marker.
+        chart.setTouchEnabled(false)
         chart.isDragEnabled = false
-
-        // Marker (tap-to-show-value popup)
-        val marker = SleepQualityMarkerView(context)
-        marker.chartView = chart
-        chart.marker = marker
-
-        // Extra padding so the marker doesn't get clipped at the top
-        chart.setExtraOffsets(0f, 16f, 0f, 0f)
+        chart.setScaleEnabled(false)
+        chart.setPinchZoom(false)
+        chart.isHighlightPerTapEnabled = false
+        chart.isHighlightPerDragEnabled = false
+        chart.marker = null
+        // 8dp top so dots never clip; 6dp bottom so date labels never clip.
+        chart.setExtraOffsets(0f, 8f, 0f, 6f)
     }
 
     /**
-     * Populate the chart with 7 days of scores. Pass `null` for days with no data.
-     * @param scoresByDay must be exactly 7 entries, Monday→Sunday.
+     * @param scores one entry per night in the window, null where there is no
+     *               record. Nulls become gaps, never zeros.
+     * @param labels x-axis date labels, one per night, already formatted for
+     *               display.
      */
-    fun setData(chart: LineChart, context: Context, scoresByDay: List<Int?>) {
-        require(scoresByDay.size == 7) { "Expected 7 scores, got ${scoresByDay.size}" }
-
-        // Build entries — skip null days (creates gaps in the line)
-        val entries = scoresByDay.mapIndexedNotNull { index, score ->
-            if (score != null) Entry(index.toFloat(), score.toFloat()) else null
+    fun setData(chart: LineChart, context: Context, scores: List<Int?>, labels: List<String>) {
+        require(scores.size == labels.size) {
+            "scores (${scores.size}) and labels (${labels.size}) must line up"
         }
 
-        if (entries.isEmpty()) {
+        chart.xAxis.valueFormatter = IndexAxisValueFormatter(labels.toTypedArray())
+        // Pin the window: all 7 slots always occupy the chart, so a lone dot
+        // sits in its own slot instead of stretching across the full width.
+        chart.xAxis.axisMinimum = -0.5f
+        chart.xAxis.axisMaximum = (scores.size - 1) + 0.5f
+
+        val lineColor = ContextCompat.getColor(context, R.color.analytics_muted)
+        val sets = mutableListOf<com.github.mikephil.charting.interfaces.datasets.ILineDataSet>()
+
+        // One dataset per contiguous run, so a gap can never be bridged.
+        var run = mutableListOf<Entry>()
+        scores.forEachIndexed { index, score ->
+            if (score == null) {
+                if (run.isNotEmpty()) { sets += run.toDataSet(context, lineColor); run = mutableListOf() }
+            } else {
+                run += Entry(index.toFloat(), score.toFloat())
+            }
+        }
+        if (run.isNotEmpty()) sets += run.toDataSet(context, lineColor)
+
+        if (sets.isEmpty()) {
             chart.clear()
             chart.invalidate()
             return
         }
 
-        // Per-dot colors based on score thresholds
-        val dotColors = entries.map { entry ->
-            colorForScore(entry.y.toInt(), context)
+        chart.data = LineData(sets)
+        chart.invalidate()
+    }
+
+    private fun List<Entry>.toDataSet(context: Context, lineColor: Int): LineDataSet {
+        val dotColors = map { entry ->
+            ContextCompat.getColor(
+                context,
+                when {
+                    entry.y >= 75f -> R.color.completion_green
+                    entry.y >= 50f -> R.color.noctra_health_yellow
+                    else -> R.color.completion_pink
+                }
+            )
         }
-
-        val dataSet = LineDataSet(entries, "Sleep Quality").apply {
-            // Line styling
-            color = ContextCompat.getColor(context, R.color.quality_good)
-            lineWidth = 2.5f
-            setDrawValues(false)  // no permanent labels; we use the marker instead
-
-            // Dot styling
+        return LineDataSet(this, "Sleep Score").apply {
+            color = lineColor
+            lineWidth = dpToPx(context, LINE_WIDTH_DP)
             setDrawCircles(true)
-            circleRadius = 5f
-            circleHoleRadius = 2f
+            circleRadius = dpToPx(context, DOT_RADIUS_DP)
+            setDrawCircleHole(false)
             setCircleColors(dotColors)
-            setDrawCircleHole(true)
-            setCircleHoleColor(android.graphics.Color.WHITE)
-
-            // Smooth line through the dots
+            setDrawValues(false)
+            // LINEAR, not CUBIC_BEZIER: a spline would bow into the gap between
+            // two runs even when the runs are drawn as separate datasets.
             mode = LineDataSet.Mode.LINEAR
-
-            // No fill below the line
             setDrawFilled(false)
-
-            // Highlight (when user taps a dot)
-            highLightColor = ContextCompat.getColor(context, R.color.noctra_purple_light)
-            highlightLineWidth = 1f
-            isHighlightEnabled = true
+            isHighlightEnabled = false
         }
-
-        chart.data = LineData(dataSet)
-        chart.invalidate()  // trigger redraw
-        chart.animateY(600)  // brief grow-in animation
     }
 
-    private fun colorForScore(score: Int, context: Context): Int = when {
-        score >= 75 -> ContextCompat.getColor(context, R.color.quality_good)
-        score >= 50 -> ContextCompat.getColor(context, R.color.quality_moderate)
-        else -> ContextCompat.getColor(context, R.color.quality_poor)
-    }
+    private fun dpToPx(context: Context, dp: Float): Float =
+        dp * context.resources.displayMetrics.density
 }

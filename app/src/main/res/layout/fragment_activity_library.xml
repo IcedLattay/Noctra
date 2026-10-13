@@ -7,7 +7,7 @@
     android:background="#F5F4FF">
 
     <!-- Scrollable content -->
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -52,7 +52,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Step 2 of 3"
+                        android:text="Step 2 of 5"
                         android:textSize="13sp"
                         android:textColor="#7B6FA0" />
 
@@ -95,7 +95,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- 3-segment progress bar -->
+            <!-- 3-segment selection meter (0-3 activities selected) -->
             <LinearLayout
                 android:id="@+id/progressBar"
                 android:layout_width="match_parent"
@@ -140,16 +140,18 @@
                 android:gravity="center"
                 android:layout_marginBottom="16dp" />
 
-            <!-- Activity grid -->
+            <!-- Activity grid (unclipped: card badges/buttons straddle edges) -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvActivities"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clipChildren="false"
+                android:clipToPadding="false"
                 android:nestedScrollingEnabled="false"
-                android:layout_marginBottom="24dp" />
+                android:layout_marginBottom="32dp" />
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
     <!-- Bottom buttons — fixed outside scroll -->
     <LinearLayout
@@ -165,21 +167,21 @@
             android:id="@+id/btnContinue"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:text="Select exactly 3 activities"
+            android:text="Continue"
             android:textSize="15sp"
             android:textColor="#FFFFFF"
-            android:layout_marginBottom="10dp"
             app:backgroundTint="#5C25F0"
             app:cornerRadius="28dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnBack"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="56dp"
+            android:layout_marginTop="8dp"
             android:text="Back"
             android:textSize="15sp"
-            android:textColor="#7B6FA0"
-            app:backgroundTint="#E0DCF0"
+            android:textColor="@color/black"
+            app:backgroundTint="#E0E0E0"
             app:cornerRadius="24dp" />
 
     </LinearLayout>

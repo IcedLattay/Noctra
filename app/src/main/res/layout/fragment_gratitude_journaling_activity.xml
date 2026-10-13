@@ -116,14 +116,21 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- ACTIVE JOURNAL PANEL -->
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <!-- ACTIVE JOURNAL PANEL — scrollable like the login screen: when the
+         keyboard shrinks the viewport, content flows instead of compressing.
+         fillViewport stretches short content to fill the screen. -->
+    <androidx.core.widget.NestedScrollView
         android:id="@+id/journalPanel"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#F5F0FF"
+        android:fillViewport="true"
         android:padding="24dp"
         android:visibility="gone">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
         <ImageView
             android:id="@+id/iv_shleepy_logo"
@@ -176,21 +183,26 @@
         <androidx.cardview.widget.CardView
             android:id="@+id/card_input"
             android:layout_width="0dp"
-            android:layout_height="0dp"
+            android:layout_height="wrap_content"
+            android:minHeight="140dp"
             android:layout_marginTop="20dp"
             app:cardBackgroundColor="#FFFFFF"
             app:cardCornerRadius="20dp"
+            android:layout_marginBottom="12dp"
             app:cardElevation="2dp"
-            app:layout_constraintBottom_toTopOf="@id/card_timer"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_subtitle">
+            app:layout_constraintTop_toBottomOf="@id/card_timer">
 
             <EditText
                 android:id="@+id/et_journal_entry"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="120dp"
+                android:maxLines="12"
                 android:background="@null"
+                android:scrollbars="vertical"
+                android:overScrollMode="ifContentScrolls"
                 android:fontFamily="@font/poppinsregular"
                 android:gravity="top|start"
                 android:hint="Releasing your thoughts is great for your well-being. Share your thoughts in this field"
@@ -201,54 +213,64 @@
                 android:textSize="14sp" />
         </androidx.cardview.widget.CardView>
 
-        <androidx.cardview.widget.CardView
+        <!-- Session 5 (R6): same countdown style as every other activity
+             (clock on top, 22sp time, bg_timer_card). Sits above the input
+             so it stays visible while typing. -->
+        <LinearLayout
             android:id="@+id/card_timer"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:cardBackgroundColor="#EDE8FF"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="24dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/bg_timer_card"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="8dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent">
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_subtitle">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_clock" />
+
+            <TextView
+                android:id="@+id/tv_timer"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:fontFamily="@font/poppinsbold"
+                android:letterSpacing="0.05"
+                android:textColor="@color/timer_default"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                tools:text="05 : 00" />
+        </LinearLayout>
 
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_clock"
-                    android:contentDescription="Timer"
-                    android:layout_marginBottom="4dp" />
-
-                <TextView
-                    android:id="@+id/tv_timer"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="@font/poppinsbold"
-                    android:textColor="#3B1FA8"
-                    android:textSize="36sp"
-                    tools:text="10 : 00" />
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCompleteRoutine"
-            android:layout_width="0dp"
             android:layout_height="56dp"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/bg_primary_button"
-            android:text="Complete Routine"
+            android:background="@drawable/bg_button_complete"
+            app:backgroundTint="@null"
+            android:stateListAnimator="@null"
+            android:elevation="4dp"
+            android:textAllCaps="false"
             android:textColor="@color/white"
             android:textSize="16sp"
-            android:textStyle="bold"
             android:fontFamily="@font/poppinsbold"
+            app:icon="@drawable/ic_btn_check"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp"
+            app:iconSize="20dp"
+            app:iconTint="#FFFFFF"
+            android:layout_width="0dp"
+            android:layout_marginBottom="8dp"
+            android:text="Complete Routine"
             android:visibility="gone"
             tools:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -256,5 +278,6 @@
             app:layout_constraintStart_toStartOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
 
 </FrameLayout>

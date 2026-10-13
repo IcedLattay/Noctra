@@ -8,6 +8,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -19,6 +21,28 @@ import com.noctra.app.databinding.FragmentGratitudeJournalingActivityBinding
 import com.noctra.app.ui.routine.RoutineViewModel
 import kotlinx.coroutines.launch
 
+/**
+ * GratitudeJournalingActivityFragment
+ *
+ * Serves: Gratitude Journaling only.
+ *
+ * FIXED: previously called routineViewModel.startCurrentActivityTimer() with
+ * no argument, silently defaulting to the VM's 15s demo value permanently —
+ * not a test-mode choice, just never wired to the real DB duration (5min)
+ * at all. Now passes the real duration (or the temporary 15s test override),
+ * same pattern as AudioscapeActivityFragment and GenericTimerActivityFragment.
+ *
+ * FIXED: previous PRE_COUNTDOWN_SECONDS was 10L, not the standard 15L every
+ * other activity uses — inconsistent with the wireframe. Corrected to 15L.
+ *
+ * Session 5: keyboard-inset handling (R3), and typing is locked once the
+ * journal timer reaches 0 (R7).
+ *
+ * Session 5 (R16): the time's-up lock used `isEnabled = false`, and a
+ * disabled EditText ignores ALL touches — so the journal stopped scrolling
+ * once the timer hit 0. It now becomes read-only instead (no typing, no
+ * keyboard, no cursor) but stays enabled, so it can still be scrolled.
+ */
 class GratitudeJournalingActivityFragment : Fragment() {
 
     private var _binding: FragmentGratitudeJournalingActivityBinding? = null
@@ -28,7 +52,18 @@ class GratitudeJournalingActivityFragment : Fragment() {
 
     private var preCountdownTimer: CountDownTimer? = null
 
-    companion object { private const val PRE_COUNTDOWN_SECONDS = 15L }
+    // Session 5 (R7): true once the real journal timer starts, so the
+    // "timer = 0" lock doesn't fire on the VM's leftover 0 value.
+    private var journalTimerStarted = false
+
+    companion object {
+        private const val PRE_COUNTDOWN_SECONDS = 15L
+
+        // TEMPORARY FOR TESTING — set to false once all activities are
+        // manually verified, to restore the real 5-minute DB duration.
+        private const val TEST_MODE_SHORT_DURATION = false
+        private const val TEST_DURATION_SECONDS = 15
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -43,6 +78,15 @@ class GratitudeJournalingActivityFragment : Fragment() {
         setupListeners()
         observeVm()
         startPreCountdown()
+
+        // The panel scrolls, so it steals vertical swipes from the textbox.
+        // While touching the textbox, it keeps scroll rights for itself.
+        binding.etJournalEntry.setOnTouchListener { v, event ->
+            if (v.canScrollVertically(1) || v.canScrollVertically(-1)) {
+                v.parent.requestDisallowInterceptTouchEvent(true)
+            }
+            false
+        }
     }
 
     private fun setupListeners() {
@@ -50,6 +94,10 @@ class GratitudeJournalingActivityFragment : Fragment() {
             routineViewModel.onCompleteRoutineTapped()
         }
     }
+
+    // No manual inset padding: pan + the scroll container is the whole
+    // strategy (login pattern). Extra padding would lift content over
+    // nothing and fight the pan.
 
     private fun showPreCountdownPanel() {
         binding.preCountdownPanel.visibility = View.VISIBLE
@@ -64,7 +112,10 @@ class GratitudeJournalingActivityFragment : Fragment() {
         binding.etJournalEntry.requestFocus()
         val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.showSoftInput(binding.etJournalEntry, InputMethodManager.SHOW_IMPLICIT)
-        routineViewModel.startCurrentActivityTimer()
+        val durationSeconds = if (TEST_MODE_SHORT_DURATION) TEST_DURATION_SECONDS
+        else (routineViewModel.currentActivity?.defaultDurationMinutes ?: 0) * 60
+        journalTimerStarted = true
+        routineViewModel.startCurrentActivityTimer(durationSeconds)
     }
 
     private fun startPreCountdown() {
@@ -96,6 +147,9 @@ class GratitudeJournalingActivityFragment : Fragment() {
                         updateTimerDisplay(secs.toLong())
                         updateTimerColor(secs.toLong())
 
+                        // Session 5 (R7): time's up — no more typing.
+                        if (secs == 0 && journalTimerStarted) lockJournalEntry()
+
                         // Show "Complete Routine" button if timer is 0 AND it's the last step
                         if (secs == 0 && routineViewModel.isLastStep) {
                             binding.btnCompleteRoutine.visibility = View.VISIBLE
@@ -125,6 +179,22 @@ class GratitudeJournalingActivityFragment : Fragment() {
         }
     }
 
+    /**
+     * Session 5 (R7/R16): time's up — stop typing and close the keyboard,
+     * but keep the text scrollable (do NOT use isEnabled = false).
+     */
+    private fun lockJournalEntry() {
+        if (_binding == null) return
+        val et = binding.etJournalEntry
+        et.keyListener = null          // no more typing
+        et.showSoftInputOnFocus = false // tapping won't reopen the keyboard
+        et.isCursorVisible = false
+        et.isLongClickable = false      // no paste menu
+        et.clearFocus()
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(binding.etJournalEntry.windowToken, 0)
+    }
+
     private fun clearEntryAndDismissKeyboard() {
         binding.etJournalEntry.setText("")
         val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
@@ -140,11 +210,8 @@ class GratitudeJournalingActivityFragment : Fragment() {
 
     private fun updateTimerColor(seconds: Long) {
         if (_binding == null) return
-        val colorRes = when {
-            seconds <= 5 -> R.color.timer_red
-            seconds <= 15 -> R.color.timer_green
-            else -> R.color.timer_default
-        }
+        // Wireframe only shows default color and red near the end — no green phase.
+        val colorRes = if (seconds <= 5) R.color.timer_red else R.color.timer_default
         binding.tvTimer.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
     }
 
