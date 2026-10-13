@@ -101,10 +101,40 @@ class RoutineStartFragment : Fragment() {
         // If opened via deep link, VM might be empty. Fetch data if needed.
         routineViewModel.initializeIfNecessary()
 
-        showWindDownPanel()
+        // Entry gate: never render the start screen before the window
+        // verdict. A warm process knows the verdict synchronously — an
+        // expired window bounces before the first frame, killing the
+        // stale-notification flash. A cold deep link holds on the bare
+        // background until initialize() resolves; observeState() then
+        // reveals or bounces.
+        if (routineViewModel.isInitialized.value) {
+            if (routineViewModel.isWindowExpired.value) {
+                bounceFromExpiredWindow()
+                return
+            }
+            showWindDownPanel()
+        } else {
+            windDownPanel.visibility = View.GONE
+            loadingPanel.visibility = View.GONE
+            readyPanel.visibility = View.GONE
+        }
+
         observeState()
         setupClickListeners()
         observeNavigationEvents()
+    }
+
+    /** Toast + bounce to routine home. One-shot — the expired collector can re-emit. */
+    private var bouncedFromExpired = false
+    private fun bounceFromExpiredWindow() {
+        if (bouncedFromExpired || !isAdded) return
+        bouncedFromExpired = true
+        android.widget.Toast.makeText(
+            requireContext(),
+            "The routine window has closed for tonight.",
+            android.widget.Toast.LENGTH_LONG
+        ).show()
+        findNavController().navigate(R.id.action_global_routineHomeFragment)
     }
 
     private fun observeState() {
@@ -115,6 +145,12 @@ class RoutineStartFragment : Fragment() {
                     // while that panel is still hidden — it'll be correct by
                     // the time the user reaches it.
                     if (ready) populateRoutineData()
+
+                    // Cold-start gate release: the verdict landed in-window,
+                    // so reveal the panel the entry gate held back.
+                    if (ready && !routineViewModel.isWindowExpired.value) {
+                        showWindDownPanel()
+                    }
                 }
             }
         }
@@ -123,12 +159,7 @@ class RoutineStartFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 routineViewModel.isWindowExpired.collect { expired ->
                     if (expired) {
-                        android.widget.Toast.makeText(
-                            requireContext(),
-                            "The routine window has closed for tonight.",
-                            android.widget.Toast.LENGTH_LONG
-                        ).show()
-                        findNavController().navigate(R.id.action_global_routineHomeFragment)
+                        bounceFromExpiredWindow()
                     }
                 }
             }
