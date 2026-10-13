@@ -156,3 +156,130 @@ ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAUL
 -- ============================================================
 
 ALTER TABLE sleep_records ADD COLUMN IF NOT EXISTS target_bedtime TEXT;
+
+-- ============================================================
+-- MIGRATION 8: XP economy columns on sleep_records
+-- ============================================================
+-- What this does:
+--   1. Adds xp_accrued — XP frozen at first score computation.
+--      The popup displays exactly this number, so display and
+--      award can never disagree.
+--   2. Adds xp_settled — one-way latch flipped when the morning
+--      popup pays out. Settlement reads only xp_settled = false
+--      rows, so a night can never be paid twice (guards the
+--      popup re-show bug on process kill + reconnect).
+--   Defaults keep old rows valid: pre-feature rows read
+--   (0, false) = "nothing to settle". No backfill needed.
+--   Covered by existing own-row RLS policies.
+-- ============================================================
+
+ALTER TABLE sleep_records ADD COLUMN IF NOT EXISTS xp_accrued INT DEFAULT 0;
+ALTER TABLE sleep_records ADD COLUMN IF NOT EXISTS xp_settled BOOLEAN DEFAULT false;
+
+-- ============================================================
+-- MIGRATION 9: shop_items + user_inventory (companion outfits)
+-- ============================================================
+-- What this does:
+--   1. Creates shop_items — the outfit catalog.
+--   2. Creates user_inventory — what each user owns.
+--   3. Adds user_profiles.outfit_equipped — currently worn item.
+--   4. Creates the on_profile_created trigger: grants the default
+--      outfit at signup, right after the profile row lands.
+--
+-- HISTORY (recorded because this shipped in three buggy steps,
+-- each discovered only in production — do not repeat):
+--   v1: BEFORE INSERT + SECURITY INVOKER → RLS 42501. At signup
+--       the client has no session yet (email confirmation means
+--       tokens only arrive at verification), so auth.uid() is
+--       null and the own-row insert policy rejects the grant.
+--   v2: added SECURITY DEFINER → surfaced the next layer:
+--       BEFORE INSERT fires before the profile row exists, so
+--       the inventory insert hit user_inventory_user_id_fkey
+--       (referencing a user not yet in user_profiles).
+--   v3 (below): AFTER INSERT + SECURITY DEFINER — fires after
+--       the profile row lands, runs with owner rights, updates
+--       outfit_equipped via UPDATE (AFTER triggers can't edit
+--       NEW). Verified working end-to-end.
+--
+-- SECURITY NOTE on the DEFINER: unavoidable here. Signup-time
+-- runs have no user identity, so SOMEONE must act on the new
+-- user's behalf. Mitigations in place: no arguments, pinned
+-- search_path, body touches exactly one shop read + one
+-- inventory insert + one profile update, callable only by the
+-- trigger (not exposed over the API).
+-- ============================================================
+
+-- Step 1: Shop catalog
+CREATE TABLE IF NOT EXISTS shop_items (
+  item_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  label TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  category TEXT DEFAULT 'outfit',
+  token_cost INT DEFAULT 0,
+  preview_asset TEXT,
+  item_asset TEXT UNIQUE NOT NULL,
+  sort_order INT DEFAULT 0
+);
+
+-- Step 2: What users own
+CREATE TABLE IF NOT EXISTS user_inventory (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT REFERENCES user_profiles(user_id) ON DELETE CASCADE,
+  item_id UUID REFERENCES shop_items(item_id) ON DELETE CASCADE,
+  purchased_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, item_id)
+);
+
+-- Step 3: Currently worn outfit (nullable — null = app default)
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS outfit_equipped TEXT;
+
+-- Step 4: RLS — users see and buy only their own rows
+ALTER TABLE shop_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_inventory ENABLE ROW LEVEL SECURITY;
+
+-- Catalog is world-readable (prices must render pre-purchase);
+-- writes are dashboard-only (no client policy = denied).
+DO $$ BEGIN
+  CREATE POLICY "shop_items_select" ON shop_items FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "inventory_select" ON user_inventory
+    FOR SELECT USING (auth.uid()::text = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "inventory_insert" ON user_inventory
+    FOR INSERT WITH CHECK (auth.uid()::text = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "inventory_delete" ON user_inventory
+    FOR DELETE USING (auth.uid()::text = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- Step 5: Signup grant (the trigger — see history block above)
+CREATE OR REPLACE FUNCTION public.equip_default_outfit()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path = public
+AS $function$
+DECLARE
+  default_id UUID;
+BEGIN
+  SELECT item_id INTO default_id FROM shop_items WHERE item_asset = 'default' LIMIT 1;
+  IF default_id IS NOT NULL THEN
+    INSERT INTO user_inventory (user_id, item_id, purchased_at)
+    VALUES (NEW.user_id, default_id, NOW());
+    UPDATE user_profiles SET outfit_equipped = default_id WHERE user_id = NEW.user_id;
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+
+DROP TRIGGER IF EXISTS on_profile_created ON public.user_profiles;
+CREATE TRIGGER on_profile_created
+  AFTER INSERT ON public.user_profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION equip_default_outfit();
