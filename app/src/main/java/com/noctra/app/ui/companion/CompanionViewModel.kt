@@ -122,6 +122,14 @@ class CompanionViewModel(
         loadData(userId, null)
     }
 
+    // Source of truth for the morning-recap once-per-day guard. Read fresh
+    // at decision time so no caller (retry, reconnect auto-reload) can
+    // bypass it by passing a stale or null parameter.
+    private fun readShownSleepDate(): String? =
+        getApplication<Application>()
+            .getSharedPreferences("noctra_prefs", android.content.Context.MODE_PRIVATE)
+            .getString("last_shown_sleep_date", null)
+
     // Clears per-user UI state so the next login never flashes the
     // previous account's data while fresh data loads
     fun onLogout() {
@@ -140,13 +148,19 @@ class CompanionViewModel(
             }
             _uiState.update { it.copy(isLoading = true, isOffline = false) }
             try {
+                // Re-read the recap flag HERE rather than trusting the caller's
+                // parameter: retry()/reconnect paths pass null, which used to
+                // bypass the once-per-session-date guard after a process kill
+                // (popup re-showed). The pref is the source of truth.
+                val shownDate = readShownSleepDate()
+
                 // 0. Inline provisional sync of last night (first-open-of-the-day
                 //    trigger). Gated on the recap flag so later resumes don't
                 //    re-hit Health Connect. Silent: result ignored — the 9 AM
                 //    worker is the backup, and the auditor covers the audit range.
                 val sessionDate = java.time.LocalDate.now().minusDays(1).toString()
-                Log.d(TAG, "loadData — lastShownSleepDate: $lastShownSleepDate, sessionDate: $sessionDate")
-                if (lastShownSleepDate != sessionDate) {
+                Log.d(TAG, "loadData — shownDate=$shownDate, sessionDate=$sessionDate (caller said $lastShownSleepDate)")
+                if (shownDate != sessionDate) {
                     Log.d(TAG, "loadData — triggering inline sync for $sessionDate")
                     val syncResult = sleepSyncManager.syncSessionDate(userId, java.time.LocalDate.now().minusDays(1))
                     Log.d(TAG, "loadData — syncResult: $syncResult")
@@ -173,7 +187,7 @@ class CompanionViewModel(
                 }
 
                 userProfileRepository.getOrCreateProfile(userId)
-                refreshData(userId, lastShownSleepDate, triggerMorningPopup = true)
+                refreshData(userId, shownDate, triggerMorningPopup = true)
             } catch (e: Exception) {
                 Log.e(TAG, "Load failed", e)
                 val isOffline = !networkObserver.checkNow()
@@ -254,9 +268,13 @@ class CompanionViewModel(
                 // the flag — not record existence — is the gate.
                 if (triggerMorningPopup) {
                     val recapSessionDate = java.time.LocalDate.now().minusDays(1).toString()
+                    // Fresh pref read, not the parameter: callers like retry()
+                    // pass null, which used to bypass this guard after a
+                    // process kill and re-show the recap. Pref is truth.
+                    val shownDate = readShownSleepDate()
                     if (latestSleep != null &&
                         latestSleep.sessionDate == recapSessionDate &&
-                        lastShownSleepDate != recapSessionDate &&
+                        shownDate != recapSessionDate &&
                         morningPopupEmittedForDate != recapSessionDate
                     ) {
                         morningPopupEmittedForDate = recapSessionDate
