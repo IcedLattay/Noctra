@@ -5,7 +5,7 @@
 - [x] RUN Migration 8: `xp_accrued INT DEFAULT 0` + `xp_settled BOOLEAN DEFAULT false` on `sleep_records` — run (settlement verified on device)
 
 Low priority (do only if time allows):
-- [ ] Wind-down notification tapped outside the routine window: routine start screen flashes for a split second before exiting to the routine home fragment — find why the start screen renders before the window check bounces it (likely nav-then-validate instead of validate-then-nav), then guard it
+- [ ] Verify wind-down window-flash fix on device (real flow, not debug fire): tap the actual wind-down notification outside the window → should land straight on routine home with the toast, no start-screen flash; also verify the already-completed case (complete tonight's routine, tap the notification → silent bounce to the Completed card). Fix committed on `fix/winddown-window-flash` (fragment entry gate + receiver window guard + completion bounce)
 - [ ] Star icon on the XP card in the companion fragment — update the wireframe first, then implement in the app UI (asset: reuse `ic_star`/`ic_star_double`)
 
 **NEXT SESSION**: Merge remote branch into local branch to continue where we left off.
