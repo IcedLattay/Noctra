@@ -213,6 +213,16 @@
                     app:layout_constraintTop_toTopOf="parent"
                     tools:text="30 XP" />
 
+                <ImageView
+                    android:id="@+id/ivXpStar"
+                    android:layout_width="22dp"
+                    android:layout_height="21dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_star"
+                    app:layout_constraintBottom_toBottomOf="@id/tvXpValue"
+                    app:layout_constraintEnd_toStartOf="@id/tvXpValue"
+                    app:layout_constraintTop_toTopOf="@id/tvXpValue" />
+
                 <ProgressBar
                     android:id="@+id/pbXpProgress"
                     style="?android:attr/progressBarStyleHorizontal"
