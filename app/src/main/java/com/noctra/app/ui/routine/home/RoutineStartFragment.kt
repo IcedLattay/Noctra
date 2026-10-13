@@ -45,6 +45,7 @@ class RoutineStartFragment : Fragment() {
     // ─── ViewModel ────────────────────────────────────────────────────────────
 
     private val routineViewModel: RoutineViewModel by activityViewModels()
+    private val routineSessionRepository = com.noctra.app.data.repository.RoutineSessionRepository()
 
     // ─── Panels ───────────────────────────────────────────────────────────────
 
@@ -101,18 +102,12 @@ class RoutineStartFragment : Fragment() {
         // If opened via deep link, VM might be empty. Fetch data if needed.
         routineViewModel.initializeIfNecessary()
 
-        // Entry gate: never render the start screen before the window
-        // verdict. A warm process knows the verdict synchronously — an
-        // expired window bounces before the first frame, killing the
-        // stale-notification flash. A cold deep link holds on the bare
-        // background until initialize() resolves; observeState() then
-        // reveals or bounces.
+        // Entry gate: never render the start screen before the verdicts.
+        // Warm process → evaluate now (window check synchronous, completion
+        // read a quick query). Cold deep link → all panels held on the bare
+        // background until initialize() resolves; observeState() evaluates.
         if (routineViewModel.isInitialized.value) {
-            if (routineViewModel.isWindowExpired.value) {
-                bounceFromExpiredWindow()
-                return
-            }
-            showWindDownPanel()
+            evaluateEntry()
         } else {
             windDownPanel.visibility = View.GONE
             loadingPanel.visibility = View.GONE
@@ -124,11 +119,67 @@ class RoutineStartFragment : Fragment() {
         observeNavigationEvents()
     }
 
-    /** Toast + bounce to routine home. One-shot — the expired collector can re-emit. */
-    private var bouncedFromExpired = false
+    /** True once a bounce fired — the evaluators/re-emit can't double-navigate. */
+    private var bounced = false
+    private var gatePassed = false
+
+    /**
+     * The one gate every entry into this screen runs: expired window →
+     * toast + bounce (a stale wind-down notification must not flash this
+     * screen); already-completed today → silent bounce (the home screen's
+     * Completed card is the feedback, so no toast). Reveal only when both
+     * verdicts pass.
+     */
+    private fun evaluateEntry() {
+        if (bounced || gatePassed || !isAdded) return
+
+        // Debug preview is a look-only screen (no writes reachable) — it
+        // renders regardless of window/completion state.
+        if (arguments?.getBoolean("previewMode") == true) {
+            gatePassed = true
+            showWindDownPanel()
+            return
+        }
+
+        if (routineViewModel.isWindowExpired.value) {
+            bounceFromExpiredWindow()
+            return
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val userId = com.noctra.app.utils.UserSession.getUserId(requireContext())
+            val alreadyCompleted = if (
+                com.noctra.app.utils.DebugSettings.skipCompletionCheck.value || userId == null
+            ) {
+                false
+            } else {
+                try {
+                    routineSessionRepository.hasCompletedSessionForDate(
+                        userId,
+                        com.noctra.app.utils.RoutineWindowProvider.resolveRoutineScreenDate().toString()
+                    )
+                } catch (e: Exception) {
+                    // Fail open: same behavior as before the guard.
+                    false
+                }
+            }
+
+            if (!isAdded || bounced) return@launch
+            if (alreadyCompleted) {
+                bounced = true
+                findNavController().navigate(R.id.action_global_routineHomeFragment)
+                return@launch
+            }
+
+            gatePassed = true
+            showWindDownPanel()
+        }
+    }
+
+    /** Toast + bounce to routine home. */
     private fun bounceFromExpiredWindow() {
-        if (bouncedFromExpired || !isAdded) return
-        bouncedFromExpired = true
+        if (bounced || !isAdded) return
+        bounced = true
         android.widget.Toast.makeText(
             requireContext(),
             "The routine window has closed for tonight.",
@@ -146,11 +197,8 @@ class RoutineStartFragment : Fragment() {
                     // the time the user reaches it.
                     if (ready) populateRoutineData()
 
-                    // Cold-start gate release: the verdict landed in-window,
-                    // so reveal the panel the entry gate held back.
-                    if (ready && !routineViewModel.isWindowExpired.value) {
-                        showWindDownPanel()
-                    }
+                    // Cold-start gate release: verdicts are now computable.
+                    if (ready && !gatePassed && !bounced) evaluateEntry()
                 }
             }
         }
