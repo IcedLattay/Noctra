@@ -6,7 +6,7 @@
 
 Low priority (do only if time allows):
 - [ ] Verify wind-down window-flash fix on device (real flow, not debug fire): tap the actual wind-down notification outside the window → should land straight on routine home with the toast, no start-screen flash; also verify the already-completed case (complete tonight's routine, tap the notification → silent bounce to the Completed card). Fix committed on `fix/winddown-window-flash` (fragment entry gate + receiver window guard + completion bounce)
-- [ ] Star icon on the XP card in the companion fragment — update the wireframe first, then implement in the app UI (asset: reuse `ic_star`/`ic_star_double`)
+- [x] Star icon on the XP card in the companion fragment — wireframe approved (star left of value), implemented with `ic_star` (16dp + 6dp gap), device-verified
 
 **NEXT SESSION**: Merge remote branch into local branch to continue where we left off.
 
