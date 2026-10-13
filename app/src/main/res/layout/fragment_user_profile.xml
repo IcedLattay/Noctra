@@ -339,7 +339,7 @@
                     android:textStyle="bold"
                     app:layout_constraintStart_toEndOf="@id/status_avatar"
                     app:layout_constraintTop_toTopOf="parent"
-                    tools:text="The Depleted" />
+                    tools:text="Depleted" />
 
                 <TextView
                     android:id="@+id/status_stage_number"

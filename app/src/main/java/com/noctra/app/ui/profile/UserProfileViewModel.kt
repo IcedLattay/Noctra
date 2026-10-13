@@ -120,11 +120,11 @@ class UserProfileViewModel(application: Application) : AndroidViewModel(applicat
     @DrawableRes
     private fun getAvatarResForStage(stageNumber: Int): Int {
         return when (stageNumber) {
-            1 -> R.drawable.ic_shleepy_stage_1  // The Depleted
-            2 -> R.drawable.ic_shleepy_stage_2  // The Awakening
-            3 -> R.drawable.ic_shleepy_stage_3  // The Charged
-            4 -> R.drawable.ic_shleepy_stage_4  // The Peak Overdrive
-            5 -> R.drawable.ic_shleepy_stage_5  // The Zen Master
+            1 -> R.drawable.ic_shleepy_stage_1  // Depleted
+            2 -> R.drawable.ic_shleepy_stage_2  // Awakening
+            3 -> R.drawable.ic_shleepy_stage_3  // Charged
+            4 -> R.drawable.ic_shleepy_stage_4  // Overdrive
+            5 -> R.drawable.ic_shleepy_stage_5  // Zen Master
             else -> R.drawable.ic_shleepy_stage_1
         }
     }
@@ -155,7 +155,7 @@ data class ProfileUiState(
     val longestStreak: Int = 0,
     val routinesCompleted: Int = 0,
     val stageNumber: Int = 1,
-    val stageName: String = "The Depleted",
+    val stageName: String = "Depleted",
     val xpToNextStageMessage: String = "",
     @DrawableRes val stageAvatarRes: Int = R.drawable.ic_shleepy_stage_1,
     val outfitAsset: String = "default",

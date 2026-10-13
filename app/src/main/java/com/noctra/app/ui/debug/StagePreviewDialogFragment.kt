@@ -17,7 +17,7 @@ class StagePreviewDialogFragment : DialogFragment() {
     private val binding get() = _binding!!
 
     private val stages = listOf(
-        1 to "Deprived",
+        1 to "Depleted",
         2 to "Awakening",
         3 to "Charged",
         4 to "Overdrive",
