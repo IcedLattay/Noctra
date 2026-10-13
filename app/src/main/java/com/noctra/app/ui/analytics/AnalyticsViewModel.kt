@@ -60,6 +60,23 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
     private val _state = MutableStateFlow(AnalyticsUiState())
     val state = _state.asStateFlow()
 
+    init {
+        // Live connectivity (push): disconnect → placeholder immediately;
+        // reconnect while showing it → auto-reload.
+        viewModelScope.launch {
+            var lastOnline = com.noctra.app.utils.ConnectivityMonitor.isOnline.value
+            com.noctra.app.utils.ConnectivityMonitor.isOnline.collect { online ->
+                if (online == lastOnline) return@collect
+                lastOnline = online
+                if (!online) {
+                    _state.value = _state.value.copy(isOffline = true, isLoading = false)
+                } else if (_state.value.isOffline) {
+                    retry(getApplication())
+                }
+            }
+        }
+    }
+
     // ─── Window bounds ────────────────────────────────────────────────────
 
     /** Last day covered by a window starting at [start]. */

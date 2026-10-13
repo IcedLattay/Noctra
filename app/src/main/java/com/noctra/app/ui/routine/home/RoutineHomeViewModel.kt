@@ -113,6 +113,26 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
     init {
         loadHomeState()
         observeDebugSettings()
+        observeConnectivity()
+    }
+
+    /**
+     * Live connectivity (push, not poll): disconnect → Offline state
+     * immediately; reconnect while showing it → auto-retry.
+     */
+    private fun observeConnectivity() {
+        viewModelScope.launch {
+            var lastOnline = com.noctra.app.utils.ConnectivityMonitor.isOnline.value
+            com.noctra.app.utils.ConnectivityMonitor.isOnline.collect { online ->
+                if (online == lastOnline) return@collect
+                lastOnline = online
+                if (!online) {
+                    _state.value = RoutineHomeState.Offline
+                } else if (_state.value == RoutineHomeState.Offline) {
+                    retry()
+                }
+            }
+        }
     }
 
     private fun observeDebugSettings() {

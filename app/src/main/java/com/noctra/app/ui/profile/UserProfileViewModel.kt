@@ -31,6 +31,23 @@ class UserProfileViewModel(application: Application) : AndroidViewModel(applicat
     private val _profileData = MutableStateFlow(ProfileUiState())
     val profileData = _profileData.asStateFlow()
 
+    init {
+        // Live connectivity (push): disconnect → placeholder immediately;
+        // reconnect while showing it → auto-reload.
+        viewModelScope.launch {
+            var lastOnline = com.noctra.app.utils.ConnectivityMonitor.isOnline.value
+            com.noctra.app.utils.ConnectivityMonitor.isOnline.collect { online ->
+                if (online == lastOnline) return@collect
+                lastOnline = online
+                if (!online) {
+                    _profileData.value = _profileData.value.copy(isOffline = true, isLoading = false)
+                } else if (_profileData.value.isOffline) {
+                    retry(getApplication())
+                }
+            }
+        }
+    }
+
     fun loadProfile(context: Context) {
         viewModelScope.launch {
             _profileData.value = _profileData.value.copy(isLoading = true, isOffline = false)

@@ -26,6 +26,10 @@ class NoctraApplication : Application() {
         com.noctra.app.data.supabase.SupabaseClient.init(this)
 
         RoutinePersistenceHelper.init(this)
+
+        // Live connectivity: one observer for the process, feeding the
+        // StateFlow every ViewModel watches (push — not per-load polling).
+        com.noctra.app.utils.ConnectivityMonitor.start(this)
         setupMorningSyncWorker()
         setupMissedSessionWorker()
         setupSleepFinalizationWorker()

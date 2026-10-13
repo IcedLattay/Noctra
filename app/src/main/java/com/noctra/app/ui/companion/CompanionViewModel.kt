@@ -69,6 +69,27 @@ class CompanionViewModel(
     private val _uiState = MutableStateFlow(CompanionUiState())
     val uiState: StateFlow<CompanionUiState> = _uiState.asStateFlow()
 
+    // Set by loadData — lets the reconnect auto-reload know who to load for.
+    private var lastUserId: String? = null
+
+    init {
+        // Live connectivity: the push flip, not a per-load poll. Disconnect
+        // → placeholder immediately (no request needed to discover it);
+        // reconnect while showing the placeholder → auto-retry.
+        viewModelScope.launch {
+            var lastOnline = com.noctra.app.utils.ConnectivityMonitor.isOnline.value
+            com.noctra.app.utils.ConnectivityMonitor.isOnline.collect { online ->
+                if (online == lastOnline) return@collect
+                lastOnline = online
+                if (!online) {
+                    _uiState.update { it.copy(isLoading = false, isOffline = true) }
+                } else if (_uiState.value.isOffline) {
+                    lastUserId?.let { retry(it) }
+                }
+            }
+        }
+    }
+
     private val _showMorningPopup = MutableSharedFlow<Pair<Int, Int>>()
     val showMorningPopup: SharedFlow<Pair<Int, Int>> = _showMorningPopup.asSharedFlow()
 
@@ -111,6 +132,7 @@ class CompanionViewModel(
     }
 
     fun loadData(userId: String, lastShownSleepDate: String?) {
+        lastUserId = userId
         viewModelScope.launch {
             if (!networkObserver.checkNow()) {
                 _uiState.update { it.copy(isLoading = false, isOffline = true) }
