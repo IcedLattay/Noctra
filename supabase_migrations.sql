@@ -301,3 +301,55 @@ INSERT INTO shop_items (item_id, label, description, category, token_cost, previ
   ('f08025e6-d246-4e3d-a198-6d87e0b02c56', 'Swaggy',   'Swaggy look',     'OUTFIT', 300, '', 'swaggy',   10),
   ('919039e2-4e63-4029-9b2f-140669798d43', 'Brazil',   'Brazilian vibes', 'OUTFIT', 300, '', 'brazil',   11)
 ON CONFLICT (item_asset) DO NOTHING;
+
+-- ============================================================
+-- MIGRATION 10: activity_library (wind-down activity catalog)
+-- ============================================================
+-- What this does:
+--   1. Creates activity_library — the read-only catalog behind
+--      onboarding's activity picker and routine execution.
+--   2. Seeds all 10 activities with production IDs preserved.
+--
+-- WHY THIS TABLE IS LOAD-BEARING (not just data):
+--   App logic keys off exact `label` strings — ActivityIllustrations,
+--   TimesUpTransitionFragment, and RoutineStartFragment all match
+--   labels verbatim. Changing a label string silently breaks
+--   illustrations and type-specific UI, so: never edit these labels
+--   without an app-side audit. The `instruction` strings are also
+--   user-facing (shown during execution).
+--
+-- Writes: dashboard/backend only — the app treats this as
+-- read-only (RoutineRepository). No client insert/update/delete
+-- policies = denied by default. Select is open because onboarding
+-- must read it pre-routine; there is nothing sensitive in it.
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS activity_library (
+  activity_id UUID PRIMARY KEY,
+  label TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  instruction TEXT DEFAULT '',
+  activity_type TEXT NOT NULL,          -- JOURNAL | PHYS | AUDIO (app-switched)
+  default_duration_minutes INT DEFAULT 5,
+  icon_asset TEXT,
+  sort_order INT DEFAULT 0
+);
+
+ALTER TABLE activity_library ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  CREATE POLICY "activity_library_select" ON activity_library FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+INSERT INTO activity_library (activity_id, label, description, instruction, activity_type, default_duration_minutes, icon_asset, sort_order) VALUES
+  ('9eb4d9f7-0443-4912-afae-0fd12f1f0361', 'Slow-Paced Breathing',              'Guided breathing with inhale, hold, exhale intervals to lower arousal.',                              'Follow the breathing circle. Inhale for 4, hold for 7, exhale for 8.',                              'PHYS',   5,  'ic_breathing',   1),
+  ('4c2e4862-4fcb-4698-ac8e-e913f5bb651e', 'White/Pink Noise',                  'Low-stimulus ambient audio to mask environmental sounds.',                                             'Play the audio and close your eyes. Audio cannot be paused.',                                       'AUDIO',  10, 'ic_noise',       2),
+  ('04c00030-062a-4c36-ac8f-1f8a5d22e8c2', 'Gratitude Journaling',              'Reflect on three things you are grateful for tonight.',                                               'Write freely. Your text is not saved — this is for reflection only.',                                'JOURNAL', 5,  'ic_journal',     3),
+  ('befe6fb9-9322-4c9d-8314-bcdfd411e1f9', 'Progressive Muscle Relaxation',     'Tense and release muscle groups to discharge physical tension.',                                      'Follow each cycle: tense for 5 seconds, then release for 10 seconds.',                              'PHYS',   8,  'ic_pmr',         4),
+  ('ff1f5195-e972-4d47-a5df-3e4d771a0933', 'Bedtime Stretching',                'Five gentle stretches to release tension before bed.',                                                'Move through each stretch slowly. Hold each one for 30 seconds.',                                   'PHYS',   7,  'ic_stretch',     5),
+  ('6e3dff06-28e5-434b-a888-ac4c816f656f', 'Mindfulness',                       'Brief guided meditation with nature-themed visuals and audio.',                                       'Sit comfortably. Focus on the audio and let thoughts pass.',                                        'AUDIO',  10, 'ic_mindfulness', 6),
+  ('4b349a14-4535-4677-9f23-e61b35090bb5', 'Reading',                           'Read for a while to wind down before sleep.',                                                         'Pick up a physical book and read until the timer ends.',                                            'PHYS',   15, 'ic_reading',     7),
+  ('7f0d16ce-b715-46b0-b4e0-0eee001287f6', 'Warm Shower',                       'A warm shower to relax muscles and signal sleep onset.',                                              'Take a warm shower. Return to the app when finished.',                                              'PHYS',   10, 'ic_shower',      8),
+  ('24a8228b-f343-4593-9eb7-df8caaf30367', 'Bedtime To-Do List Writing',        'Write tomorrow''s tasks somewhere outside the app to clear mental clutter.',                          'Use a notebook or notes app to write tomorrow''s tasks. Not in this app.',                          'JOURNAL', 5,  'ic_todo',        9),
+  ('cfe3b4e2-cc1e-42c5-8f96-10f4e2067d3b', 'Low-Stimulus Audio Listening',      'Gently guided meditation audio to quiet a busy mind before sleep.',                                   'Lie back and breathe slowly. Listen to the soothing rhythm of the audio.',                          'AUDIO',  10, 'ic_meditation',  10)
+ON CONFLICT (activity_id) DO NOTHING;
