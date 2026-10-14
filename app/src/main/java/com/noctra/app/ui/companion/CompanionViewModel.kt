@@ -154,18 +154,29 @@ class CompanionViewModel(
                 // (popup re-showed). The pref is the source of truth.
                 val shownDate = readShownSleepDate()
 
+                // Journey-start gate: the account's first synced night is the
+                // night ON or AFTER onboarding — never a pre-signup night.
+                // Fresh accounts used to pull "last night" on day 0 (it
+                // predates the account), freezing XP for nights the journey
+                // never covered. Null stamp = legacy account predating the
+                // column → no gate.
+                val profile = userProfileRepository.getOrCreateProfile(userId)
+                val journeyStart = profile.onboardingCompletedAt
+                    ?.let { runCatching { java.time.OffsetDateTime.parse(it).toLocalDate() }.getOrNull() }
+
                 // 0. Inline provisional sync of last night (first-open-of-the-day
                 //    trigger). Gated on the recap flag so later resumes don't
                 //    re-hit Health Connect. Silent: result ignored — the 9 AM
                 //    worker is the backup, and the auditor covers the audit range.
-                val sessionDate = java.time.LocalDate.now().minusDays(1).toString()
-                Log.d(TAG, "loadData — shownDate=$shownDate, sessionDate=$sessionDate (caller said $lastShownSleepDate)")
-                if (shownDate != sessionDate) {
+                val sessionDate = java.time.LocalDate.now().minusDays(1)
+                Log.d(TAG, "loadData — shownDate=$shownDate, sessionDate=$sessionDate, journeyStart=$journeyStart (caller said $lastShownSleepDate)")
+                val predatesJourney = journeyStart != null && sessionDate.isBefore(journeyStart)
+                if (shownDate != sessionDate.toString() && !predatesJourney) {
                     Log.d(TAG, "loadData — triggering inline sync for $sessionDate")
-                    val syncResult = sleepSyncManager.syncSessionDate(userId, java.time.LocalDate.now().minusDays(1))
+                    val syncResult = sleepSyncManager.syncSessionDate(userId, sessionDate)
                     Log.d(TAG, "loadData — syncResult: $syncResult")
                 } else {
-                    Log.d(TAG, "loadData — sync skipped (already synced today)")
+                    Log.d(TAG, "loadData — sync skipped (${if (predatesJourney) "night predates journey" else "already synced today"})")
                 }
 
                 // 1. Snapshot Ledger BEFORE Audit
@@ -186,7 +197,6 @@ class CompanionViewModel(
                     }
                 }
 
-                userProfileRepository.getOrCreateProfile(userId)
                 refreshData(userId, shownDate, triggerMorningPopup = true)
             } catch (e: Exception) {
                 Log.e(TAG, "Load failed", e)
