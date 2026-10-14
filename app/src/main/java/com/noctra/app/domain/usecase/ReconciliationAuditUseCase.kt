@@ -69,14 +69,25 @@ class ReconciliationAuditUseCase(
     }
 
     /**
-     * Step 1–2 of the audit: for each night in the trailing 14-day cap
+     * Step 1–2 of the audit: for each night in the audit-anchored window
      * missing a sleep row or flagged partial, pull Health Connect once.
      * Found data upserts (or finalizes partials); absent data writes
      * nothing — no empty sleep rows are ever fabricated.
+     *
+     * Window = max(audit anchor, today−14) → today. The anchor (last
+     * session date, seeded at onboarding completion) is the journey
+     * start: fresh accounts must NOT backfill pre-signup nights —
+     * that flooded day-1 accounts with up to 14 ghost rows, froze XP
+     * on nights the journey never covered, and paid it out at the
+     * next morning popup as a windfall.
      */
     private suspend fun refreshSleepWindow(userId: String) {
         val today = LocalDate.now()
-        val start = today.minusDays(14)
+        val anchor = rewardRepository.getRewardLedger(userId)?.lastSessionDate
+            ?.let { LocalDate.parse(it) }
+        val uncappedStart = maxOf(anchor ?: today.minusDays(14), today.minusDays(14))
+        val start = if (uncappedStart.isAfter(today)) today else uncappedStart
+        Log.d("ReconciliationAudit", "Sleep refresh window: $start → $today (anchor=$anchor)")
         val existingByDate = sleepRecordRepository
             .getRecordsInRange(userId, start.toString(), today.toString())
             .associateBy { it.sessionDate }
