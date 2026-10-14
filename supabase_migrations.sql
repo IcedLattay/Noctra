@@ -283,3 +283,21 @@ CREATE TRIGGER on_profile_created
   AFTER INSERT ON public.user_profiles
   FOR EACH ROW
   EXECUTE FUNCTION equip_default_outfit();
+
+-- Step 6: Catalog seed (all 11 outfits, IDs preserved from production so
+-- existing user_inventory rows and outfit_equipped references stay valid).
+-- ON CONFLICT on item_asset (UNIQUE): re-running against prod is a no-op.
+-- The 'default' row is required — the signup trigger grants it by item_asset.
+INSERT INTO shop_items (item_id, label, description, category, token_cost, preview_asset, item_asset, sort_order) VALUES
+  ('761478ef-06f2-4a30-8be3-68459c3e0534', 'Default',  'Default skin',    'OUTFIT', 0,   '', 'default',  1),
+  ('7bde04bf-da5d-4cb6-99a0-40a58ca8131b', 'Pajamas',  'Cozy pajamas',    'OUTFIT', 100, '', 'pajamas',  2),
+  ('ebefa437-4e00-499f-bda2-e11e8df9ae62', 'Office',   'Office attire',   'OUTFIT', 100, '', 'office',   3),
+  ('6fe7a1c8-7c9f-448e-adce-118d6e363dd8', 'Fairy',    'Fairy outfit',    'OUTFIT', 150, '', 'fairy',    4),
+  ('5f886087-9774-493e-bd89-718f77edad2c', 'Boom',     'Boom outfit',     'OUTFIT', 150, '', 'boom',     5),
+  ('d0cb1903-d9c2-4e98-bca0-483acca817f5', 'Cozy',     'Cozy vibes',      'OUTFIT', 50,  '', 'cozy',     6),
+  ('d50d2ba7-0187-43d0-ad3f-3c537a43eb14', 'Casual',   'Casual wear',     'OUTFIT', 200, '', 'casual',   7),
+  ('c4be44f7-97a2-4c5a-ac5a-77edf8c8d304', 'Coquette', 'Coquette style',  'OUTFIT', 250, '', 'coquette', 8),
+  ('880144ae-ee4a-4af8-8d2a-6bc2088ebc63', 'Alt',      'Alt aesthetic',   'OUTFIT', 250, '', 'alt',      9),
+  ('f08025e6-d246-4e3d-a198-6d87e0b02c56', 'Swaggy',   'Swaggy look',     'OUTFIT', 300, '', 'swaggy',   10),
+  ('919039e2-4e63-4029-9b2f-140669798d43', 'Brazil',   'Brazilian vibes', 'OUTFIT', 300, '', 'brazil',   11)
+ON CONFLICT (item_asset) DO NOTHING;
