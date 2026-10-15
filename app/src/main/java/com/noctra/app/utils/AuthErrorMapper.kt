@@ -67,6 +67,9 @@ object AuthErrorMapper {
             "rate limit" in raw || "rate_limit" in raw ->
                 "Too many attempts — wait a minute and try again."
 
+            "bearer token" in raw || "invalid refresh token" in raw ->
+                "Your session has expired — sign in again, or request a new reset link."
+
             ("otp" in raw || "token" in raw || "code" in raw) && "expired" in raw ->
                 "That code has expired — request a new one."
 
