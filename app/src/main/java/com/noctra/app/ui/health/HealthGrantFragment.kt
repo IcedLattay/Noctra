@@ -103,6 +103,7 @@ class HealthGrantFragment : Fragment() {
     // bite. Post-onboarding changes go through Health Settings.
     private fun refreshUiState() {
         val context = requireContext()
+        HealthConnectPermissionHelper.logDiagnostics(context)
         setGrantLoading(false)
 
         when {

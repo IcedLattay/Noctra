@@ -128,6 +128,7 @@ class SleepSyncManager {
 
         if (!isHealthConnectAvailable()) {
             Log.w(TAG, "Health Connect unavailable")
+            HealthConnectPermissionHelper.logDiagnostics(NoctraApplication.instance)
             return SyncResult.HealthConnectUnavailable
         }
 
