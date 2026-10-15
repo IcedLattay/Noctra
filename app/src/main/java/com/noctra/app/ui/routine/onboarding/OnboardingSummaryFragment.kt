@@ -220,7 +220,7 @@ class OnboardingSummaryFragment : Fragment() {
 
             Snackbar.make(
                 binding.root,
-                "Error: ${e.message ?: e.javaClass.simpleName}",
+                com.noctra.app.utils.AuthErrorMapper.userMessage(e, "Something went wrong — please try again."),
                 Snackbar.LENGTH_LONG
             ).show()
         }

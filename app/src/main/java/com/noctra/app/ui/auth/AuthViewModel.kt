@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.noctra.app.data.repository.AuthRepository
 import com.noctra.app.data.repository.UserProfileRepository
+import com.noctra.app.utils.AuthErrorMapper
 import com.noctra.app.utils.PasswordStrength
 import com.noctra.app.utils.PasswordStrengthEvaluator
 import io.github.jan.supabase.gotrue.auth
@@ -66,7 +67,7 @@ class AuthViewModel : ViewModel() {
                 if (msg.contains("Email not confirmed", ignoreCase = true)) {
                     _authState.value = AuthState.UnverifiedEmail(email)
                 } else {
-                    _authState.value = AuthState.Error(msg.ifBlank { "Login failed" })
+                    _authState.value = AuthState.Error(AuthErrorMapper.userMessage(e, "Login failed"))
                 }
             }
         }
@@ -81,7 +82,7 @@ class AuthViewModel : ViewModel() {
                 authRepository.register(email.value, password.value, displayName.value)
                 _authState.value = AuthState.Success(false) // New user
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Registration failed")
+                _authState.value = AuthState.Error(AuthErrorMapper.userMessage(e, "Registration failed"))
             }
         }
     }
@@ -93,7 +94,7 @@ class AuthViewModel : ViewModel() {
                 authRepository.resetPassword(email)
                 _authState.value = AuthState.PasswordResetSent
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Failed to send reset email")
+                _authState.value = AuthState.Error(AuthErrorMapper.userMessage(e, "Failed to send reset email"))
             }
         }
     }
@@ -104,7 +105,7 @@ class AuthViewModel : ViewModel() {
                 authRepository.sendVerificationEmail(email)
                 _authState.value = AuthState.VerificationCodeSent
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Failed to resend code")
+                _authState.value = AuthState.Error(AuthErrorMapper.userMessage(e, "Failed to resend code"))
             }
         }
     }
@@ -117,7 +118,7 @@ class AuthViewModel : ViewModel() {
                 authRepository.verifyOtp(email, token, OtpType.Email.SIGNUP)
                 _authState.value = AuthState.OtpVerified
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Invalid or expired code")
+                _authState.value = AuthState.Error(AuthErrorMapper.userMessage(e, "Invalid or expired code"))
             }
         }
     }
@@ -129,7 +130,7 @@ class AuthViewModel : ViewModel() {
                 authRepository.updatePassword(newPassword)
                 _authState.value = AuthState.PasswordUpdated
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Failed to update password")
+                _authState.value = AuthState.Error(AuthErrorMapper.userMessage(e, "Failed to update password"))
             }
         }
     }

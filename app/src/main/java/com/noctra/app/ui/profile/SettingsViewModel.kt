@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.noctra.app.data.repository.UserProfileRepository
+import com.noctra.app.utils.AuthErrorMapper
 import com.noctra.app.utils.UserSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -129,7 +130,7 @@ class SettingsViewModel : ViewModel() {
                 authRepository.resetPassword(email)
                 _settingsState.value = SettingsState.PasswordResetSent
             } catch (e: Exception) {
-                _settingsState.value = SettingsState.Error(e.message ?: "Failed to send reset link")
+                _settingsState.value = SettingsState.Error(AuthErrorMapper.userMessage(e, "Failed to send reset link"))
             }
         }
     }
@@ -142,7 +143,7 @@ class SettingsViewModel : ViewModel() {
                 authRepository.sendVerificationEmail(email)
                 _settingsState.value = SettingsState.VerificationSent
             } catch (e: Exception) {
-                _settingsState.value = SettingsState.Error(e.message ?: "Failed to send verification email")
+                _settingsState.value = SettingsState.Error(AuthErrorMapper.userMessage(e, "Failed to send verification email"))
             }
         }
     }
