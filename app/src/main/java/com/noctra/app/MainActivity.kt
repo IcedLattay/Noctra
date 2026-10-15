@@ -260,13 +260,31 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     private fun handleDeeplinks(intent: android.content.Intent?) {
         val url = intent?.dataString ?: return
 
-        // Log only the SHAPE of the link — which params arrived and how long
-        // they are. Codes/tokens are credentials and must never reach logcat.
+        // Log only the SHAPE of the link — param names + value lengths.
+        // Codes/tokens are credentials and must never reach logcat verbatim;
+        // error descriptions are diagnostics (no secrets) and are safe to show.
         val uri = android.net.Uri.parse(url)
-        val shape = uri.queryParameterNames.joinToString { name ->
+        val queryShape = uri.queryParameterNames.joinToString { name ->
             "$name:len=${uri.getQueryParameter(name)?.length ?: 0}"
-        } + (if (uri.fragment != null) " | fragment:len=${uri.fragment!!.length}" else " | no fragment")
-        android.util.Log.d("DeepLink", "${uri.scheme}://${uri.host} [$shape]")
+        }.ifEmpty { "none" }
+        val fragment = uri.fragment
+        val fragShape = when {
+            fragment == null -> "none"
+            else -> {
+                // The fragment is itself a param list (a=b&c=d), so parse it
+                // the same way to see WHICH fields arrived without their values.
+                val fragParams = android.net.Uri.parse("http://x/?" + fragment)
+                fragParams.queryParameterNames.joinToString { name ->
+                    val value = fragParams.getQueryParameter(name)
+                    when {
+                        name.startsWith("error") -> "$name=$value"
+                        value == null -> name
+                        else -> "$name:len=${value.length}"
+                    }
+                }.ifEmpty { "(no params, rawlen=${fragment.length})" }
+            }
+        }
+        android.util.Log.d("DeepLink", "${uri.scheme}://${uri.host} query=[$queryShape] fragment=[$fragShape]")
 
         // PKCE flow: supabase-kt 2.4.0's handleDeeplinks only understands
         // implicit #access_token links and throws "No access token found"
