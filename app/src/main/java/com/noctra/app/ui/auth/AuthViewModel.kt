@@ -139,6 +139,15 @@ class AuthViewModel : ViewModel() {
         _authState.value = AuthState.Idle
     }
 
+    /**
+     * Surface an error that didn't come from a repository call — e.g. a
+     * recovery deep link that arrived broken (consumed upstream, expired,
+     * or stripped in transit), detected by MainActivity's link handler.
+     */
+    fun setError(message: String) {
+        _authState.value = AuthState.Error(message)
+    }
+
     sealed class AuthState {
         object Idle : AuthState()
         object Loading : AuthState()

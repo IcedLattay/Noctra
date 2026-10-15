@@ -32,6 +32,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.noctra.app.ui.routine.RoutineViewModel
 import com.noctra.app.ui.routine.home.ResumeRoutineDialogFragment
 import com.noctra.app.utils.DebugSettings
+import com.noctra.app.utils.PendingDeepLinkError
 import com.noctra.app.utils.UserSession
 import com.noctra.app.utils.NetworkObserver
 import com.noctra.app.workers.WindDownNotificationScheduler
@@ -292,21 +293,50 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         // password update went out unauthenticated and401'd).
         val code = uri.getQueryParameter("code")
         if (!code.isNullOrBlank()) {
+            // A live link supersedes any earlier dead-link notice.
+            PendingDeepLinkError.message = null
             lifecycleScope.launch {
                 try {
                     SupabaseClient.client.auth.exchangeCodeForSession(code)
                     android.util.Log.d("DeepLink", "PKCE session established")
                 } catch (e: Exception) {
                     android.util.Log.e("DeepLink", "PKCE exchange failed", e)
+                    PendingDeepLinkError.message =
+                        "This reset link has expired or was already used. Request a new one from the login screen."
                 }
             }
             return
         }
 
-        try {
-            SupabaseClient.client.handleDeeplinks(intent)
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "Deep link handling failed", e)
+        // Implicit flow: tokens arrive in the fragment (#access_token=...).
+        // A fragment without an access token means the link was dead before
+        // it reached us — consumed by an upstream click/scanner, expired, or
+        // stripped in transit. Log the server's reason and hand the screen a
+        // friendly explanation instead of failing silently at password time.
+        val fragParams = fragment?.let { android.net.Uri.parse("http://x/?" + it) }
+        val accessToken = fragParams?.getQueryParameter("access_token")
+        if (!accessToken.isNullOrBlank()) {
+            // A live link supersedes any earlier dead-link notice.
+            PendingDeepLinkError.message = null
+            try {
+                SupabaseClient.client.handleDeeplinks(intent)
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Deep link handling failed", e)
+            }
+            return
+        }
+
+        val reason = fragParams?.getQueryParameter("error_description")
+            ?: fragParams?.getQueryParameter("error")
+        android.util.Log.w("DeepLink", "link arrived without usable token; reason=$reason")
+        // Idempotent: the intent can be delivered twice on launch (onCreate +
+        // onNewIntent) — keep the first notice, a live link clears it later.
+        if (PendingDeepLinkError.message == null) {
+            PendingDeepLinkError.message = if (reason != null) {
+                "This reset link has expired or was already used. Request a new one from the login screen."
+            } else {
+                "This reset link is broken or incomplete. Request a new one from the login screen."
+            }
         }
     }
 
