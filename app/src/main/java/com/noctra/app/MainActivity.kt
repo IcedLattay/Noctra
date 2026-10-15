@@ -258,12 +258,37 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     }
 
     private fun handleDeeplinks(intent: android.content.Intent?) {
-        intent?.let {
-            try {
-                SupabaseClient.client.handleDeeplinks(it)
-            } catch (e: Exception) {
-                android.util.Log.e("MainActivity", "Deep link handling failed", e)
+        val url = intent?.dataString ?: return
+
+        // Log only the SHAPE of the link — which params arrived and how long
+        // they are. Codes/tokens are credentials and must never reach logcat.
+        val uri = android.net.Uri.parse(url)
+        val shape = uri.queryParameterNames.joinToString { name ->
+            "$name:len=${uri.getQueryParameter(name)?.length ?: 0}"
+        } + (if (uri.fragment != null) " | fragment:len=${uri.fragment!!.length}" else " | no fragment")
+        android.util.Log.d("DeepLink", "${uri.scheme}://${uri.host} [$shape]")
+
+        // PKCE flow: supabase-kt 2.4.0's handleDeeplinks only understands
+        // implicit #access_token links and throws "No access token found"
+        // on ?code= links (observed in production — left no session, so the
+        // password update went out unauthenticated and401'd).
+        val code = uri.getQueryParameter("code")
+        if (!code.isNullOrBlank()) {
+            lifecycleScope.launch {
+                try {
+                    SupabaseClient.client.auth.exchangeCodeForSession(code)
+                    android.util.Log.d("DeepLink", "PKCE session established")
+                } catch (e: Exception) {
+                    android.util.Log.e("DeepLink", "PKCE exchange failed", e)
+                }
             }
+            return
+        }
+
+        try {
+            SupabaseClient.client.handleDeeplinks(intent)
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Deep link handling failed", e)
         }
     }
 
