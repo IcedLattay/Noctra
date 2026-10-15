@@ -106,6 +106,7 @@ class ResetPasswordFragment : Fragment(R.layout.fragment_reset_password) {
                 binding.btnResetPassword.isEnabled = false
                 binding.btnResetPassword.text = ""
                 binding.pbResetPassword.visibility = View.VISIBLE
+                binding.tvFormError.visibility = View.GONE
             }
             is AuthViewModel.AuthState.PasswordUpdated -> {
                 findNavController().navigate(R.id.action_resetPassword_to_success)
@@ -114,7 +115,8 @@ class ResetPasswordFragment : Fragment(R.layout.fragment_reset_password) {
                 binding.btnResetPassword.isEnabled = true
                 binding.btnResetPassword.text = "Reset Password"
                 binding.pbResetPassword.visibility = View.GONE
-                Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                binding.tvFormError.text = state.message
+                binding.tvFormError.visibility = View.VISIBLE
                 viewModel.resetState()
             }
             else -> {

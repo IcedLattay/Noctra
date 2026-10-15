@@ -143,6 +143,7 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
             is AuthViewModel.AuthState.Loading -> {
                 binding.btnCreateAccount.text = ""
                 binding.pbCreateAccount.visibility = View.VISIBLE
+                binding.tvFormError.visibility = View.GONE
             }
             is AuthViewModel.AuthState.Success -> {
                 val email = viewModel.email.value
@@ -156,7 +157,8 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
             is AuthViewModel.AuthState.Error -> {
                 binding.btnCreateAccount.text = "Create Account"
                 binding.pbCreateAccount.visibility = View.GONE
-                Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                binding.tvFormError.text = state.message
+                binding.tvFormError.visibility = View.VISIBLE
                 viewModel.resetState()
             }
             else -> {

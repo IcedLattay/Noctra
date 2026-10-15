@@ -114,6 +114,7 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                 binding.btnSignIn.isEnabled = false
                 binding.btnSignIn.text = ""
                 binding.pbSignIn.visibility = View.VISIBLE
+                binding.tvFormError.visibility = View.GONE
             }
             is AuthViewModel.AuthState.Success -> {
                 if (state.onboardingCompleted) {
@@ -135,7 +136,8 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                 binding.btnSignIn.isEnabled = true
                 binding.btnSignIn.text = "Sign In"
                 binding.pbSignIn.visibility = View.GONE
-                Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                binding.tvFormError.text = state.message
+                binding.tvFormError.visibility = View.VISIBLE
                 viewModel.resetState()
             }
             else -> {

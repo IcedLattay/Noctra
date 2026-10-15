@@ -137,6 +137,7 @@ class VerifyOtpFragment : Fragment(R.layout.fragment_verify_otp) {
                     is AuthViewModel.AuthState.Loading -> {
                         binding.btnVerify.text = "Verifying..."
                         binding.btnVerify.isEnabled = false
+                        binding.tvFormError.visibility = View.GONE
                     }
                     is AuthViewModel.AuthState.OtpVerified -> {
                         // After verifying, we always take the user to onboarding
@@ -150,7 +151,8 @@ class VerifyOtpFragment : Fragment(R.layout.fragment_verify_otp) {
                     is AuthViewModel.AuthState.Error -> {
                         binding.btnVerify.text = "Verify Code"
                         binding.btnVerify.isEnabled = true
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                        binding.tvFormError.text = state.message
+                        binding.tvFormError.visibility = View.VISIBLE
                         viewModel.resetState()
                     }
                     else -> {}
