@@ -34,14 +34,14 @@
 
   /* desktop carousel knobs */
   --slot-w: 256px;
-  --gap: 36px;
+  --gap: 42px;
   --rail-pad: 26px;
   --slot-h: calc(var(--slot-w) * 19.5 / 9);   /* phone aspect */
-  --rest-scale: .9;
+  --rest-scale: .92;
   --rest-op: .55;
   --rest-shift: 8px;        /* resting slides sit lower */
   --active-shift: -16px;    /* active slide rises */
-  --active-scale: 1.08;
+  --active-scale: 1.06;
 
   /* mobile strip knobs */
   --card-w: clamp(150px, 42vw, 300px);
@@ -160,7 +160,7 @@ body {
     gap: clamp(48px, 11vw, 170px);      /* pushes the carousel away from the identity block */
     align-items: center;
     min-height: 100vh;
-    padding: 40px 36px;
+    padding: 24px 36px 18px;
   }
 
   .identity { text-align: center; }
@@ -180,7 +180,7 @@ body {
        inside the rail's content box */
     --act-l: calc(var(--zone-pad-l) + var(--rail-pad) - var(--slot-w) * (var(--active-scale) - 1) / 2);
     --arrow-gap: 40px;                       /* equal breathing room on BOTH sides of the active card */
-    padding: 40px var(--zone-pad-r) 8px var(--zone-pad-l);   /* the "big enough" hover area */
+    padding: 20px var(--zone-pad-r) 4px var(--zone-pad-l);   /* the "big enough" hover area */
   }
 
   /* --- rail: clips horizontally (active left, peeks right) --- */
@@ -282,8 +282,8 @@ body {
   .captions {
     display: block;
     position: relative;
-    height: 84px;
-    margin-top: 6px;
+    height: 66px;
+    margin-top: 2px;
   }
   .caption {
     position: absolute;
