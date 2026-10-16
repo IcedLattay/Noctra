@@ -6,6 +6,9 @@
 <title>Noctra — Sleep better, nightly</title>
 <meta name="description" content="Noctra — your nightly companion for better pre-sleep habits and sleep. Free Android app.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#127769;</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
    NOCTRA LANDING — SCAFFOLD DRAFT
@@ -58,7 +61,7 @@ body {
   min-height: 100vh;
   background: linear-gradient(115deg, var(--bg-a) 0%, var(--bg-b) 55%, var(--bg-c) 100%);
   color: var(--ink);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   overflow-x: hidden;
 }
 
@@ -220,15 +223,19 @@ body {
     box-shadow: var(--shadow-active);
   }
 
-  /* phase 1: next = current exits LEFT while fading (spec), prev mirrors right */
+  /* phase 1 (next): current demotes + slides left + fades to gone — it is
+     leaving the rail, so it ends invisible */
   .slide.is-exit-left {
-    transform: translateX(-56px) scale(var(--active-scale)) translateY(var(--active-shift));
+    transform: translateX(-56px) scale(var(--rest-scale)) translateY(var(--rest-shift));
     opacity: 0;
     transition: transform var(--ph1, 250ms) var(--ease), opacity var(--ph1, 250ms) var(--ease);
   }
+  /* phase 1 (prev): current slides right while demoting to its REST state
+     (peek dimness, not gone) — it becomes the right-hand peek, so it must
+     never blink out or the peek would sit empty during the push */
   .slide.is-exit-right {
-    transform: translateX(56px) scale(var(--active-scale)) translateY(var(--active-shift));
-    opacity: 0;
+    transform: translateX(56px) scale(var(--rest-scale)) translateY(var(--rest-shift));
+    opacity: var(--rest-op);
     transition: transform var(--ph1, 250ms) var(--ease), opacity var(--ph1, 250ms) var(--ease);
   }
   /* cleanup helper: reset an off-rail slide without animating it back in */
@@ -525,6 +532,19 @@ body.lb-open { overflow: hidden; }
     });
   }
 
+  // same as markActive, but the newly-active slide gets its active styling
+  // WITHOUT transitioning — used at loop-wrap snaps so the swap of
+  // clone → real slot at the active position is invisible
+  function markActiveInstant() {
+    var all = slides();
+    all.forEach(function (s, i) {
+      if (i === vi) s.classList.add('no-anim', 'is-active');
+      else s.classList.remove('is-active');
+    });
+    void track.offsetWidth;                       // commit with transitions off
+    all.forEach(function (s) { s.classList.remove('no-anim'); });
+  }
+
   function go(dir) {
     if (animating) return;
     var railVisible = rail.offsetParent !== null;
@@ -543,37 +563,51 @@ body.lb-open { overflow: hidden; }
       return;
     }
 
-    // PHASE 1 — current exits (next: slides LEFT + fades; prev: mirrors
-    // right); its caption fades out
+    // PHASE 1 — current exits (next: slides left + fades to gone; prev:
+    // slides right + demotes to peek state); its caption fades out WITH it
     current.classList.add(dir > 0 ? 'is-exit-left' : 'is-exit-right');
+    captionEls[real].classList.remove('is-active');
 
     setTimeout(function () {
       // PHASE 2 — track pushes; incoming morphs to active
       vi += dir;
       real = nextReal;
-      place(true);                       // push (also moves outgoing fully off-rail)
+      place(true);                       // push
       markActive();                      // incoming interpolates size/pos/opacity/shadow
       setCaptions(real);                 // new caption fades in (with delay)
 
       setTimeout(function () {
-        // silent reposition if we landed on a loop clone (same visuals, real slot)
-        var snapped = false;
-        if (vi >= K + n) { vi -= n; snapped = true; }
-        else if (vi < K) { vi += n; snapped = true; }
-        if (snapped) { place(false); markActive(); }
+        var atNextWrap = dir > 0 && vi >= K + n;
+        var atPrevWrap = dir < 0 && vi < K;
+
         if (dir > 0) {
-          // outgoing slide ended up off-rail left — reset it instantly so
+          // outgoing ended up off-rail (clipped) — reset it instantly so
           // no half-faded ghost slips in at the clip edge
           current.classList.add('no-anim');
           current.classList.remove('is-exit-left', 'is-exit-right');
           void current.offsetWidth;                 // commit the reset
           current.classList.remove('no-anim');
         } else {
-          // outgoing slide is now the right-hand peek — let it morph
-          // smoothly from its exit state back to rest
+          // outgoing is now the right-hand peek — settle the last 56px
           current.classList.remove('is-exit-left', 'is-exit-right');
         }
-        animating = false;
+
+        if (atNextWrap) {
+          // landed on a clone of slide 1 — re-home to the real slot
+          // (identical visuals) with an instant active-style swap
+          vi -= n; place(false); markActiveInstant();
+          animating = false;
+        } else if (atPrevWrap) {
+          // landed on a clone of the last slide — wait for the outgoing
+          // settle-morph to finish (it sits at the peek position), then
+          // re-home: the clone's twin takes its place, pixel-identical
+          setTimeout(function () {
+            vi += n; place(false); markActiveInstant();
+            animating = false;
+          }, CFG.ph2);
+        } else {
+          animating = false;
+        }
       }, CFG.ph2 + 20);
     }, reduced ? 0 : CFG.ph1);
   }
@@ -657,6 +691,19 @@ body.lb-open { overflow: hidden; }
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && lb.classList.contains('is-open')) closeLb();
   });
+})();
+</script>
+<!-- TEMP DIAGNOSTIC — remove after animation/position tuning -->
+<div id="dbgChip" aria-hidden="true" style="position:fixed;left:8px;bottom:8px;z-index:999;background:rgba(0,0,0,.55);color:#fff;font:10px/1.5 ui-monospace,Consolas,monospace;padding:4px 8px;border-radius:6px;pointer-events:none"></div>
+<script>
+(function () {
+  var chip = document.getElementById('dbgChip');
+  if (!chip) return;
+  var rm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var noHover = window.matchMedia('(hover: none)').matches;
+  chip.textContent = window.innerWidth + '×' + window.innerHeight
+    + ' · OS animations: ' + (rm ? 'OFF (reduced)' : 'ON')
+    + ' · touch-mode: ' + (noHover ? 'yes' : 'no');
 })();
 </script>
 </body>
