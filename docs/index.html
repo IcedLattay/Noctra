@@ -320,8 +320,12 @@ body {
 }
 
 .identity { padding-top: 12px; }
-.hero > * { min-width: 0; }   /* keep the column at viewport width — the wide strip must
-                                 scroll INSIDE it, not stretch the whole layout right */
+@media (max-width: 859px) {
+  .hero > * { min-width: 0; }   /* keep the column at viewport width — the wide strip must
+                                   scroll INSIDE it, not stretch the whole layout right.
+                                   MOBILE ONLY: desktop's carousel relies on the column
+                                   blowing out (edge-bleed peeks) — never apply this >=860px. */
+}
 .identity h1 { margin-top: 4px; }
 .tagline { margin-bottom: 24px; }
 .btn { border-radius: 999px; }   /* pill on mobile (per wireframe) */
