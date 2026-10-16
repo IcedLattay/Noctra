@@ -79,12 +79,11 @@ body {
 .appicon {
   width: 96px; height: 96px;
   margin: 0 auto 16px;
-  border-radius: 24px;
-  background: linear-gradient(160deg, #7f63ff, var(--accent-2));
-  display: flex; align-items: center; justify-content: center;
+  border-radius: 24px;            /* the brand SVG rounds itself; this is just a fallback clip */
+  overflow: hidden;
   box-shadow: var(--shadow-card);
 }
-.appicon svg { width: 54px; height: 54px; display: block; }
+.appicon svg { width: 100%; height: 100%; display: block; }
 
 .identity h1 {
   font-size: clamp(30px, 4vw, 40px);
@@ -404,13 +403,58 @@ body.lb-open { overflow: hidden; }
   <!-- ========== identity (shared) ========== -->
   <section class="identity">
     <div class="appicon" aria-hidden="true">
-      <!-- PLACEHOLDER logo: crescent moon + star (night motif) — swap for the real brand icon later -->
-      <svg viewBox="0 0 96 96" fill="#fff"><path d="M84 51.16A36 36 0 1 1 44.84 12 28 28 0 0 0 84 51.16z"/><circle cx="70" cy="20" r="4"/></svg>
+      <!-- real Noctra logo (brand SVG, includes its own tile background) -->
+      <svg width="847" height="847" viewBox="0 0 847 847" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_14_6)">
+<rect width="847" height="847" fill="url(#paint0_linear_14_6)"/>
+<path d="M734.474 398.062C726.366 373.854 701.301 353.552 664.984 338.452C625.74 322.136 572.435 311.48 510.132 308.575C465.842 292.448 432.428 282.034 401.46 281.893C370.545 281.751 342.407 291.826 308.489 315.667C269.902 304.984 225.089 308.585 185.586 324.492C146.04 340.417 111.495 368.813 93.8858 408.026C43.7179 421.042 25.7348 428.424 2.51865 441.437C2.23782 441.594 1.9871 441.784 1.76862 442H0V847H847V442H846.579C843.988 435.422 837.892 429.282 830.295 423.933C822.02 418.106 811.437 412.849 800.046 408.688C781.103 401.77 759.3 397.667 741.587 399.437C739.266 398.983 736.896 398.525 734.474 398.062Z" fill="url(#paint1_radial_14_6)"/>
+<path d="M631.603 459.815C644.712 545.456 544.858 607.348 416.866 595.815C303.223 595.815 200.135 545.814 200.135 467.814C185.188 389.314 276.63 323.056 416.866 323.815C543.775 318.402 631.603 380.814 631.603 459.815Z" fill="url(#paint2_radial_14_6)"/>
+<path d="M489.794 409.545C511.401 417.592 526.78 418.648 556.557 418.045M291 413.546C313.888 416.25 329.081 413.635 357.877 406M444.455 418.045C437.498 420.801 427.324 424.645 421.536 425.046C414.399 425.54 411.598 421.918 401.607 418.045M388.155 475.546C413.503 452.932 428.984 451.882 459.402 475.546M421.536 425.046L420.668 455.546" stroke="#7F7F7F" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M639.971 359.641C628.071 363.727 611.947 331.616 593.564 328.585C568.562 324.463 570.015 327.662 548.899 324.463C486.285 314.974 414.696 289.092 420.31 286.28C426.498 256.832 456.226 239.227 497.14 231.458C541.481 229.267 564.633 234.314 601.298 260.389C639.971 294.546 647.221 316.196 648.252 324.463C648.904 329.69 651.65 355.632 639.971 359.641Z" fill="url(#paint3_radial_14_6)"/>
+<path d="M530.5 299C551.768 313.707 565.547 320.118 593.564 328.585C593.564 328.585 570.871 326.539 561 325.859C546.526 317.072 540.473 310.775 530.5 299Z" fill="#E4B510"/>
+<path d="M657.618 405.71C632.881 410.126 627.145 362.752 638.796 354.049C648.543 346.769 669.845 353.667 680.384 362.752C704.304 383.372 678.591 402.447 657.618 405.71Z" fill="url(#paint4_radial_14_6)"/>
+<path d="M650.192 351.004C646.448 351.723 642.812 353.325 639.5 356C636.742 358.228 634.766 361.428 633.527 365.146C634.344 360.128 636.106 356.058 638.796 354.049C641.743 351.847 645.748 350.944 650.192 351.004Z" fill="#E4B510"/>
+<path d="M800.48 457.542C794.344 477.692 762.738 485.441 729.888 474.85C697.037 464.26 675.381 439.341 681.518 419.191C687.655 399.042 719.26 391.293 752.111 401.883C789.119 407.56 810.462 432.853 800.48 457.542Z" fill="#E0E0E0"/>
+<path d="M776.969 450.412C773.471 461.95 751.922 465.303 728.838 457.902C705.754 450.501 689.877 435.148 693.375 423.61C696.873 412.073 718.421 408.719 741.505 416.12C767.281 420.806 782.956 436.366 776.969 450.412Z" fill="#CCB3B8"/>
+<path d="M50.0107 460.742C56.1474 480.891 87.7529 488.64 120.603 478.05C153.454 467.459 175.11 442.54 168.973 422.39C162.836 402.241 131.231 394.492 98.3803 405.083C61.3715 410.759 40.0288 436.052 50.0107 460.742Z" fill="#E0E0E0"/>
+<path d="M73.5222 453.612C77.0202 465.149 98.5691 468.503 121.653 461.101C144.737 453.7 160.614 438.347 157.116 426.81C153.618 415.272 132.07 411.919 108.986 419.32C83.2099 424.006 67.535 439.565 73.5222 453.612Z" fill="#CCB3B8"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_14_6" x1="423.5" y1="0" x2="423.5" y2="658.198" gradientUnits="userSpaceOnUse">
+<stop stop-color="#522ABE"/>
+<stop offset="1" stop-color="#16056E"/>
+</linearGradient>
+<radialGradient id="paint1_radial_14_6" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(423 383) rotate(90) scale(518 660.865)">
+<stop stop-color="white"/>
+<stop offset="0.543269" stop-color="#FAF9FB"/>
+<stop offset="0.721154" stop-color="#F5F4F8"/>
+<stop offset="1" stop-color="#E6E3ED"/>
+</radialGradient>
+<radialGradient id="paint2_radial_14_6" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(415.54 425.988) rotate(90.9991) scale(119.5 393.782)">
+<stop stop-color="#C6BCBE"/>
+<stop offset="0.471154" stop-color="#D4D1D1"/>
+<stop offset="0.826923" stop-color="#D9D9D9"/>
+</radialGradient>
+<radialGradient id="paint3_radial_14_6" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(534 231) rotate(74.1025) scale(164.283 342.048)">
+<stop stop-color="#FFDE6D"/>
+<stop offset="0.441478" stop-color="#FAD761"/>
+<stop offset="1" stop-color="#DCA61D"/>
+</radialGradient>
+<radialGradient id="paint4_radial_14_6" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(670.5 357.5) rotate(74.9457) scale(75.0766 87.741)">
+<stop stop-color="#FFDE6D"/>
+<stop offset="0.495192" stop-color="#FAD662"/>
+<stop offset="1" stop-color="#DCA61D"/>
+</radialGradient>
+<clipPath id="clip0_14_6">
+<rect width="847" height="847" rx="235" fill="white"/>
+</clipPath>
+</defs>
+</svg>
     </div>
     <h1>Noctra</h1>
     <p class="tagline">Your nightly companion for better pre-sleep habits and sleep.</p>
     <a class="btn" href="https://github.com/IcedLattay/Noctra/releases/download/v1.0/Noctra-1.0.apk">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11m0 0l-4.5-4.5M12 14l4.5-4.5M4 16v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2"/></svg>
+      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M18.75 12.75V16.75C18.75 17.2804 18.5393 17.7891 18.1642 18.1642C17.7891 18.5393 17.2804 18.75 16.75 18.75H2.75C2.21957 18.75 1.71086 18.5393 1.33579 18.1642C0.960714 17.7891 0.75 17.2804 0.75 16.75V12.75M14.75 7.75L9.75 12.75L4.75 7.75M9.75 12.75V0.75" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke="white"/></svg>
       Download for Android
     </a>
     <p class="meta">v1.0 &middot; 124 MB &middot; free</p>
