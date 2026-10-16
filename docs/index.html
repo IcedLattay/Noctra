@@ -223,18 +223,18 @@ body {
     box-shadow: var(--shadow-active);
   }
 
-  /* phase 1 (next): current demotes + slides left + fades to gone — it is
-     leaving the rail, so it ends invisible */
+  /* single-phase exits: the ROW PUSH supplies the movement — the outgoing
+     slide only demotes (shrink + dim) in place, so it never crosses into a
+     neighbour's slot and never needs a settle-back afterwards.
+     next → fades to gone (it leaves the rail);
+     prev → dims to peek state (it becomes the right-hand peek) */
   .slide.is-exit-left {
-    transform: translateX(-56px) scale(var(--rest-scale)) translateY(var(--rest-shift));
+    transform: scale(var(--rest-scale)) translateY(var(--rest-shift));
     opacity: 0;
     transition: transform var(--ph1, 250ms) var(--ease), opacity var(--ph1, 250ms) var(--ease);
   }
-  /* phase 1 (prev): current slides right while demoting to its REST state
-     (peek dimness, not gone) — it becomes the right-hand peek, so it must
-     never blink out or the peek would sit empty during the push */
   .slide.is-exit-right {
-    transform: translateX(56px) scale(var(--rest-scale)) translateY(var(--rest-shift));
+    transform: scale(var(--rest-scale)) translateY(var(--rest-shift));
     opacity: var(--rest-op);
     transition: transform var(--ph1, 250ms) var(--ease), opacity var(--ph1, 250ms) var(--ease);
   }
@@ -468,8 +468,8 @@ body.lb-open { overflow: hidden; }
   'use strict';
 
   var CFG = {
-    ph1: 250,          // exit fade+slide
-    ph2: 340,          // push + morph
+    ph1: 250,          // outgoing slide's fade + demote (starts together with the push)
+    ph2: 340,          // row push + incoming promotion (the main motion)
     capDelay: 160,     // caption fade-in delay after push starts
     capFade: 300
   };
@@ -563,53 +563,50 @@ body.lb-open { overflow: hidden; }
       return;
     }
 
-    // PHASE 1 — current exits (next: slides left + fades to gone; prev:
-    // slides right + demotes to peek state); its caption fades out WITH it
+    // SINGLE-PHASE CHOREOGRAPHY (spec rev after seeing v1 live): the row
+    // push, the outgoing slide's demote/fade and the incoming slide's
+    // promotion ALL start in the same frame — no staged "current moves
+    // first" moment, and the outgoing slide travels with the row instead of
+    // sliding on its own (which used to overlap its neighbour and settle
+    // back afterwards). Its caption fades out on the same tick.
     current.classList.add(dir > 0 ? 'is-exit-left' : 'is-exit-right');
     captionEls[real].classList.remove('is-active');
 
+    vi += dir;
+    real = nextReal;
+    place(true);                       // row push starts now
+    markActive();                      // incoming morphs to active with the push
+    setCaptions(real);                 // new caption fades in (delayed)
+
     setTimeout(function () {
-      // PHASE 2 — track pushes; incoming morphs to active
-      vi += dir;
-      real = nextReal;
-      place(true);                       // push
-      markActive();                      // incoming interpolates size/pos/opacity/shadow
-      setCaptions(real);                 // new caption fades in (with delay)
+      var atNextWrap = dir > 0 && vi >= K + n;
+      var atPrevWrap = dir < 0 && vi < K;
 
-      setTimeout(function () {
-        var atNextWrap = dir > 0 && vi >= K + n;
-        var atPrevWrap = dir < 0 && vi < K;
+      if (dir > 0) {
+        // outgoing ended up off-rail (clipped) — reset it instantly so
+        // no half-faded ghost slips in at the clip edge
+        current.classList.add('no-anim');
+        current.classList.remove('is-exit-left', 'is-exit-right');
+        void current.offsetWidth;                 // commit the reset
+        current.classList.remove('no-anim');
+      } else {
+        // outgoing sits at the right-hand peek, already in rest styling
+        // (exit state == rest state now) — removal is visually a no-op
+        current.classList.remove('is-exit-left', 'is-exit-right');
+      }
 
-        if (dir > 0) {
-          // outgoing ended up off-rail (clipped) — reset it instantly so
-          // no half-faded ghost slips in at the clip edge
-          current.classList.add('no-anim');
-          current.classList.remove('is-exit-left', 'is-exit-right');
-          void current.offsetWidth;                 // commit the reset
-          current.classList.remove('no-anim');
-        } else {
-          // outgoing is now the right-hand peek — settle the last 56px
-          current.classList.remove('is-exit-left', 'is-exit-right');
-        }
+      if (atNextWrap) {
+        // landed on a clone of slide 1 — re-home to the real slot
+        // (identical visuals) with an instant active-style swap
+        vi -= n; place(false); markActiveInstant();
+      } else if (atPrevWrap) {
+        // landed on a clone of the last slide — same invisible re-home;
+        // the outgoing slide is already pixel-identical to its clone twin
+        vi += n; place(false); markActiveInstant();
+      }
 
-        if (atNextWrap) {
-          // landed on a clone of slide 1 — re-home to the real slot
-          // (identical visuals) with an instant active-style swap
-          vi -= n; place(false); markActiveInstant();
-          animating = false;
-        } else if (atPrevWrap) {
-          // landed on a clone of the last slide — wait for the outgoing
-          // settle-morph to finish (it sits at the peek position), then
-          // re-home: the clone's twin takes its place, pixel-identical
-          setTimeout(function () {
-            vi += n; place(false); markActiveInstant();
-            animating = false;
-          }, CFG.ph2);
-        } else {
-          animating = false;
-        }
-      }, CFG.ph2 + 20);
-    }, reduced ? 0 : CFG.ph1);
+      animating = false;
+    }, CFG.ph2 + 20);
   }
 
   prevBtn.addEventListener('click', function () { go(-1); });
