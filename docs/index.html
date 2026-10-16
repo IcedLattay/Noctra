@@ -160,7 +160,7 @@ body {
     gap: clamp(48px, 11vw, 170px);      /* pushes the carousel away from the identity block */
     align-items: center;
     min-height: 100vh;
-    padding: 24px 36px 18px;
+    padding: 12px 36px 16px;
   }
 
   .identity { text-align: center; }
@@ -180,7 +180,7 @@ body {
        inside the rail's content box */
     --act-l: calc(var(--zone-pad-l) + var(--rail-pad) - var(--slot-w) * (var(--active-scale) - 1) / 2);
     --arrow-gap: 40px;                       /* equal breathing room on BOTH sides of the active card */
-    padding: 20px var(--zone-pad-r) 4px var(--zone-pad-l);   /* the "big enough" hover area */
+    padding: 8px var(--zone-pad-r) 4px var(--zone-pad-l);   /* the "big enough" hover area */
   }
 
   /* --- rail: clips horizontally (active left, peeks right) --- */
@@ -200,7 +200,7 @@ body {
 
   .slot {
     flex: 0 0 var(--slot-w);
-    height: calc(var(--slot-h) + 48px);   /* room for rise */
+    height: calc(var(--slot-h) + 28px);   /* room for rise */
     display: flex;
     align-items: flex-end;
     padding-bottom: 8px;
