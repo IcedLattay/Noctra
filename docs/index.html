@@ -44,7 +44,7 @@
   --active-scale: 1.06;
 
   /* mobile strip knobs */
-  --card-w: clamp(150px, 42vw, 300px);
+  --card-w: clamp(140px, 38vw, 280px);
   --strip-gap: 12px;
 
   --shadow-active: 0 6px 9.8px 1px rgba(0, 0, 0, .06);   /* per wireframe */
@@ -310,6 +310,14 @@ body {
    MOBILE FORMAT  (<860px)
    ============================================================ */
 .cmob { display: block; }
+
+/* mobile gets its OWN background: top-to-bottom, white up top → lavender at
+   the bottom (desktop keeps the left-to-right one) */
+@media (max-width: 859px) {
+  body {
+    background: linear-gradient(180deg, var(--bg-a) 30%, var(--bg-b) 58%, var(--bg-c) 100%);
+  }
+}
 
 .identity { padding-top: 12px; }
 .hero > * { min-width: 0; }   /* keep the column at viewport width — the wide strip must
