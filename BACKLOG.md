@@ -244,5 +244,16 @@ Suspect first: `MainActivity` line 73 sets `DebugSettings.setForceRoutineWindow(
 - [ ] Propagate the reframed problem into Noctra_SDD.docx / Noctra_SRS.docx / SDD_revisions.docx so all documents agree
 - [ ] Optional app work to fully close the loop: surface SOL stat (session-start→onset gap) on analytics
 
+## 13. Password reset — PKCE round-trip (BLOCKED: friend has inbox access)
+
+Fixes complete on local branch `fix/reset-password-deeplink` (unpushed): PKCE `?code=` exchange, redacted deep-link shape logging, dead-link → friendly inline error (device-verified via crafted intents), Bearer-token error copy, client switched to `flowType = PKCE` + `SettingsCodeVerifierCache`. Root cause of the original failure: implicit links carried raw tokens; an upstream tap (friend/mail preview/scanner) consumed the single-use recovery token before the user opened it.
+
+Remaining end-to-end test (needs friend):
+- [ ] Step 1: from THIS phone's login screen → Forgot password → confirm verifier persisted (`run-as ... shared_prefs` — key names only) + no `NoctraApiError` in logcat (server accepted `code_challenge`)
+- [ ] Step 2: friend forwards the fresh email link (copy — though taps are now harmless by design)
+- [ ] Step 3: open on the SAME phone that did step 1 → session established → set new password → success screen
+- Rules: request→open must be same device; don't uninstall/clear app data between (verifier lives locally)
+- Also confirm with friend whether they completed a reset on an old link (user's session was revoked server-side; account password state unknown)
+
 
 
