@@ -9,6 +9,7 @@ app/build/
 
 # Local configuration
 local.properties
+keystore.properties
 
 # Gradle
 .gradle/
