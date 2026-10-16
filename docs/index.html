@@ -82,18 +82,19 @@ body {
   border-radius: 24px;
   background: linear-gradient(160deg, #7f63ff, var(--accent-2));
   display: flex; align-items: center; justify-content: center;
-  font-size: 52px;
   box-shadow: var(--shadow-card);
 }
+.appicon svg { width: 54px; height: 54px; display: block; }
 
 .identity h1 {
   font-size: clamp(30px, 4vw, 40px);
+  font-weight: 400;
   letter-spacing: .5px;
   margin-bottom: 10px;
 }
 
 .tagline {
-  color: var(--muted);
+  color: #727272;
   font-size: clamp(14px, 1.6vw, 16px);
   line-height: 1.55;
   max-width: 44ch;
@@ -112,7 +113,7 @@ body {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: #fff;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 400;
   text-decoration: none;
   cursor: pointer;
   transition: filter .2s var(--ease), transform .15s var(--ease);
@@ -302,8 +303,8 @@ body {
     opacity: 1;
     transition-delay: var(--ph-cap-delay, 160ms);
   }
-  .caption h2 { font-size: 21px; margin-bottom: 6px; }
-  .caption p { font-size: 14.5px; color: var(--muted); }
+  .caption h2 { font-size: 17px; font-weight: 400; margin-bottom: 6px; }
+  .caption p { font-size: 14.5px; color: #727272; }
 }
 
 /* ============================================================
@@ -402,11 +403,14 @@ body.lb-open { overflow: hidden; }
 
   <!-- ========== identity (shared) ========== -->
   <section class="identity">
-    <div class="appicon" aria-hidden="true">&#128017;</div> <!-- PLACEHOLDER: Shleepy app icon -->
+    <div class="appicon" aria-hidden="true">
+      <!-- PLACEHOLDER logo: crescent moon + star (night motif) — swap for the real brand icon later -->
+      <svg viewBox="0 0 96 96" fill="#fff"><path d="M84 51.16A36 36 0 1 1 44.84 12 28 28 0 0 0 84 51.16z"/><circle cx="70" cy="20" r="4"/></svg>
+    </div>
     <h1>Noctra</h1>
     <p class="tagline">Your nightly companion for better pre-sleep habits and sleep.</p>
     <a class="btn" href="https://github.com/IcedLattay/Noctra/releases/download/v1.0/Noctra-1.0.apk">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 21h16"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11m0 0l-4.5-4.5M12 14l4.5-4.5M4 16v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2"/></svg>
       Download for Android
     </a>
     <p class="meta">v1.0 &middot; 124 MB &middot; free</p>
