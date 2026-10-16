@@ -59,11 +59,6 @@ class BreathingActivityFragment : Fragment() {
 
     companion object {
         private const val PRE_COUNTDOWN_SECONDS = 15L
-
-        // TEMPORARY FOR TESTING — set to false once all activities are
-        // manually verified, to restore the real 5-minute DB duration.
-        private const val TEST_MODE_SHORT_DURATION = false
-        private const val TEST_DURATION_SECONDS = 15
     }
 
     override fun onCreateView(
@@ -153,8 +148,7 @@ class BreathingActivityFragment : Fragment() {
         binding.breathingPanel.visibility = View.VISIBLE
         startBreathingLoop()
         breathingTimerStarted = true
-        val durationSeconds = if (TEST_MODE_SHORT_DURATION) TEST_DURATION_SECONDS
-        else (routineViewModel.currentActivity?.defaultDurationMinutes ?: 0) * 60
+        val durationSeconds = (routineViewModel.currentActivity?.defaultDurationMinutes ?: 0) * 60
         routineViewModel.startCurrentActivityTimer(durationSeconds)
     }
 

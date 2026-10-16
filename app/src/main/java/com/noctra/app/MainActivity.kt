@@ -91,9 +91,6 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         onBackPressedDispatcher.addCallback(this, routineBackBlocker)
-        //DebugSettings.setForceRoutineWindow(true) // TEMP — remove before final submission
-        //DebugSettings.setSkipCompletionCheck(true) // TEMP — remove before final submission
-
         networkObserver = NetworkObserver(applicationContext)
 
         val navHostFragment = supportFragmentManager
