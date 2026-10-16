@@ -175,6 +175,11 @@ body {
     position: relative;
     --zone-pad-l: clamp(56px, 11vw, 170px);  /* breathing room before the active card; ‹ arrow lives here */
     --zone-pad-r: 64px;
+    /* the active card's VISUAL left edge: the active scale-expansion grows the
+       card evenly in both directions, so it starts (slot-w * (scale-1)/2)px
+       inside the rail's content box */
+    --act-l: calc(var(--zone-pad-l) + var(--rail-pad) - var(--slot-w) * (var(--active-scale) - 1) / 2);
+    --arrow-gap: 26px;                       /* equal breathing room on BOTH sides of the active card */
     padding: 40px var(--zone-pad-r) 8px var(--zone-pad-l);   /* the "big enough" hover area */
   }
 
@@ -265,8 +270,8 @@ body {
   .c-zone:hover .c-arrow,
   .c-zone:focus-within .c-arrow { opacity: 1; }
 
-  .c-prev { left: max(0px, calc(var(--zone-pad-l) - 106px)); }  /* floats in the gap like the wireframe: arrow's right edge ~54px short of the active card */
-  .c-next { left: calc(var(--zone-pad-l) + var(--rail-pad) + var(--slot-w) * var(--active-scale) + 6px); }
+  .c-prev { left: calc(var(--act-l) - var(--arrow-gap) - 52px); }
+  .c-next { left: calc(var(--act-l) + var(--slot-w) * var(--active-scale) + var(--arrow-gap)); }
 
   /* touch devices have no hover — keep arrows visible */
   @media (hover: none) {
