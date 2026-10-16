@@ -53,11 +53,6 @@ class AudioscapeActivityFragment : Fragment() {
     companion object {
         private const val PRE_COUNTDOWN_SECONDS = 15L
 
-        // TEMPORARY FOR TESTING — set to false once all activities are
-        // manually verified, to restore real per-activity durations from the DB.
-        private const val TEST_MODE_SHORT_DURATION = false
-        private const val TEST_DURATION_SECONDS = 15
-
         private const val LABEL_MINDFULNESS = "Mindfulness"
         private const val LABEL_WHITE_PINK_NOISE = "White/Pink Noise"
 
@@ -227,8 +222,7 @@ class AudioscapeActivityFragment : Fragment() {
         if (binding.imgNatureScenery.visibility == View.VISIBLE) {
             startNatureSlideshow()
         }
-        val durationSeconds = if (TEST_MODE_SHORT_DURATION) TEST_DURATION_SECONDS
-        else (routineViewModel.currentActivity?.defaultDurationMinutes ?: 0) * 60
+        val durationSeconds = (routineViewModel.currentActivity?.defaultDurationMinutes ?: 0) * 60
         routineViewModel.startCurrentActivityTimer(durationSeconds)
     }
 

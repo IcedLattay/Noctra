@@ -252,7 +252,7 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
                     _state.value = RoutineHomeState.Offline
                 } else {
                     _state.value = RoutineHomeState.Error(
-                        message = e.message ?: "Something went wrong loading your routine."
+                        message = com.noctra.app.utils.AuthErrorMapper.userMessage(e, "Something went wrong loading your routine.")
                     )
                 }
             }

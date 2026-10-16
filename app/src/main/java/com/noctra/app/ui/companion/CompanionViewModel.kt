@@ -201,7 +201,7 @@ class CompanionViewModel(
             } catch (e: Exception) {
                 Log.e(TAG, "Load failed", e)
                 val isOffline = !networkObserver.checkNow()
-                _uiState.update { it.copy(isLoading = false, isOffline = isOffline, error = if (!isOffline) e.message else null) }
+                _uiState.update { it.copy(isLoading = false, isOffline = isOffline, error = if (!isOffline) com.noctra.app.utils.AuthErrorMapper.userMessage(e, "Couldn't load your data.") else null) }
             }
         }
     }
@@ -337,7 +337,7 @@ class CompanionViewModel(
                     refreshData(userId, null, triggerMorningPopup = false)
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Purchase failed: ${e.message}") }
+                _uiState.update { it.copy(error = com.noctra.app.utils.AuthErrorMapper.userMessage(e, "Purchase failed — please try again.")) }
                 refreshData(userId, null, triggerMorningPopup = false)
             }
         }
@@ -367,7 +367,7 @@ class CompanionViewModel(
                 inventoryRepository.setEquippedOutfit(userId, item.itemId)
                 refreshData(userId, null, triggerMorningPopup = false)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Equip failed: ${e.message}") }
+                _uiState.update { it.copy(error = com.noctra.app.utils.AuthErrorMapper.userMessage(e, "Equip failed — please try again.")) }
                 refreshData(userId, null, triggerMorningPopup = false)
             }
         }
@@ -381,7 +381,7 @@ class CompanionViewModel(
                 noticeHandledThisSession = false // allow for re-testing
                 refreshData(userId, null, triggerMorningPopup = true)
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = "Seeding failed: ${e.message}") }
+                _uiState.update { it.copy(isLoading = false, error = com.noctra.app.utils.AuthErrorMapper.userMessage(e, "Seeding failed — please try again.")) }
             }
         }
     }

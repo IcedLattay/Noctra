@@ -56,6 +56,7 @@ class ForgotPasswordFragment : Fragment(R.layout.fragment_forgot_password) {
                         binding.btnSendReset.text = ""
                         binding.pbSendReset.visibility = View.VISIBLE
                         binding.btnSendReset.isEnabled = false
+                        binding.tvFormError.visibility = View.GONE
                     }
                     is AuthViewModel.AuthState.PasswordResetSent -> {
                         findNavController().navigate(R.id.action_forgotPassword_to_resetConfirmation)
@@ -64,7 +65,8 @@ class ForgotPasswordFragment : Fragment(R.layout.fragment_forgot_password) {
                         binding.btnSendReset.text = "Send Reset Link"
                         binding.pbSendReset.visibility = View.GONE
                         binding.btnSendReset.isEnabled = true
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                        binding.tvFormError.text = state.message
+                        binding.tvFormError.visibility = View.VISIBLE
                         viewModel.resetState()
                     }
                     else -> {}

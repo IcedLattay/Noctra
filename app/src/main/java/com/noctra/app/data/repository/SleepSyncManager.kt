@@ -128,6 +128,7 @@ class SleepSyncManager {
 
         if (!isHealthConnectAvailable()) {
             Log.w(TAG, "Health Connect unavailable")
+            HealthConnectPermissionHelper.logDiagnostics(NoctraApplication.instance)
             return SyncResult.HealthConnectUnavailable
         }
 
@@ -414,15 +415,71 @@ class SleepSyncManager {
         start: Instant,
         end: Instant
     ): Double? {
-        val response = client.readRecords(
-            ReadRecordsRequest(
-                recordType = HeartRateRecord::class,
-                timeRangeFilter = TimeRangeFilter.between(start, end)
+        Log.d(TAG, "HR query window: $start → $end")
+        val response = try {
+            client.readRecords(
+                ReadRecordsRequest(
+                    recordType = HeartRateRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(start, end)
+                )
             )
-        )
+        } catch (e: Exception) {
+            // HR is optional (weights redistribute), so a failed read must not
+            // sink the whole night's sync — but log loudly so it's never silent.
+            Log.e(TAG, "HR read threw ${e::class.simpleName}: ${e.message}")
+            return null
+        }
+
+        dumpHrRecords("in-window", response.records)
+
         val samples = response.records.flatMap { it.samples }
-        Log.d(TAG, "HR read [$start → $end]: ${response.records.size} records, ${samples.size} samples")
-        if (samples.isEmpty()) return null
-        return samples.map { it.beatsPerMinute.toDouble() }.average()
+        if (samples.isEmpty()) {
+            // Distinguish "device has no HR data at all" from "HR exists but
+            // sits OUTSIDE our sleep window" (clock skew, timezone shifts,
+            // companion writing HR as workout-only blocks). Sweep ±12h.
+            val sweepStart = start.minus(Duration.ofHours(12))
+            val sweepEnd = end.plus(Duration.ofHours(12))
+            val sweep = try {
+                client.readRecords(
+                    ReadRecordsRequest(
+                        recordType = HeartRateRecord::class,
+                        timeRangeFilter = TimeRangeFilter.between(sweepStart, sweepEnd)
+                    )
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "HR sweep threw ${e::class.simpleName}: ${e.message}")
+                return null
+            }
+            dumpHrRecords("sweep ±12h [$sweepStart → $sweepEnd]", sweep.records)
+            return null
+        }
+
+        val values = samples.map { it.beatsPerMinute.toDouble() }
+        Log.d(
+            TAG,
+            "HR avg = ${"%.1f".format(values.average())} bpm " +
+                "(${values.size} samples, min=${values.minOrNull()}, max=${values.maxOrNull()})"
+        )
+        return values.average()
+    }
+
+    /**
+     * Diagnostic dump of what Health Connect actually handed back: per record
+     * its interval, sample count, first bpm values, and the package that wrote
+     * it — so "empty read" splits into "no data on device" vs "wrong window"
+     * vs "written by <companion app>" at a glance.
+     */
+    private fun dumpHrRecords(label: String, records: List<HeartRateRecord>) {
+        Log.d(TAG, "HR records $label: ${records.size}")
+        records.take(10).forEachIndexed { i, r ->
+            val bpms = r.samples.take(8).joinToString(",") { it.beatsPerMinute.toString() }
+            val origin = r.metadata.dataOrigin.packageName
+            Log.d(
+                TAG,
+                "  #$i [${r.startTime} → ${r.endTime}] " +
+                    "${r.samples.size} samples from $origin, bpm=[$bpms]"
+            )
+        }
+        if (records.size > 10) Log.d(TAG, "  …and ${records.size - 10} more records")
     }
 }

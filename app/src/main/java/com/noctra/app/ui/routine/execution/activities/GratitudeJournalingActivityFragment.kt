@@ -58,11 +58,6 @@ class GratitudeJournalingActivityFragment : Fragment() {
 
     companion object {
         private const val PRE_COUNTDOWN_SECONDS = 15L
-
-        // TEMPORARY FOR TESTING — set to false once all activities are
-        // manually verified, to restore the real 5-minute DB duration.
-        private const val TEST_MODE_SHORT_DURATION = false
-        private const val TEST_DURATION_SECONDS = 15
     }
 
     override fun onCreateView(
@@ -112,8 +107,7 @@ class GratitudeJournalingActivityFragment : Fragment() {
         binding.etJournalEntry.requestFocus()
         val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.showSoftInput(binding.etJournalEntry, InputMethodManager.SHOW_IMPLICIT)
-        val durationSeconds = if (TEST_MODE_SHORT_DURATION) TEST_DURATION_SECONDS
-        else (routineViewModel.currentActivity?.defaultDurationMinutes ?: 0) * 60
+        val durationSeconds = (routineViewModel.currentActivity?.defaultDurationMinutes ?: 0) * 60
         journalTimerStarted = true
         routineViewModel.startCurrentActivityTimer(durationSeconds)
     }

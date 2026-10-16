@@ -13,6 +13,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.noctra.app.R
 import com.noctra.app.databinding.FragmentResetPasswordBinding
+import com.noctra.app.utils.PendingDeepLinkError
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -29,6 +30,14 @@ class ResetPasswordFragment : Fragment(R.layout.fragment_reset_password) {
         setupInputs()
         setupListeners()
         observeViewModel()
+
+        // A recovery link can arrive dead (consumed by an upstream
+        // click/scanner, expired, or stripped in transit) — the deep-link
+        // handler stashes a friendly explanation for us to surface here,
+        // before the user types a password into a session that doesn't exist.
+        PendingDeepLinkError.consume()?.let { message ->
+            viewModel.setError(message)
+        }
     }
 
     private fun setupInputs() {
@@ -106,6 +115,7 @@ class ResetPasswordFragment : Fragment(R.layout.fragment_reset_password) {
                 binding.btnResetPassword.isEnabled = false
                 binding.btnResetPassword.text = ""
                 binding.pbResetPassword.visibility = View.VISIBLE
+                binding.tvFormError.visibility = View.GONE
             }
             is AuthViewModel.AuthState.PasswordUpdated -> {
                 findNavController().navigate(R.id.action_resetPassword_to_success)
@@ -114,7 +124,8 @@ class ResetPasswordFragment : Fragment(R.layout.fragment_reset_password) {
                 binding.btnResetPassword.isEnabled = true
                 binding.btnResetPassword.text = "Reset Password"
                 binding.pbResetPassword.visibility = View.GONE
-                Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                binding.tvFormError.text = state.message
+                binding.tvFormError.visibility = View.VISIBLE
                 viewModel.resetState()
             }
             else -> {

@@ -3,6 +3,8 @@ package com.noctra.app.utils
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.util.Log
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.HeartRateRecord
@@ -33,6 +35,39 @@ object HealthConnectPermissionHelper {
 
     fun getSdkStatus(context: Context): Int =
         HealthConnectClient.getSdkStatus(context)
+
+    /**
+     * One-shot availability diagnosis for bug reports. Logs the raw SDK
+     * status + OS info so a single logcat screenshot answers what state
+     * the device is in, instead of reverse-engineering from UI copy:
+     *
+     *   status=0 SDK_AVAILABLE              → HC present and blessed
+     *   status=1 SDK_UNAVAILABLE            → OS can't run HC at all
+     *   status=2 UPDATE_REQUIRED            → module present but older
+     *                                          than this SDK requires
+     *                                          (reads may still work —
+     *                                          the handshake is advisory)
+     *   status=3 UPGRADE_REQUIRED           → Android 14+ with a stale
+     *                                          Mainline module (fix =
+     *                                          Google Play system update,
+     *                                          NOT the Play Store app page)
+     */
+    fun logDiagnostics(context: Context) {
+        val status = getSdkStatus(context)
+        val label = when (status) {
+            HealthConnectClient.SDK_AVAILABLE -> "SDK_AVAILABLE"
+            HealthConnectClient.SDK_UNAVAILABLE -> "SDK_UNAVAILABLE (cannot run HC)"
+            HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED -> "UPDATE_REQUIRED (module present, too old for this SDK)"
+            // = SDK_UNAVAILABLE_PROVIDER_UPGRADE_REQUIRED in newer androidx SDKs
+            // (absent from 1.1.0): Android 14+ with a stale Mainline module
+            3 -> "UPGRADE_REQUIRED (14+ Mainline module stale — Google Play system update)"
+            else -> "UNKNOWN status"
+        }
+        Log.d(
+            "HealthConnectDiag",
+            "status=$status $label | SDK=${Build.VERSION.SDK_INT} (Android ${Build.VERSION.RELEASE}) | ${Build.MANUFACTURER} ${Build.MODEL}"
+        )
+    }
 
     /**
      * True when Health Connect is present and usable. On Android < 14 this

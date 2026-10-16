@@ -89,15 +89,6 @@ class GenericTimerActivityFragment : Fragment() {
         private const val PRE_COUNTDOWN_SECONDS = 15L
         private const val DEFAULT_FRAME_MILLIS = 1000L
 
-        // TEMPORARY FOR TESTING — true shortens every phase (instruction 2s,
-        // prep 1s, execution 3s, rest 2s) for quick flow tests. Keep FALSE
-        // for real timings.
-        private const val TEST_MODE_SHORT_DURATIONS = false
-        private const val TEST_INSTRUCTION_SECONDS = 2
-        private const val TEST_PREP_SECONDS = 1
-        private const val TEST_ACTION_SECONDS = 3
-        private const val TEST_REST_SECONDS = 2
-
         // Drawable names without the .png extension.
         // StepperStepConfig(id, name, instruction, images,
         //                   instructionSecs, prepSecs, executionSecs, restSecs,
@@ -174,17 +165,16 @@ class GenericTimerActivityFragment : Fragment() {
     }
 
     private fun effectiveInstructionSeconds(step: StepperStepConfig): Int =
-        if (TEST_MODE_SHORT_DURATIONS) TEST_INSTRUCTION_SECONDS else step.instructionDurationSeconds
+        step.instructionDurationSeconds
 
     private fun effectivePrepSeconds(step: StepperStepConfig): Int =
-        if (step.prepDurationSeconds == 0) 0
-        else if (TEST_MODE_SHORT_DURATIONS) TEST_PREP_SECONDS else step.prepDurationSeconds
+        if (step.prepDurationSeconds == 0) 0 else step.prepDurationSeconds
 
     private fun effectiveActionSeconds(step: StepperStepConfig): Int =
-        if (TEST_MODE_SHORT_DURATIONS) TEST_ACTION_SECONDS else step.actionDurationSeconds
+        step.actionDurationSeconds
 
     private fun effectiveRestSeconds(step: StepperStepConfig): Int =
-        if (TEST_MODE_SHORT_DURATIONS) TEST_REST_SECONDS else step.restDurationSeconds
+        step.restDurationSeconds
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?

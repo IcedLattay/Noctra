@@ -32,6 +32,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.noctra.app.ui.routine.RoutineViewModel
 import com.noctra.app.ui.routine.home.ResumeRoutineDialogFragment
 import com.noctra.app.utils.DebugSettings
+import com.noctra.app.utils.PendingDeepLinkError
 import com.noctra.app.utils.UserSession
 import com.noctra.app.utils.NetworkObserver
 import com.noctra.app.workers.WindDownNotificationScheduler
@@ -90,9 +91,6 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         onBackPressedDispatcher.addCallback(this, routineBackBlocker)
-        //DebugSettings.setForceRoutineWindow(true) // TEMP — remove before final submission
-        //DebugSettings.setSkipCompletionCheck(true) // TEMP — remove before final submission
-
         networkObserver = NetworkObserver(applicationContext)
 
         val navHostFragment = supportFragmentManager
@@ -258,11 +256,83 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     }
 
     private fun handleDeeplinks(intent: android.content.Intent?) {
-        intent?.let {
+        val url = intent?.dataString ?: return
+
+        // Log only the SHAPE of the link — param names + value lengths.
+        // Codes/tokens are credentials and must never reach logcat verbatim;
+        // error descriptions are diagnostics (no secrets) and are safe to show.
+        val uri = android.net.Uri.parse(url)
+        val queryShape = uri.queryParameterNames.joinToString { name ->
+            "$name:len=${uri.getQueryParameter(name)?.length ?: 0}"
+        }.ifEmpty { "none" }
+        val fragment = uri.fragment
+        val fragShape = when {
+            fragment == null -> "none"
+            else -> {
+                // The fragment is itself a param list (a=b&c=d), so parse it
+                // the same way to see WHICH fields arrived without their values.
+                val fragParams = android.net.Uri.parse("http://x/?" + fragment)
+                fragParams.queryParameterNames.joinToString { name ->
+                    val value = fragParams.getQueryParameter(name)
+                    when {
+                        name.startsWith("error") -> "$name=$value"
+                        value == null -> name
+                        else -> "$name:len=${value.length}"
+                    }
+                }.ifEmpty { "(no params, rawlen=${fragment.length})" }
+            }
+        }
+        android.util.Log.d("DeepLink", "${uri.scheme}://${uri.host} query=[$queryShape] fragment=[$fragShape]")
+
+        // PKCE flow: supabase-kt 2.4.0's handleDeeplinks only understands
+        // implicit #access_token links and throws "No access token found"
+        // on ?code= links (observed in production — left no session, so the
+        // password update went out unauthenticated and401'd).
+        val code = uri.getQueryParameter("code")
+        if (!code.isNullOrBlank()) {
+            // A live link supersedes any earlier dead-link notice.
+            PendingDeepLinkError.message = null
+            lifecycleScope.launch {
+                try {
+                    SupabaseClient.client.auth.exchangeCodeForSession(code)
+                    android.util.Log.d("DeepLink", "PKCE session established")
+                } catch (e: Exception) {
+                    android.util.Log.e("DeepLink", "PKCE exchange failed", e)
+                    PendingDeepLinkError.message =
+                        "This reset link has expired or was already used. Request a new one from the login screen."
+                }
+            }
+            return
+        }
+
+        // Implicit flow: tokens arrive in the fragment (#access_token=...).
+        // A fragment without an access token means the link was dead before
+        // it reached us — consumed by an upstream click/scanner, expired, or
+        // stripped in transit. Log the server's reason and hand the screen a
+        // friendly explanation instead of failing silently at password time.
+        val fragParams = fragment?.let { android.net.Uri.parse("http://x/?" + it) }
+        val accessToken = fragParams?.getQueryParameter("access_token")
+        if (!accessToken.isNullOrBlank()) {
+            // A live link supersedes any earlier dead-link notice.
+            PendingDeepLinkError.message = null
             try {
-                SupabaseClient.client.handleDeeplinks(it)
+                SupabaseClient.client.handleDeeplinks(intent)
             } catch (e: Exception) {
                 android.util.Log.e("MainActivity", "Deep link handling failed", e)
+            }
+            return
+        }
+
+        val reason = fragParams?.getQueryParameter("error_description")
+            ?: fragParams?.getQueryParameter("error")
+        android.util.Log.w("DeepLink", "link arrived without usable token; reason=$reason")
+        // Idempotent: the intent can be delivered twice on launch (onCreate +
+        // onNewIntent) — keep the first notice, a live link clears it later.
+        if (PendingDeepLinkError.message == null) {
+            PendingDeepLinkError.message = if (reason != null) {
+                "This reset link has expired or was already used. Request a new one from the login screen."
+            } else {
+                "This reset link is broken or incomplete. Request a new one from the login screen."
             }
         }
     }

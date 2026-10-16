@@ -45,6 +45,7 @@ class HealthSettingsFragment : Fragment() {
     private fun refreshStatus() {
         val context = requireContext()
         val view = view ?: return
+        HealthConnectPermissionHelper.logDiagnostics(context)
 
         viewLifecycleOwner.lifecycleScope.launch {
             if (!HealthConnectPermissionHelper.isAvailable(context)) {
