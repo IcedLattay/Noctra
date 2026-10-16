@@ -227,6 +227,8 @@ body {
     transform: scale(var(--active-scale)) translateY(var(--active-shift));
     opacity: 1;
     box-shadow: var(--shadow-active);
+    z-index: 2;   /* paint above the peeks so the shadow fades out over them
+                     instead of being cut in a straight line at their edge */
   }
 
   /* single-phase exits: the ROW PUSH supplies the movement — the outgoing
