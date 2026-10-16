@@ -4,41 +4,660 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Noctra — Sleep better, nightly</title>
+<meta name="description" content="Noctra — your nightly companion for better pre-sleep habits and sleep. Free Android app.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#127769;</text></svg>">
 <style>
-  :root { --bg:#0b0b14; --card:#141425; --border:#23233a; --accent:#6f5bff; --text:#eceaf6; --muted:#9a97b3; }
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body {
-    min-height:100vh; display:flex; align-items:center; justify-content:center;
-    background:var(--bg); color:var(--text); padding:24px;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+/* ============================================================
+   NOCTRA LANDING — SCAFFOLD DRAFT
+   Two formats, one page:
+     ≥860px  → desktop: two-column hero + choreographed carousel
+     <860px  → mobile:  stacked hero + free-scroll strip + lightbox
+   Everything tunable lives in :root knobs.
+   ============================================================ */
+:root {
+  --bg-a: #fbfaff;
+  --bg-b: #efeafc;
+  --bg-c: #e7e1f8;
+  --ink: #16131f;
+  --muted: #6b6880;
+  --accent: #6f5bff;
+  --accent-2: #522abe;
+  --card: #ffffff;
+  --ph-bg: #f4f2fb;
+  --ph-border: #b9b2df;
+
+  /* button width — drives the mobile strip gutter alignment */
+  --btn-w: min(360px, 84vw);
+
+  /* desktop carousel knobs */
+  --slot-w: 230px;
+  --gap: 18px;
+  --rail-pad: 26px;
+  --slot-h: calc(var(--slot-w) * 19.5 / 9);   /* phone aspect */
+  --rest-scale: .86;
+  --rest-op: .55;
+  --rest-shift: 8px;        /* resting slides sit lower */
+  --active-shift: -16px;    /* active slide rises */
+  --active-scale: 1.08;
+
+  /* mobile strip knobs */
+  --card-w: clamp(150px, 42vw, 300px);
+  --strip-gap: 12px;
+
+  --shadow-active: 0 18px 34px -14px rgba(40, 25, 90, .28);
+  --shadow-card: 0 10px 22px -12px rgba(40, 25, 90, .22);
+
+  --ease: cubic-bezier(.4, 0, .2, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  min-height: 100vh;
+  background: linear-gradient(115deg, var(--bg-a) 0%, var(--bg-b) 55%, var(--bg-c) 100%);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+.hero {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 56px 28px 64px;
+  display: grid;
+  gap: 48px;
+}
+
+/* ---------- identity block (shared, repositioned per format) ---------- */
+.identity { text-align: center; }
+
+.appicon {
+  width: 96px; height: 96px;
+  margin: 0 auto 16px;
+  border-radius: 24px;
+  background: linear-gradient(160deg, #7f63ff, var(--accent-2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 52px;
+  box-shadow: var(--shadow-card);
+}
+
+.identity h1 {
+  font-size: clamp(30px, 4vw, 40px);
+  letter-spacing: .5px;
+  margin-bottom: 10px;
+}
+
+.tagline {
+  color: var(--muted);
+  font-size: clamp(14px, 1.6vw, 16px);
+  line-height: 1.55;
+  max-width: 44ch;
+  margin: 0 auto 26px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: var(--btn-w);
+  justify-content: center;
+  padding: 15px 24px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter .2s var(--ease), transform .15s var(--ease);
+}
+.btn:hover { filter: brightness(1.1); }
+.btn:active { transform: scale(.98); }
+.btn svg { width: 18px; height: 18px; }
+
+.meta {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ---------- shared placeholder art ---------- */
+.ph {
+  width: 100%; height: 100%;
+  background: var(--ph-bg);
+  border: 2px dashed var(--ph-border);
+  border-radius: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  padding: 14px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.ph .glyph { font-size: 30px; }
+.ph small { display: block; font-size: 11px; opacity: .75; }
+
+/* ============================================================
+   DESKTOP FORMAT  (≥860px)
+   ============================================================ */
+.cdesk { display: none; }
+
+.captions { display: none; }
+
+@media (min-width: 860px) {
+  .hero {
+    grid-template-columns: minmax(340px, 420px) 1fr;
+    align-items: center;
+    min-height: 100vh;
+    padding: 40px 36px;
   }
-  .card {
-    max-width:420px; width:100%; background:var(--card);
-    border:1px solid var(--border); border-radius:20px;
-    padding:44px 32px; text-align:center;
+
+  .identity { text-align: left; }
+  .identity .appicon { margin: 0 0 22px; }
+  .tagline { margin: 0 0 28px; }
+
+  .cmob { display: none !important; }
+  .cdesk { display: block; }
+
+  /* --- hover zone: arrows reveal when cursor is anywhere near --- */
+  .c-zone {
+    position: relative;
+    --zone-pad-l: 56px;
+    --zone-pad-r: 64px;
+    padding: 40px var(--zone-pad-r) 8px var(--zone-pad-l);   /* the "big enough" hover area */
   }
-  .moon { font-size:46px; }
-  h1 { font-size:34px; margin:14px 0 8px; letter-spacing:.5px; }
-  .tag { color:var(--muted); font-size:15px; line-height:1.55; margin-bottom:30px; }
-  .btn {
-    display:block; text-decoration:none; color:#fff; font-weight:600; font-size:16px;
-    background:linear-gradient(135deg,var(--accent),#522abe);
-    padding:15px 20px; border-radius:12px;
+
+  /* --- rail: clips horizontally (active left, peeks right) --- */
+  .rail {
+    position: relative;
+    overflow: hidden;             /* padding inside rail keeps raised card + shadow unclipped */
+    padding: 28px var(--rail-pad) 34px;
+    border-radius: 22px;
   }
-  .btn:hover { filter:brightness(1.12); }
-  .meta { color:var(--muted); font-size:13px; margin-top:14px; }
-  footer { margin-top:28px; font-size:13px; color:var(--muted); }
-  footer a { color:#9d8fff; }
+
+  .track {
+    display: flex;
+    gap: var(--gap);
+    will-change: transform;
+    /* JS drives translateX; phases set transition per-animation */
+  }
+
+  .slot {
+    flex: 0 0 var(--slot-w);
+    height: calc(var(--slot-h) + 48px);   /* room for rise */
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 8px;
+  }
+
+  .slide {
+    position: relative;
+    width: var(--slot-w);
+    aspect-ratio: 9 / 19.5;
+    background: var(--card);
+    border-radius: 20px;
+    overflow: hidden;
+    transform: scale(var(--rest-scale)) translateY(var(--rest-shift));
+    opacity: var(--rest-op);
+    box-shadow: none;
+    transition:
+      transform var(--ph2, 340ms) var(--ease),
+      opacity var(--ph2, 340ms) var(--ease),
+      box-shadow var(--ph2, 340ms) var(--ease);
+    cursor: default;              /* spec: no lightbox on desktop */
+  }
+
+  .slide.is-active {
+    transform: scale(var(--active-scale)) translateY(var(--active-shift));
+    opacity: 1;
+    box-shadow: var(--shadow-active);
+  }
+
+  /* phase 1: next = current exits LEFT while fading (spec), prev mirrors right */
+  .slide.is-exit-left {
+    transform: translateX(-56px) scale(var(--active-scale)) translateY(var(--active-shift));
+    opacity: 0;
+    transition: transform var(--ph1, 250ms) var(--ease), opacity var(--ph1, 250ms) var(--ease);
+  }
+  .slide.is-exit-right {
+    transform: translateX(56px) scale(var(--active-scale)) translateY(var(--active-shift));
+    opacity: 0;
+    transition: transform var(--ph1, 250ms) var(--ease), opacity var(--ph1, 250ms) var(--ease);
+  }
+  /* cleanup helper: reset an off-rail slide without animating it back in */
+  .slide.no-anim { transition: none; }
+
+  /* --- arrows: fade in/out on zone hover, no movement (spec) --- */
+  .c-arrow {
+    position: absolute;
+    top: 46%;
+    translate: 0 -50%;
+    width: 52px; height: 52px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .85);
+    box-shadow: 0 6px 16px -6px rgba(40, 25, 90, .30);
+    color: var(--ink);
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .28s var(--ease), background .2s;
+    z-index: 3;
+  }
+  .c-arrow:hover { background: #fff; }
+  .c-arrow:focus-visible { opacity: 1; outline: 2px solid var(--accent); }
+  .c-zone:hover .c-arrow,
+  .c-zone:focus-within .c-arrow { opacity: 1; }
+
+  .c-prev { left: 0; }
+  .c-next { left: calc(var(--zone-pad-l) + var(--rail-pad) + var(--slot-w) * var(--active-scale) + 6px); }
+
+  /* touch devices have no hover — keep arrows visible */
+  @media (hover: none) {
+    .c-arrow { opacity: 1; }
+  }
+
+  /* --- captions: centered under the active slot, fade ONLY (spec) --- */
+  .captions {
+    display: block;
+    position: relative;
+    height: 84px;
+    margin-top: 6px;
+  }
+  .caption {
+    position: absolute;
+    top: 0;
+    left: calc(var(--rail-pad) + var(--slot-w) / 2);
+    width: 340px;
+    translate: -50% 0;             /* static — only opacity animates (no movement) */
+    text-align: center;
+    opacity: 0;
+    transition: opacity var(--ph-cap, 300ms) var(--ease);
+    pointer-events: none;
+  }
+  .caption.is-active {
+    opacity: 1;
+    transition-delay: var(--ph-cap-delay, 160ms);
+  }
+  .caption h2 { font-size: 21px; margin-bottom: 6px; }
+  .caption p { font-size: 14.5px; color: var(--muted); }
+}
+
+/* ============================================================
+   MOBILE FORMAT  (<860px)
+   ============================================================ */
+.cmob { display: block; }
+
+.identity { padding-top: 12px; }
+.identity h1 { margin-top: 4px; }
+.tagline { margin-bottom: 24px; }
+.btn { border-radius: 999px; }   /* pill on mobile (per wireframe) */
+
+.strip {
+  display: flex;
+  gap: var(--strip-gap);
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin-inline: -28px;          /* full-bleed: cancel hero side padding for gutter math */
+  padding: 26px 0 34px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+.strip::-webkit-scrollbar { display: none; }
+
+.m-card {
+  flex: 0 0 var(--card-w);
+  aspect-ratio: 9 / 19.5;
+  background: var(--card);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);   /* spec: ALL mobile cards shadowed */
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* gutter alignment: first card left edge == button left edge,
+   last card right edge == button right edge (one shared knob;
+   100% = full-bleed strip width, same basis the button is centered on) */
+.m-card:first-child { margin-left: calc((100% - var(--btn-w)) / 2); }
+.m-card:last-child  { margin-right: calc((100% - var(--btn-w)) / 2); }
+
+/* ---------- lightbox (mobile tap-to-enlarge) ---------- */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 9, 24, .88);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 24px;
+}
+.lightbox.is-open { display: flex; }
+.lightbox-inner {
+  width: min(92vw, 380px);
+  aspect-ratio: 9 / 19.5;
+  background: var(--ph-bg);
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+}
+.lightbox-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  width: 40px; height: 40px;
+  border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, .9);
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 2;
+}
+
+/* body scroll lock while lightbox open */
+body.lb-open { overflow: hidden; }
+
+/* ============================================================
+   MOTION + NO-JS SAFETY
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .slide, .caption, .c-arrow, .btn { transition-duration: .01ms !important; transition-delay: 0ms !important; }
+}
+
 </style>
+<noscript>
+  <!-- without JS the desktop carousel can't move — fall back to the
+       native-scroll strip on any screen size -->
+  <style>
+    .cdesk { display: none !important; }
+    .cmob { display: block !important; }
+  </style>
+</noscript>
 </head>
 <body>
-  <main class="card">
-    <div class="moon">&#127769;</div>
+<main class="hero">
+
+  <!-- ========== identity (shared) ========== -->
+  <section class="identity">
+    <div class="appicon" aria-hidden="true">&#128017;</div> <!-- PLACEHOLDER: Shleepy app icon -->
     <h1>Noctra</h1>
-    <p class="tag">Your nightly companion for better sleep — structured routines, honest audits, and a little Shleepy to keep you on track.</p>
-    <a class="btn" href="https://github.com/IcedLattay/Noctra/releases/download/v1.0/Noctra-1.0.apk">&#11015; Download for Android</a>
-    <p class="meta">v1.0 &middot; 124 MB &middot; Free</p>
-    <footer>Source on <a href="https://github.com/IcedLattay/Noctra">GitHub</a></footer>
-  </main>
+    <p class="tagline">Your nightly companion for better pre-sleep habits and sleep.</p>
+    <a class="btn" href="https://github.com/IcedLattay/Noctra/releases/download/v1.0/Noctra-1.0.apk">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 21h16"/></svg>
+      Download for Android
+    </a>
+    <p class="meta">v1.0 &middot; 124 MB &middot; free</p>
+  </section>
+
+  <!-- ========== DESKTOP: choreographed carousel ========== -->
+  <section class="cdesk" aria-roledescription="carousel" aria-label="Noctra features">
+    <div class="c-zone">
+      <div class="rail" id="rail">
+        <div class="track" id="track">
+          <!-- slots duplicated by JS for the infinite loop (clones of ends) -->
+          <div class="slot"><div class="slide"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 1<small>placeholder · desktop asset</small></div></div></div>
+          <div class="slot"><div class="slide"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 2<small>placeholder · desktop asset</small></div></div></div>
+          <div class="slot"><div class="slide"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 3<small>placeholder · desktop asset</small></div></div></div>
+          <div class="slot"><div class="slide"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 4<small>placeholder · desktop asset</small></div></div></div>
+          <div class="slot"><div class="slide"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 5<small>placeholder · desktop asset</small></div></div></div>
+          <div class="slot"><div class="slide"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 6<small>placeholder · desktop asset</small></div></div></div>
+          <div class="slot"><div class="slide"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 7<small>placeholder · desktop asset</small></div></div></div>
+        </div>
+      </div>
+      <button class="c-arrow c-prev" id="cPrev" aria-label="Previous feature">&#8249;</button>
+      <button class="c-arrow c-next" id="cNext" aria-label="Next feature">&#8250;</button>
+
+      <!-- captions: one per slide, only current visible, fade only -->
+      <div class="captions" id="captions">
+        <div class="caption is-active"><h2>Build your nightly routine</h2><p>Pick your activities, set your bedtime.</p></div>
+        <div class="caption"><h2>Perform your nightly routine</h2><p>Follow along with guided activities every night.</p></div>
+        <div class="caption"><h2>Help your Shleepy gain energy</h2><p>Your companion charges as you keep your routine.</p></div>
+        <div class="caption"><h2>Customize your Shleepy</h2><p>Unlock outfits and make them yours.</p></div>
+        <div class="caption"><h2>Maintain your streak</h2><p>Stay accountable, night after night.</p></div>
+        <div class="caption"><h2>Compete with friends</h2><p>Climb the leaderboard together.</p></div>
+        <div class="caption"><h2>View your performance</h2><p>Nightly scores, trends, and insights.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== MOBILE: free-scroll strip ========== -->
+  <section class="cmob" aria-label="Noctra features">
+    <div class="strip" id="strip">
+      <!-- captions are BAKED INTO mobile images; placeholder labels stand in -->
+      <figure class="m-card" data-label="Screenshot 1 — Build your nightly routine"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 1<small>caption baked into asset</small></div></figure>
+      <figure class="m-card" data-label="Screenshot 2 — Perform your nightly routine"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 2<small>caption baked into asset</small></div></figure>
+      <figure class="m-card" data-label="Screenshot 3 — Help your Shleepy gain energy"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 3<small>caption baked into asset</small></div></figure>
+      <figure class="m-card" data-label="Screenshot 4 — Customize your Shleepy"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 4<small>caption baked into asset</small></div></figure>
+      <figure class="m-card" data-label="Screenshot 5 — Maintain your streak"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 5<small>caption baked into asset</small></div></figure>
+      <figure class="m-card" data-label="Screenshot 6 — Compete with friends"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 6<small>caption baked into asset</small></div></figure>
+      <figure class="m-card" data-label="Screenshot 7 — View your performance"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 7<small>caption baked into asset</small></div></figure>
+    </div>
+  </section>
+
+</main>
+
+<!-- lightbox (mobile tap-to-enlarge) -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Screenshot preview">
+  <button class="lightbox-close" id="lbClose" aria-label="Close">&#10005;</button>
+  <div class="lightbox-inner"><div class="ph" id="lbPh"><span class="glyph">&#128247;</span><span id="lbLabel">Screenshot</span></div></div>
+</div>
+
+<script>
+/* ============================================================
+   DESKTOP CAROUSEL — two-phase choreography (spec):
+     phase 1: current exits (slides + fades), caption fades out
+     phase 2: track pushes, incoming morphs to active, caption fades in
+   Infinite loop via end clones. Timing knobs below = tune by eye.
+   ============================================================ */
+(function () {
+  'use strict';
+
+  var CFG = {
+    ph1: 250,          // exit fade+slide
+    ph2: 340,          // push + morph
+    capDelay: 160,     // caption fade-in delay after push starts
+    capFade: 300
+  };
+  document.documentElement.style.setProperty('--ph1', CFG.ph1 + 'ms');
+  document.documentElement.style.setProperty('--ph2', CFG.ph2 + 'ms');
+  document.documentElement.style.setProperty('--ph-cap', CFG.capFade + 'ms');
+  document.documentElement.style.setProperty('--ph-cap-delay', CFG.capDelay + 'ms');
+
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var rail = document.getElementById('rail');
+  var track = document.getElementById('track');
+  var captionEls = document.querySelectorAll('#captions .caption');
+  var prevBtn = document.getElementById('cPrev');
+  var nextBtn = document.getElementById('cNext');
+  if (!track) return;
+
+  var n = track.children.length;          // real slide count (7)
+  var K = 3;                              // clones per end — keeps peeks stocked at the loop boundary
+  var real = 0;                           // real index 0..n-1
+  var vi = K;                             // visual index of real slide 0 (real slots live at K..K+n-1)
+  var animating = false;
+  var step = 0;
+
+  // infinite-loop clones: [cloneLast×K, real…, cloneFirst×K]
+  var originals = Array.prototype.slice.call(track.children);
+  for (var i = 1; i <= K; i++) {
+    track.insertBefore(originals[n - i].cloneNode(true), track.firstChild);
+    track.appendChild(originals[i - 1].cloneNode(true));
+  }
+
+  function slides() { return track.querySelectorAll('.slide'); }
+  function slots() { return track.children; }
+
+  function measure() {
+    var a = slots()[1].getBoundingClientRect();
+    var b = slots()[2].getBoundingClientRect();
+    step = b.left - a.left;               // slot width + gap
+  }
+
+  function place(animate) {
+    // track's static position = rail's content box, so translate is
+    // purely -vi * step (active slot lands exactly on rail's content left)
+    var x = -vi * step;
+    track.style.transition = animate
+      ? 'transform ' + CFG.ph2 + 'ms var(--ease)'
+      : 'none';
+    track.style.transform = 'translateX(' + x + 'px)';
+  }
+
+  function setCaptions(realIdx) {
+    captionEls.forEach(function (c, i) {
+      c.classList.toggle('is-active', i === realIdx);
+    });
+  }
+
+  function markActive() {
+    slides().forEach(function (s, i) {
+      s.classList.toggle('is-active', i === vi);
+    });
+  }
+
+  function go(dir) {
+    if (animating) return;
+    var railVisible = rail.offsetParent !== null;
+    if (!railVisible) return;
+    animating = true;
+
+    var current = slots()[vi].querySelector('.slide');
+    var nextReal = (real + dir + n) % n;
+
+    if (reduced) {
+      vi += dir; real = nextReal;
+      if (vi >= K + n) vi -= n;
+      if (vi < K) vi += n;
+      place(false); markActive(); setCaptions(real);
+      animating = false;
+      return;
+    }
+
+    // PHASE 1 — current exits (next: slides LEFT + fades; prev: mirrors
+    // right); its caption fades out
+    current.classList.add(dir > 0 ? 'is-exit-left' : 'is-exit-right');
+
+    setTimeout(function () {
+      // PHASE 2 — track pushes; incoming morphs to active
+      vi += dir;
+      real = nextReal;
+      place(true);                       // push (also moves outgoing fully off-rail)
+      markActive();                      // incoming interpolates size/pos/opacity/shadow
+      setCaptions(real);                 // new caption fades in (with delay)
+
+      setTimeout(function () {
+        // silent reposition if we landed on a loop clone (same visuals, real slot)
+        var snapped = false;
+        if (vi >= K + n) { vi -= n; snapped = true; }
+        else if (vi < K) { vi += n; snapped = true; }
+        if (snapped) { place(false); markActive(); }
+        if (dir > 0) {
+          // outgoing slide ended up off-rail left — reset it instantly so
+          // no half-faded ghost slips in at the clip edge
+          current.classList.add('no-anim');
+          current.classList.remove('is-exit-left', 'is-exit-right');
+          void current.offsetWidth;                 // commit the reset
+          current.classList.remove('no-anim');
+        } else {
+          // outgoing slide is now the right-hand peek — let it morph
+          // smoothly from its exit state back to rest
+          current.classList.remove('is-exit-left', 'is-exit-right');
+        }
+        animating = false;
+      }, CFG.ph2 + 20);
+    }, reduced ? 0 : CFG.ph1);
+  }
+
+  prevBtn.addEventListener('click', function () { go(-1); });
+  nextBtn.addEventListener('click', function () { go(1); });
+
+  // keyboard: arrow keys alongside clicks (spec)
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowLeft') { go(-1); }
+    else if (e.key === 'ArrowRight') { go(1); }
+  });
+
+  // no autoplay (spec)
+
+  function layout() {
+    if (rail.offsetParent === null) return;   // hidden on mobile
+    measure();
+    place(false);
+  }
+
+  var resizeTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(layout, 120);
+  });
+
+  // initial paint
+  requestAnimationFrame(function () {
+    layout();
+    markActive();
+    setCaptions(0);
+  });
+})();
+
+/* ============================================================
+   MOBILE STRIP — tap vs swipe disambiguation + lightbox
+   ============================================================ */
+(function () {
+  'use strict';
+
+  var strip = document.getElementById('strip');
+  var lb = document.getElementById('lightbox');
+  var lbLabel = document.getElementById('lbLabel');
+  var lbClose = document.getElementById('lbClose');
+  if (!strip || !lb) return;
+
+  var downX = 0, downY = 0, moved = false;
+  var THRESHOLD = 8;   // px — beyond this it's a scroll, not a tap
+
+  strip.addEventListener('pointerdown', function (e) {
+    downX = e.clientX; downY = e.clientY; moved = false;
+  });
+  strip.addEventListener('pointermove', function (e) {
+    if (Math.abs(e.clientX - downX) > THRESHOLD || Math.abs(e.clientY - downY) > THRESHOLD) {
+      moved = true;
+    }
+  });
+  strip.addEventListener('pointerup', function (e) {
+    if (moved) return;                       // it was a swipe — ignore
+    var card = e.target.closest('.m-card');
+    if (!card) return;
+    openLb(card.getAttribute('data-label') || 'Screenshot');
+  });
+
+  function openLb(label) {
+    lbLabel.textContent = label;
+    lb.classList.add('is-open');
+    document.body.classList.add('lb-open');
+    lbClose.focus();
+  }
+  function closeLb() {
+    lb.classList.remove('is-open');
+    document.body.classList.remove('lb-open');
+  }
+
+  lbClose.addEventListener('click', closeLb);
+  lb.addEventListener('click', function (e) {
+    if (e.target === lb) closeLb();          // backdrop tap closes
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && lb.classList.contains('is-open')) closeLb();
+  });
+})();
+</script>
 </body>
 </html>
