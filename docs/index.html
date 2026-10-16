@@ -157,14 +157,15 @@ body {
 @media (min-width: 860px) {
   .hero {
     grid-template-columns: minmax(340px, 420px) 1fr;
+    gap: clamp(48px, 11vw, 170px);      /* pushes the carousel away from the identity block */
     align-items: center;
     min-height: 100vh;
     padding: 40px 36px;
   }
 
-  .identity { text-align: left; }
-  .identity .appicon { margin: 0 0 22px; }
-  .tagline { margin: 0 0 28px; }
+  .identity { text-align: center; }
+  .identity .appicon { margin: 0 auto 22px; }
+  .tagline { margin: 0 auto 28px; }
 
   .cmob { display: none !important; }
   .cdesk { display: block; }
@@ -172,7 +173,7 @@ body {
   /* --- hover zone: arrows reveal when cursor is anywhere near --- */
   .c-zone {
     position: relative;
-    --zone-pad-l: 56px;
+    --zone-pad-l: clamp(56px, 11vw, 170px);  /* breathing room before the active card; ‹ arrow lives here */
     --zone-pad-r: 64px;
     padding: 40px var(--zone-pad-r) 8px var(--zone-pad-l);   /* the "big enough" hover area */
   }
@@ -264,7 +265,7 @@ body {
   .c-zone:hover .c-arrow,
   .c-zone:focus-within .c-arrow { opacity: 1; }
 
-  .c-prev { left: 0; }
+  .c-prev { left: max(0px, calc(var(--zone-pad-l) - 106px)); }  /* floats in the gap like the wireframe: arrow's right edge ~54px short of the active card */
   .c-next { left: calc(var(--zone-pad-l) + var(--rail-pad) + var(--slot-w) * var(--active-scale) + 6px); }
 
   /* touch devices have no hover — keep arrows visible */
