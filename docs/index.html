@@ -172,8 +172,8 @@ body {
   /* --- hover zone: arrows reveal when cursor is anywhere near --- */
   .c-zone {
     position: relative;
-    --zone-pad-l: 56px;             /* sized to house the ‹ / › edge arrows */
-    --zone-pad-r: 56px;
+    --zone-pad-l: 56px;
+    --zone-pad-r: 64px;
     padding: 40px var(--zone-pad-r) 8px var(--zone-pad-l);   /* the "big enough" hover area */
   }
 
@@ -265,7 +265,7 @@ body {
   .c-zone:focus-within .c-arrow { opacity: 1; }
 
   .c-prev { left: 0; }
-  .c-next { right: 0; }             /* both arrows flank the carousel in the zone margins */
+  .c-next { left: calc(var(--zone-pad-l) + var(--rail-pad) + var(--slot-w) * var(--active-scale) + 6px); }
 
   /* touch devices have no hover — keep arrows visible */
   @media (hover: none) {
@@ -282,7 +282,7 @@ body {
   .caption {
     position: absolute;
     top: 0;
-    left: 50%;                      /* captions box = rail width → 50% = rail center */
+    left: calc(var(--rail-pad) + var(--slot-w) / 2);
     width: 340px;
     translate: -50% 0;             /* static — only opacity animates (no movement) */
     text-align: center;
@@ -493,7 +493,6 @@ body.lb-open { overflow: hidden; }
   var vi = K;                             // visual index of real slide 0 (real slots live at K..K+n-1)
   var animating = false;
   var step = 0;
-  var slotW = 0, padL = 0, railW = 0;   // captured by measure() for centering
 
   // infinite-loop clones: [cloneLast×K, real…, cloneFirst×K]
   var originals = Array.prototype.slice.call(track.children);
@@ -509,15 +508,12 @@ body.lb-open { overflow: hidden; }
     var a = slots()[1].getBoundingClientRect();
     var b = slots()[2].getBoundingClientRect();
     step = b.left - a.left;               // slot width + gap
-    slotW = slots()[0].getBoundingClientRect().width;
-    padL = parseFloat(getComputedStyle(rail).paddingLeft) || 0;
-    railW = rail.clientWidth;             // padding box (rail pads are symmetric)
   }
 
   function place(animate) {
-    // active slot's CENTER sits at the rail's center — peeks show on both
-    // sides (spec rev: active no longer hugs the rail's left edge)
-    var x = railW / 2 - padL - vi * step - slotW / 2;
+    // track's static position = rail's content box, so translate is
+    // purely -vi * step (active slot lands exactly on rail's content left)
+    var x = -vi * step;
     track.style.transition = animate
       ? 'transform ' + CFG.ph2 + 'ms var(--ease)'
       : 'none';
