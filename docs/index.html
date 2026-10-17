@@ -365,13 +365,22 @@ body {
   position: fixed;
   inset: 0;
   background: rgba(12, 9, 24, .88);
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   z-index: 50;
   padding: 24px;
+  visibility: hidden;
+  opacity: 0;
+  /* no transition on the closed state → closing snaps out instantly.
+     The fade lives ONLY on .is-open, so it plays when arriving (fade-in),
+     and vanishes when leaving (instant-out). */
 }
-.lightbox.is-open { display: flex; }
+.lightbox.is-open {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity .28s ease;   /* fade-in only */
+}
 .lightbox-inner {
   width: min(92vw, 380px);
   aspect-ratio: 9 / 19.5;
@@ -398,7 +407,7 @@ body.lb-open { overflow: hidden; }
    MOTION + NO-JS SAFETY
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
-  .slide, .caption, .c-arrow, .btn { transition-duration: .01ms !important; transition-delay: 0ms !important; }
+  .slide, .caption, .c-arrow, .btn, .lightbox { transition-duration: .01ms !important; transition-delay: 0ms !important; }
 }
 
 </style>
