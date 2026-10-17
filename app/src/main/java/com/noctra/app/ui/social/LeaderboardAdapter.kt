@@ -5,21 +5,37 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.noctra.app.R
 
-class LeaderboardAdapter : ListAdapter<LeaderboardEntryUiModel, RecyclerView.ViewHolder>(DiffCallback()) {
+/**
+ * Plain RecyclerView.Adapter — deliberately NOT ListAdapter (same reasoning
+ * as FriendAdapter): position 0 is a synthetic banner header that is not part
+ * of the data, and ListAdapter's diff dispatch computes positions against the
+ * data size only — two bookkeepers that can drift apart. The friends screen
+ * crashed on every open from exactly this pattern (its second synthetic row,
+ * the empty placeholder, made the offset change mid-flight). A full rebind on
+ * change keeps count and positions consistent by construction; the trade-off
+ * is no row animations.
+ */
+class LeaderboardAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
         private const val VIEW_TYPE_HEADER = 0
         private const val VIEW_TYPE_ENTRY = 1
     }
 
+    private var items: List<LeaderboardEntryUiModel> = emptyList()
+
+    fun submitList(newItems: List<LeaderboardEntryUiModel>, commitCallback: Runnable? = null) {
+        items = newItems
+        notifyDataSetChanged()
+        commitCallback?.run()
+    }
+
     // Position 0 is the static "Compete with Friends" banner header so it
     // scrolls with the cards; entries start at position 1
-    override fun getItemCount(): Int = super.getItemCount() + 1
+    override fun getItemCount(): Int = items.size + 1
 
     override fun getItemViewType(position: Int): Int =
         if (position == 0) VIEW_TYPE_HEADER else VIEW_TYPE_ENTRY
@@ -35,7 +51,7 @@ class LeaderboardAdapter : ListAdapter<LeaderboardEntryUiModel, RecyclerView.Vie
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is EntryViewHolder) {
-            holder.bind(getItem(position - 1))
+            holder.bind(items[position - 1])
         }
     }
 
@@ -97,22 +113,6 @@ class LeaderboardAdapter : ListAdapter<LeaderboardEntryUiModel, RecyclerView.Vie
                 card.setBackgroundResource(R.drawable.bg_leaderboard_friend_outline)
                 textYourRank.visibility = View.GONE
             }
-        }
-    }
-
-    class DiffCallback : DiffUtil.ItemCallback<LeaderboardEntryUiModel>() {
-        override fun areItemsTheSame(
-            oldItem: LeaderboardEntryUiModel,
-            newItem: LeaderboardEntryUiModel
-        ): Boolean {
-            return oldItem.userId == newItem.userId
-        }
-
-        override fun areContentsTheSame(
-            oldItem: LeaderboardEntryUiModel,
-            newItem: LeaderboardEntryUiModel
-        ): Boolean {
-            return oldItem == newItem
         }
     }
 }
