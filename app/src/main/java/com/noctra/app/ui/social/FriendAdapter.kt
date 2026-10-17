@@ -5,14 +5,25 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.noctra.app.R
 
+/**
+ * Plain RecyclerView.Adapter — deliberately NOT ListAdapter.
+ *
+ * This screen has two synthetic rows that are not part of the data: the
+ * banner header at position 0, and an empty-placeholder row when there are
+ * no friends. ListAdapter dispatches insert/remove positions computed
+ * against the raw data size only, so its position math disagreed with the
+ * inflated count above — RecyclerView threw "Inconsistency detected.
+ * Invalid view holder adapter position" and crashed the friends screen on
+ * every open. A full rebind on change keeps count and positions consistent
+ * by construction (rows no longer animate in/out).
+ */
 class FriendAdapter(
     private val onRemoveClick: (LeaderboardEntryUiModel) -> Unit,
     private val onBannerClick: () -> Unit
-) : ListAdapter<LeaderboardEntryUiModel, RecyclerView.ViewHolder>(LeaderboardAdapter.DiffCallback()) {
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
         private const val VIEW_TYPE_HEADER = 0
@@ -20,22 +31,29 @@ class FriendAdapter(
         private const val VIEW_TYPE_EMPTY = 2
     }
 
+    private var items: List<LeaderboardEntryUiModel> = emptyList()
+
     // null = hide badge
     private var pendingBadgeCount: Int? = null
 
+    fun submitList(newItems: List<LeaderboardEntryUiModel>) {
+        items = newItems
+        notifyDataSetChanged()   // whole-list refresh: synthetic-row offsets can't go stale
+    }
+
     fun setPendingBadge(count: Int) {
         pendingBadgeCount = if (count > 0) count else null
-        notifyItemChanged(0)
+        notifyItemChanged(0)     // position 0 is always the header
     }
 
     // Position 0 is the banner + label header so it scrolls with the rows.
     // When there are no friends, position 1 shows the empty placeholder.
-    override fun getItemCount(): Int = super.getItemCount() + if (super.getItemCount() == 0) 2 else 1
+    override fun getItemCount(): Int = items.size + if (items.isEmpty()) 2 else 1
 
     override fun getItemViewType(position: Int): Int =
         when {
             position == 0 -> VIEW_TYPE_HEADER
-            super.getItemCount() == 0 -> VIEW_TYPE_EMPTY
+            items.isEmpty() -> VIEW_TYPE_EMPTY
             else -> VIEW_TYPE_ENTRY
         }
 
@@ -51,7 +69,7 @@ class FriendAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (holder) {
             is HeaderViewHolder -> holder.bind()
-            is EntryViewHolder -> holder.bind(getItem(position - 1))
+            is EntryViewHolder -> holder.bind(items[position - 1])
             // EmptyViewHolder is static text, nothing to bind
         }
     }
