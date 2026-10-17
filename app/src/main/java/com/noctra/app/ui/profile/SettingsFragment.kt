@@ -20,6 +20,8 @@ import com.google.android.material.materialswitch.MaterialSwitch
 import com.noctra.app.BuildConfig
 import com.noctra.app.R
 import com.noctra.app.ui.common.BedtimePickerBottomSheet
+import com.noctra.app.ui.update.UpdateDialogs
+import com.noctra.app.update.UpdateChecker
 import com.noctra.app.utils.NotificationPreferences
 import io.github.jan.supabase.gotrue.auth
 import kotlinx.coroutines.launch
@@ -64,6 +66,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 findNavController().navigate(R.id.debug_graph)
                 true
             }
+        }
+
+        // Check for updates row — manual path; bypasses the 24h throttle
+        view.findViewById<View>(R.id.row_check_updates).setOnClickListener {
+            checkForUpdatesManually()
         }
 
         // Notification switches
@@ -178,6 +185,36 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         viewModel.loadProfile(ctx)
         viewModel.checkHealthConnectStatus(ctx)
+    }
+
+    /**
+     * Manual update check — runs regardless of the 24h throttle (the user
+     * explicitly asked) but refreshes the same timestamp, so the automatic
+     * cold-start check won't double-fire afterwards. Failures show a plain
+     * toast; the row stays live for immediate retry.
+     */
+    private fun checkForUpdatesManually() {
+        val row = view?.findViewById<View>(R.id.row_check_updates) ?: return
+        row.isEnabled = false
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                when (val result = UpdateChecker.check(requireContext())) {
+                    is UpdateChecker.CheckResult.Available -> {
+                        if (isAdded) {
+                            UpdateDialogs.showAvailable(requireContext(), result.info)
+                        }
+                    }
+                    UpdateChecker.CheckResult.UpToDate -> {
+                        Toast.makeText(requireContext(), "You're on the latest version", Toast.LENGTH_SHORT).show()
+                    }
+                    UpdateChecker.CheckResult.Failed -> {
+                        Toast.makeText(requireContext(), "Couldn't check for updates. Try again later.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } finally {
+                row.isEnabled = true
+            }
+        }
     }
 
     override fun onResume() {

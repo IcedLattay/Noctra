@@ -35,6 +35,11 @@ import com.noctra.app.utils.DebugSettings
 import com.noctra.app.utils.PendingDeepLinkError
 import com.noctra.app.utils.UserSession
 import com.noctra.app.utils.NetworkObserver
+import com.noctra.app.update.UpdateChecker
+import com.noctra.app.ui.update.UpdateDialogs
+import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.FragmentManager
+import kotlinx.coroutines.delay
 import com.noctra.app.workers.WindDownNotificationScheduler
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -375,6 +380,10 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                             requestNotificationPermissionIfNeeded()
                         }
                         WindDownNotificationScheduler.scheduleNext(applicationContext)
+
+                        // Throttled update check — only for fully onboarded
+                        // users, so it never appears over auth or onboarding.
+                        scheduleUpdateCheck()
                     } else {
                         // Mid-flow recovery: Set the Onboarding Group as start
                         // and then adjust the internal start of that group
@@ -410,6 +419,54 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                 isLoading = false
             }
         }
+    }
+
+    // ─── Update check ────────────────────────────────────────────────────────
+
+    /**
+     * Cold-start update check, scheduled only from the fully-onboarded
+     * branch of checkOnboardingStatus (and thus only behind
+     * checkConnectivityAndInit's online gate — offline never reaches this).
+     *
+     * Behavior: throttled to once per 24h; completely silent on failure (a
+     * GitHub outage must never surface); delayed a few seconds so it never
+     * competes with startup navigation; and it will not stack on top of any
+     * dialog that's already on screen (morning popup, resume dialog, ...).
+     */
+    private fun scheduleUpdateCheck() {
+        lifecycleScope.launch {
+            delay(4_000) // let navigation + first frames settle
+            if (!UpdateChecker.isDue(applicationContext)) return@launch
+
+            // If another dialog owns the screen, give it up to 30s to close.
+            var waited = 0L
+            while (waited < 30_000 && anyDialogShowing()) {
+                delay(3_000)
+                waited += 3_000
+            }
+            if (anyDialogShowing() || isFinishing || isDestroyed) return@launch
+
+            when (val result = UpdateChecker.check(applicationContext)) {
+                is UpdateChecker.CheckResult.Available -> {
+                    if (!isFinishing && !isDestroyed) {
+                        UpdateDialogs.showAvailable(this@MainActivity, result.info)
+                    }
+                }
+                // UpToDate and Failed are both silent by design.
+                else -> Unit
+            }
+        }
+    }
+
+    /**
+     * True when any DialogFragment is currently showing — including ones in
+     * the nav host's child fragment manager, where the morning popup lives.
+     */
+    private fun anyDialogShowing(
+        fm: androidx.fragment.app.FragmentManager = supportFragmentManager
+    ): Boolean = fm.fragments.toList().any { fragment ->
+        (fragment is DialogFragment && fragment.dialog?.isShowing == true) ||
+            anyDialogShowing(fragment.childFragmentManager)
     }
 
     private fun setupNavigationUI(navController: androidx.navigation.NavController, bottomNav: BottomNavigationView) {
