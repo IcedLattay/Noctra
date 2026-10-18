@@ -7,6 +7,7 @@ import com.noctra.app.data.repository.RewardLedgerRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.data.repository.SleepRecordRepository
 import com.noctra.app.data.repository.SleepSyncManager
+import com.noctra.app.utils.DbTime
 import java.time.Instant
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -202,10 +203,15 @@ class ReconciliationAuditUseCase(
             
             if (sleepRecord != null) {
                 // The 1-Hour Rule
-                val routineStart = Instant.parse(session.startTimestamp)
-                val sleepOnset = sleepRecord.sleepOnsetTime?.let { Instant.parse(it) }
+                // Lenient parse (DbTime): PostgREST returns offset strings
+                // ("...+00:00") and strict Instant.parse throws on pre-Android-14
+                // runtimes — an unparseable stamp must skip the rule, never
+                // crash the audit (it bricked the companion screen for
+                // old-runtime users with an abandoned night).
+                val routineStart = DbTime.parseInstantOrNull(session.startTimestamp)
+                val sleepOnset = DbTime.parseInstantOrNull(sleepRecord.sleepOnsetTime)
                 
-                if (sleepOnset != null) {
+                if (routineStart != null && sleepOnset != null) {
                     val diffMinutes = ChronoUnit.MINUTES.between(routineStart, sleepOnset)
                     if (diffMinutes in 0..60) {
                         return "COMPLETED"

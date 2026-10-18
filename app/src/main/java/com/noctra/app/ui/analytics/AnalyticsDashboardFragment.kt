@@ -324,9 +324,12 @@ class AnalyticsDashboardFragment : Fragment(R.layout.fragment_analytics_dashboar
 
     private fun formatOnsetTime(isoTimestamp: String?): String {
         if (isoTimestamp == null) return getString(R.string.analytics_placeholder_dash)
+        // Lenient parse (DbTime): strict Instant.parse rejects PostgREST
+        // offset strings on pre-Android-14 runtimes.
+        val instant = com.noctra.app.utils.DbTime.parseInstantOrNull(isoTimestamp)
+            ?: return isoTimestamp
         return try {
             // Parse as UTC then convert to local time
-            val instant = java.time.Instant.parse(isoTimestamp)
             val localTime = LocalDateTime.ofInstant(instant, ZoneOffset.systemDefault())
             localTime.format(DateTimeFormatter.ofPattern("h:mm a"))
         } catch (e: Exception) {

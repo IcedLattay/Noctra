@@ -1,6 +1,7 @@
 package com.noctra.app.domain.usecase
 
 import com.noctra.app.data.model.SleepRecord
+import com.noctra.app.utils.DbTime
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -45,9 +46,14 @@ class BedtimeAdherenceCalculator {
             return NightAdherence(sessionDate, Adherence.NO_DATA, null)
         }
 
+        // Lenient parse (DbTime): strict Instant.parse rejects PostgREST
+        // offset strings on pre-Android-14 runtimes, which silently
+        // classified every night as NO_DATA there (empty adherence chart).
+        val actualInstant = DbTime.parseInstantOrNull(sleepOnsetTime)
+            ?: return NightAdherence(sessionDate, Adherence.NO_DATA, null)
+
         return try {
             val targetInstant = computeTargetInstant(sessionDate, targetBedtime)
-            val actualInstant = Instant.parse(sleepOnsetTime)
 
             val delayMinutes = (actualInstant.epochSecond - targetInstant.epochSecond) / 60L
 

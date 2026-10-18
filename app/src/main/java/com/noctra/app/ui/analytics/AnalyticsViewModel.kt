@@ -298,7 +298,7 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
         return (0 until days).map { offset ->
             val date = start.plusDays(offset.toLong())
             byDate[date.toString()]?.sleepOnsetTime?.let {
-                runCatching { Instant.parse(it) }.getOrNull()
+                com.noctra.app.utils.DbTime.parseInstantOrNull(it)
             }
         }
     }
@@ -379,7 +379,7 @@ class AnalyticsViewModel(application: Application) : AndroidViewModel(applicatio
     ): Int? {
         val globalTarget = _state.value.targetBedtime?.let { parseTargetBedtime(it) }
         val minutes = records.mapNotNull { record ->
-            val onset = record.sleepOnsetTime?.let { runCatching { Instant.parse(it) }.getOrNull() }
+            val onset = record.sleepOnsetTime?.let { com.noctra.app.utils.DbTime.parseInstantOrNull(it) }
                 ?: return@mapNotNull null
             val date = runCatching { LocalDate.parse(record.sessionDate) }.getOrNull()
                 ?: return@mapNotNull null
