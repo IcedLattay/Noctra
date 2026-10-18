@@ -2,7 +2,9 @@ package com.noctra.app.domain.usecase
 
 import com.noctra.app.data.repository.RewardLedgerRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
+import com.noctra.app.utils.RoutineWindowProvider
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.OffsetDateTime
 import kotlin.math.max
@@ -31,6 +33,27 @@ class RewardCalculationUseCase(
 
         /** Flat Growth Points (XP) earned per completed session. */
         const val BASE_XP = 100
+
+        /**
+         * Chain arithmetic for one completion, anchored on the NIGHT's own
+         * date: consecutive night → +1, same night re-run → unchanged,
+         * genuine gap (or first ever) → restart at 1. Pinned by unit test —
+         * the old wall-clock version reset streaks for every routine that
+         * finished after midnight.
+         */
+        internal fun computeNewStreak(
+            currentStreak: Int,
+            lastSessionDate: LocalDate?,
+            nightDate: LocalDate
+        ): Int {
+            val nightBefore = nightDate.minusDays(1)
+            return when {
+                lastSessionDate == null -> 1
+                lastSessionDate == nightBefore -> currentStreak + 1
+                lastSessionDate == nightDate -> currentStreak
+                else -> 1
+            }
+        }
     }
 
     /**
@@ -70,18 +93,18 @@ class RewardCalculationUseCase(
         val repo = rewardRepository ?: throw IllegalStateException("RewardLedgerRepository required for execute()")
         val ledger = repo.getRewardLedger(userId) ?: throw IllegalStateException("Reward ledger not found")
 
-        val today = LocalDate.now()
-        val yesterday = today.minusDays(1)
+        // The night is identified by ITS session_date — never the wall clock.
+        // Bedtime routines legitimately finish after midnight (session dates
+        // stamp pre-4 AM completions to the previous day), and a clock-based
+        // "yesterday" then sees a fake gap, resetting the streak to 1 instead
+        // of chaining — and stamping last_session_date with the next day,
+        // which also mis-anchors the audit range.
+        val nightDate = resolveNightDate(sessionId)
         val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
         val lastSessionDate = ledger.lastSessionDate?.let { LocalDate.parse(it, dateFormatter) }
 
-        val newStreak = when {
-            lastSessionDate == null -> 1
-            lastSessionDate == yesterday -> ledger.currentStreak + 1
-            lastSessionDate == today -> ledger.currentStreak
-            else -> 1
-        }
+        val newStreak = computeNewStreak(ledger.currentStreak, lastSessionDate, nightDate)
 
         val result = calculate(newStreak - 1)
 
@@ -90,7 +113,7 @@ class RewardCalculationUseCase(
             totalXp = ledger.totalXp + result.xpEarned,
             currentStreak = newStreak,
             longestStreak = max(ledger.longestStreak, newStreak),
-            lastSessionDate = today.format(dateFormatter),
+            lastSessionDate = nightDate.format(dateFormatter),
             lastUpdated = OffsetDateTime.now().toString(),
             hasFirstMiss = false
         )
@@ -98,6 +121,22 @@ class RewardCalculationUseCase(
         repo.updateRewardLedger(updatedLedger)
 
         return result
+    }
+
+    /**
+     * The calendar date this completion belongs to: the session row's own
+     * session_date (authoritative), falling back to the same pre-4 AM
+     * boundary used when the session was created (covers a missing or
+     * degenerate session id).
+     */
+    private suspend fun resolveNightDate(sessionId: String): LocalDate {
+        val fromRow = runCatching {
+            routineSessionRepository?.getSessionById(sessionId)?.sessionDate
+        }.getOrNull()
+        if (fromRow != null) {
+            runCatching { LocalDate.parse(fromRow) }.getOrNull()?.let { return it }
+        }
+        return RoutineWindowProvider.resolveRoutineSessionDate(LocalDateTime.now())
     }
 
     fun getMultiplier(streak: Int): Double {
