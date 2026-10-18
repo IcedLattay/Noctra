@@ -242,47 +242,6 @@ class RoutineSessionRepository {
         }
     }
 
-    suspend fun getCurrentStreak(userId: String): Int {
-        return try {
-            val allSessions = client
-                .from("routine_sessions")
-                .select {
-                    filter {
-                        eq("user_id", userId)
-                        eq("status", "COMPLETED")
-                    }
-                    order("session_date", Order.DESCENDING)
-                }
-                .decodeList<RoutineSession>()
-
-            if (allSessions.isEmpty()) {
-                return 0
-            }
-
-            val completedDates: Set<String> = allSessions.map { it.sessionDate }.toSet()
-            val today = java.time.LocalDate.now().toString()
-            var expectedDate = if (completedDates.contains(today)) {
-                today
-            } else {
-                java.time.LocalDate.parse(today).minusDays(1).toString()
-            }
-
-            var streak = 0
-            while (completedDates.contains(expectedDate)) {
-                streak++
-                expectedDate = java.time.LocalDate.parse(expectedDate).minusDays(1).toString()
-            }
-
-            streak
-        } catch (e: IOException) {
-            Log.e(tag, "Network error getting current streak", e)
-            throw e
-        } catch (e: SocketTimeoutException) {
-            Log.e(tag, "Timeout getting current streak", e)
-            throw e
-        }
-    }
-
     // ─── Missed Session ──────────────────────────────────────────────────────
 
     suspend fun recordMissedSession(

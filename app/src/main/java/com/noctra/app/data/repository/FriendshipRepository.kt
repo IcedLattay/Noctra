@@ -2,6 +2,7 @@ package com.noctra.app.data.repository
 
 import com.noctra.app.data.model.Friendship
 import com.noctra.app.data.model.UserProfile
+import com.noctra.app.data.model.RewardLedger
 import com.noctra.app.data.model.RoutineSession
 import com.noctra.app.data.model.EncouragementReaction
 import com.noctra.app.data.supabase.SupabaseClient
@@ -143,6 +144,11 @@ class FriendshipRepository {
             }
             .decodeList<UserProfile>()
 
+        // Streaks from reward_ledger — the single source of truth (the same
+        // counter the profile reads and the audit/reward writers mutate);
+        // the session recount below is only a per-user fallback.
+        val ledgerStreaks = fetchLedgerStreaks(friendIds)
+
         // Fetch latest routine session for each friend to get streak
         val friendWithProfiles = mutableListOf<FriendWithProfile>()
         for (friendId in friendIds) {
@@ -162,8 +168,7 @@ class FriendshipRepository {
                 }
                 .decodeSingleOrNull<RoutineSession>()
 
-            // Calculate streak for this friend
-            val streak = calculateStreak(friendId)
+            val streak = ledgerStreaks[friendId] ?: calculateStreak(friendId)
 
             friendWithProfiles.add(
                 FriendWithProfile(
@@ -189,7 +194,7 @@ class FriendshipRepository {
             }
             .decodeSingleOrNull<UserProfile>()
 
-        val streak = calculateStreak(userId)
+        val streak = fetchLedgerStreaks(listOf(userId))[userId] ?: calculateStreak(userId)
 
         return FriendWithProfile(
             userId = userId,
@@ -197,6 +202,28 @@ class FriendshipRepository {
             currentStreak = streak,
             lastCompletedTimestamp = null
         )
+    }
+
+    /**
+     * reward_ledger.current_streak for the given users — the app's single
+     * source of truth for displayed streaks (the counter the audit and the
+     * in-app completion path both write). Falls back per-user to the session
+     * recount when a ledger row is missing (legacy accounts) or the read
+     * fails, so the leaderboard degrades instead of breaking.
+     */
+    private suspend fun fetchLedgerStreaks(userIds: List<String>): Map<String, Int> {
+        if (userIds.isEmpty()) return emptyMap()
+        return try {
+            client.from("reward_ledger")
+                .select {
+                    filter { isIn("user_id", userIds) }
+                }
+                .decodeList<RewardLedger>()
+                .associate { it.userId to it.currentStreak }
+        } catch (e: Exception) {
+            android.util.Log.e("FriendshipRepository", "ledger streak read failed", e)
+            emptyMap()
+        }
     }
 
     private suspend fun calculateStreak(userId: String): Int {

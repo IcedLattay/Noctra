@@ -99,7 +99,7 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
                 if (activeRoutine != null) {
                     val entries = routineRepository.parseActivitySequence(activeRoutine.activitySequence)
                     val activities = routineRepository.hydrateActivitySequence(entries)
-                    val streak = routineSessionRepository.getCurrentStreak(userId)
+                    val streak = rewardLedgerRepository.getRewardLedger(userId)?.currentStreak ?: 0
 
                     // Validate window before completing setup
                     val inWindow = com.noctra.app.utils.RoutineWindowProvider.isTimeInWindow(
@@ -471,7 +471,7 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
 
                 val entries = routineRepository.parseActivitySequence(activeRoutine.activitySequence)
                 val hydratedActivities = routineRepository.hydrateActivitySequence(entries)
-                val streak = routineSessionRepository.getCurrentStreak(userId)
+                val streak = rewardLedgerRepository.getRewardLedger(userId)?.currentStreak ?: 0
 
                 setupSession(hydratedActivities, activeRoutine.id, streak)
                 activeSessionId = RoutinePersistenceHelper.getActiveSessionId() // may be null — see Flag 1

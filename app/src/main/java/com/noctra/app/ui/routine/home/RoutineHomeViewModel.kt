@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.noctra.app.data.model.Activity
 import com.noctra.app.data.model.RoutineConfiguration
+import com.noctra.app.data.repository.RewardLedgerRepository
 import com.noctra.app.data.repository.RoutineRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.data.repository.UserProfileRepository
@@ -51,6 +52,7 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
 
     private val routineRepository        = RoutineRepository()
     private val routineSessionRepository = RoutineSessionRepository()
+    private val rewardLedgerRepository   = RewardLedgerRepository()
     private val userProfileRepository    = UserProfileRepository()
     private val networkObserver          = NetworkObserver(getApplication())
 
@@ -190,7 +192,7 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
                 // to resolve — this just short-circuits straight to the
                 // Resumable state.
                 if (RoutinePersistenceHelper.hasActiveSession()) {
-                    val streak = routineSessionRepository.getCurrentStreak(userId)
+                    val streak = rewardLedgerRepository.getRewardLedger(userId)?.currentStreak ?: 0
                     _state.value = RoutineHomeState.Resumable(
                         activities = activities,
                         totalDurationMinutes = totalDuration,
@@ -208,7 +210,7 @@ class RoutineHomeViewModel(application: Application) : AndroidViewModel(applicat
                 val alreadyCompleted = if (DebugSettings.skipCompletionCheck.value) false else {
                     routineSessionRepository.hasCompletedSessionForDate(userId, todayDate)
                 }
-                val streak = routineSessionRepository.getCurrentStreak(userId)
+                val streak = rewardLedgerRepository.getRewardLedger(userId)?.currentStreak ?: 0
                 android.util.Log.d("StreakDebug", "HOME: reading as userId=$userId, got streak=$streak")
 
                 if (alreadyCompleted) {
