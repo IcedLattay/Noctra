@@ -37,6 +37,7 @@ import com.noctra.app.utils.UserSession
 import com.noctra.app.utils.NetworkObserver
 import com.noctra.app.update.UpdateChecker
 import com.noctra.app.update.UpdateFlowDialogFragment
+import com.noctra.app.update.UpdateInstaller
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
 import kotlinx.coroutines.delay
@@ -687,6 +688,38 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
     override fun onPreviewResumeDialog() {
         ResumeRoutineDialogFragment.newInstance(1, 3, 25L)
             .show(supportFragmentManager, "ResumePreview")
+    }
+
+    override fun onPreviewUpdateDialog() {
+        // Debug preview: a fake offer pointing at the REAL published v1.2.1
+        // assets, so the whole chain walks the genuine path (download →
+        // verify → permission) instead of erroring out on a dead URL.
+        // UpdateChecker never produces this info itself.
+        val previewVersion = "1.2.1"
+
+        // Reset first: the dialog restores mid-flight state by design
+        // (finished file → straight to verify, live download → re-attach),
+        // which would otherwise stop the preview from ever showing the
+        // OFFER state again after one full walkthrough.
+        val activeId = UpdateInstaller.activeDownloadId(this)
+        if (activeId != -1L) UpdateInstaller.cancel(this, activeId)
+        UpdateInstaller.clearActive(this)
+        UpdateInstaller.apkFile(this, previewVersion)?.delete()
+
+        val info = UpdateChecker.UpdateInfo(
+            version = previewVersion,
+            notes = "Streaks, made honest. This update fixes several ways your nightly " +
+                "streak could be reported wrong: after-midnight routine finishes, nights " +
+                "still awaiting their morning verdict, and mismatched streak numbers " +
+                "between screens. Streaks now come from a single source everywhere and " +
+                "only change when a night is actually judged. Also includes the timestamp " +
+                "parsing hotfix for older devices.",
+            sizeBytes = 130_200_992L,
+            downloadUrl = "https://github.com/IcedLattay/Noctra/releases/download/v1.2.1/Noctra-1.2.1.apk",
+            releasePageUrl = "https://github.com/IcedLattay/Noctra/releases/tag/v1.2.1",
+            checksumUrl = "https://github.com/IcedLattay/Noctra/releases/download/v1.2.1/Noctra-1.2.1.apk.sha256"
+        )
+        UpdateFlowDialogFragment.launch(supportFragmentManager, info)
     }
 
     override fun onDumpSleepSession() {

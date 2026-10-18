@@ -16,6 +16,16 @@
         android:orientation="vertical"
         android:padding="24dp">
 
+        <!-- Spinner shown while downloading or verifying -->
+        <ProgressBar
+            android:id="@+id/progress_spinner"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp"
+            android:indeterminateTint="@color/noctra_purple"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/dialog_title"
             android:layout_width="match_parent"
@@ -38,6 +48,18 @@
             android:textSize="16sp"
             android:lineSpacingExtra="4sp" />
 
+        <!-- Size hint under the offer message — caption-scale, not body-scale -->
+        <TextView
+            android:id="@+id/dialog_meta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="@font/poppinsregular"
+            android:gravity="center"
+            android:textColor="@color/noctra_text_muted"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
         <ProgressBar
             android:id="@+id/progress_download"
             style="?android:attr/progressBarStyleHorizontal"
@@ -56,6 +78,7 @@
             android:layout_marginTop="24dp"
             android:backgroundTint="@color/noctra_purple"
             android:fontFamily="@font/poppinsbold"
+            android:letterSpacing="0"
             android:text="Update"
             android:textAllCaps="false"
             android:textColor="@color/white"
@@ -69,6 +92,7 @@
             android:layout_marginTop="8dp"
             android:backgroundTint="#E0E0E0"
             android:fontFamily="@font/poppinsbold"
+            android:letterSpacing="0"
             android:text="Later"
             android:textAllCaps="false"
             android:textColor="@color/black"

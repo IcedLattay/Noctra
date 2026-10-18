@@ -250,6 +250,16 @@
                     <View style="@style/DebugDivider" />
 
                     <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_preview_update"
+                        style="@style/DebugButton"
+                        android:text="Preview Update Dialog" />
+                    <TextView
+                        style="@style/DebugDescription"
+                        android:text="Opens the release-update flow with the v1.2.1 release as a fake offer. Walks the real states: download, verify, permission. Cancelling is safe." />
+
+                    <View style="@style/DebugDivider" />
+
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_dump_sleep"
                         style="@style/DebugButton"
                         android:text="Dump Latest Sleep Session" />

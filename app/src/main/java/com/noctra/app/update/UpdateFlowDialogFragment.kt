@@ -312,13 +312,22 @@ class UpdateFlowDialogFragment : DialogFragment() {
     private fun render() {
         val b = binding
         b.progressDownload.isVisible = state == State.DOWNLOADING
+        b.progressSpinner.isVisible = state == State.DOWNLOADING || state == State.VERIFYING
+        b.dialogMeta.isVisible = false
+        b.dialogMessage.isVisible = true
+        b.dialogTitle.textSize = 20f
         b.btnPositive.isVisible = state != State.DOWNLOADING && state != State.VERIFYING
         b.btnNegative.isVisible = state != State.VERIFYING
 
         when (state) {
             State.OFFER -> {
                 b.dialogTitle.text = "Noctra ${info.version} is available"
-                b.dialogMessage.text = offerMessage()
+                b.dialogMessage.isVisible = false // no release-notes body
+                val sizeLine = offerSizeLine()
+                if (sizeLine != null) {
+                    b.dialogMeta.text = sizeLine
+                    b.dialogMeta.isVisible = true
+                }
                 b.btnPositive.text = "Update"
                 b.btnNegative.text = "Later"
             }
@@ -328,11 +337,15 @@ class UpdateFlowDialogFragment : DialogFragment() {
                 b.btnNegative.text = "Cancel"
             }
             State.VERIFYING -> {
+                // Calm, minimal state: spinner, then the label at subtitle
+                // size — no body copy, no buttons. The spinner itself is
+                // shown in the common block for both busy states.
                 b.dialogTitle.text = "Checking the download…"
-                b.dialogMessage.text = "Making sure the file isn't damaged."
+                b.dialogTitle.textSize = 16f
+                b.dialogMessage.isVisible = false
             }
             State.PERMISSION -> {
-                b.dialogTitle.text = "One-time setting"
+                b.dialogTitle.text = "One-time permission"
                 b.dialogMessage.text = "To install updates, allow Noctra to install apps from " +
                     "this source. It's a one-time Android setting."
                 b.btnPositive.text = "Continue"
@@ -360,16 +373,10 @@ class UpdateFlowDialogFragment : DialogFragment() {
         }
     }
 
-    /** Release-notes excerpt + size line; calm fallbacks when GitHub has neither. */
-    private fun offerMessage(): String {
-        val trimmedNotes = info.notes.trim()
-        val excerpt = when {
-            trimmedNotes.isEmpty() -> "A new version of Noctra is ready to download."
-            trimmedNotes.length > 240 -> trimmedNotes.take(240).trimEnd() + "…"
-            else -> trimmedNotes
-        }
+    /** Size hint under the offer message — rendered at caption scale (dialog_meta). */
+    private fun offerSizeLine(): String? {
         val size = UpdateChecker.formatSize(info.sizeBytes)
-        return if (size.isEmpty()) excerpt else "$excerpt\n\n$size download · Wi-Fi recommended"
+        return if (size.isEmpty()) null else "$size download · Wi-Fi recommended"
     }
 
     /** Maps DownloadManager failure reasons to plain language — never codes. */

@@ -27,6 +27,7 @@ interface DebugPanelListener {
     fun onPreviewStreakLost()
     fun onPreviewStreakWarning()
     fun onPreviewResumeDialog()
+    fun onPreviewUpdateDialog()
     fun onDumpSleepSession()
     fun onDumpHeartRate()
     fun onResyncLastNight()
@@ -118,6 +119,9 @@ class DebugPanelFragment : Fragment() {
         }
         view.findViewById<MaterialButton>(R.id.btn_preview_resume).setOnClickListener {
             listener?.onPreviewResumeDialog()
+        }
+        view.findViewById<MaterialButton>(R.id.btn_preview_update).setOnClickListener {
+            listener?.onPreviewUpdateDialog()
         }
         view.findViewById<MaterialButton>(R.id.btn_dump_sleep).setOnClickListener {
             listener?.onDumpSleepSession()
