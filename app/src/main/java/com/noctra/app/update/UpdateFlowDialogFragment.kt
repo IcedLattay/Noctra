@@ -3,6 +3,7 @@ package com.noctra.app.update
 import android.app.Dialog
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -168,6 +169,7 @@ class UpdateFlowDialogFragment : DialogFragment() {
             render()
             beginPolling()
         } catch (e: Exception) {
+            Log.e(TAG, "enqueue failed for ${info.downloadUrl}", e)
             showError(
                 "Download failed",
                 "Check your connection and try again.",
@@ -242,8 +244,14 @@ class UpdateFlowDialogFragment : DialogFragment() {
 
     private fun openPermissionSettings() {
         try {
-            UpdateInstaller.openInstallPermissionSettings(requireContext())
+            // Through the launcher, NOT plain startActivity: the result
+            // callback is what re-checks the permission and continues to the
+            // installer when the user comes back from Settings.
+            permissionLauncher.launch(
+                UpdateInstaller.installPermissionIntent(requireContext())
+            )
         } catch (e: Exception) {
+            Log.e(TAG, "couldn't open install-permission settings", e)
             showError("Couldn't open settings", "Open Noctra's install permission manually in Android settings.")
         }
     }

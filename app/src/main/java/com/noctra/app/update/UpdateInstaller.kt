@@ -84,9 +84,13 @@ object UpdateInstaller {
         val request = DownloadManager.Request(Uri.parse(info.downloadUrl))
             .setTitle("Noctra ${info.version}")
             .setDescription("Downloading update")
-            // The dialog is our progress UI; no system notification (its
-            // "download complete" tap would bypass our verification).
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN)
+            // Visible while downloading — modern Android rejects HIDDEN from
+            // apps outright (SecurityException "Invalid value for visibility:
+            // 2"), and the ongoing notification is genuinely useful when the
+            // dialog is dismissed mid-download. NOT visible after completion:
+            // a lingering "download complete" tap would hand the raw APK to
+            // the system installer, bypassing our verification.
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
             .setDestinationInExternalFilesDir(context, null, apkFileName(info.version))
 
         val id = downloadManager(context).enqueue(request)
@@ -186,14 +190,14 @@ object UpdateInstaller {
     fun canInstall(context: Context): Boolean =
         context.packageManager.canRequestPackageInstalls()
 
-    /** Deep-link straight to Noctra's own install-permission toggle. */
-    fun openInstallPermissionSettings(context: Context) {
-        val intent = Intent(
+    /** Intent for the one-time "install unknown apps" toggle. Callers must
+     *  launch this through an ActivityResult launcher — the result callback
+     *  is what re-checks canInstall() and resumes the flow afterwards. */
+    fun installPermissionIntent(context: Context): Intent =
+        Intent(
             Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
             Uri.parse("package:${context.packageName}")
         )
-        context.startActivity(intent)
-    }
 
     /**
      * Hands the APK to the system installer via FileProvider. Android shows
