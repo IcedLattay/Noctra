@@ -15,7 +15,7 @@ import com.noctra.app.update.UpdateChecker
 
 /**
  * UpdateDialogs — the single "Noctra X.Y is available" dialog, used by both
- * the throttled cold-start check (MainActivity) and the manual Settings row.
+ * the cold-start check (MainActivity) and the manual Settings row.
  *
  * Phase 1 behavior: "Update" opens the release page in the browser — the
  * same page the site's download button points at. Phase 2 replaces that one
@@ -44,7 +44,7 @@ object UpdateDialogs {
             openReleasePage(context, info.releasePageUrl)
         }
         view.findViewById<Button>(R.id.btn_negative).setOnClickListener {
-            dialog.dismiss() // plain "Later" — re-offers after the next 24h window
+            dialog.dismiss() // "Later" — re-offers on the next cold open
         }
 
         dialog.show()

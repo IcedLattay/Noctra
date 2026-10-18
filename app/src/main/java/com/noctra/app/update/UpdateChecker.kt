@@ -1,7 +1,5 @@
 package com.noctra.app.update
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.util.Log
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
@@ -17,15 +15,16 @@ import kotlinx.serialization.decodeFromString
  * exists. Detection only; the download/install hand-off is Phase 2.
  *
  * Design rules (agreed scope):
- *  - Throttled: at most one automatic check per 24h (manual Settings taps
- *    bypass the throttle but refresh the same timestamp).
- *  - Failures are silent and unrecorded — a GitHub outage must never surface
- *    to the user, and a failed check simply retries on the next cold start.
+ *  - Stateless: no timers, no stored timestamps. The callers decide WHEN to
+ *    ask — MainActivity runs this on every cold open, the Settings row runs
+ *    it on tap.
+ *  - Failures are silent — a GitHub outage must never surface to the user,
+ *    and an error simply reads as "no update information".
  *  - The caller guarantees connectivity (MainActivity only invokes this
  *    behind its existing online gate), but this class still treats any
  *    error as "no update information" rather than throwing.
  *  - No auth token: the repo is public, so anonymous requests are fine
- *    (60/hour per IP — one throttled check per day is nothing).
+ *    (60/hour per IP — one request per cold open is nothing).
  */
 object UpdateChecker {
 
@@ -33,9 +32,6 @@ object UpdateChecker {
     private const val RELEASES_API =
         "https://api.github.com/repos/IcedLattay/Noctra/releases/latest"
     private const val USER_AGENT = "Noctra-Android"
-    private const val PREFS = "noctra_update_prefs"
-    private const val KEY_LAST_CHECK_AT = "last_check_at"
-    private const val CHECK_INTERVAL_MS = 24L * 60 * 60 * 1000
 
     private val json = kotlinx.serialization.json.Json {
         ignoreUnknownKeys = true
@@ -73,10 +69,10 @@ object UpdateChecker {
     }
 
     /**
-     * One check against GitHub. Never throws. Conclusive answers
-     * (Available / UpToDate) refresh the 24h throttle; Failed does not.
+     * One check against GitHub. Never throws; network problems, rate limits
+     * and malformed payloads all collapse into CheckResult.Failed on purpose.
      */
-    suspend fun check(context: Context): CheckResult {
+    suspend fun check(): CheckResult {
         val client = HttpClient(Android) {
             expectSuccess = false
             install(HttpTimeout) {
@@ -100,7 +96,6 @@ object UpdateChecker {
             if (latest.isBlank()) return CheckResult.Failed
 
             if (!isNewer(latest, currentVersion())) {
-                recordCheck(context)
                 Log.d(TAG, "check: up to date (latest=$latest)")
                 return CheckResult.UpToDate
             }
@@ -114,7 +109,6 @@ object UpdateChecker {
                 return CheckResult.Failed
             }
 
-            recordCheck(context)
             CheckResult.Available(
                 UpdateInfo(
                     version = latest,
@@ -133,10 +127,6 @@ object UpdateChecker {
             client.close()
         }
     }
-
-    /** True when no conclusive check has run within the last 24h. */
-    fun isDue(context: Context): Boolean =
-        System.currentTimeMillis() - prefs(context).getLong(KEY_LAST_CHECK_AT, 0L) >= CHECK_INTERVAL_MS
 
     /**
      * Numeric segment-wise compare, so 1.10 > 1.9 (lexicographic would say
@@ -158,11 +148,4 @@ object UpdateChecker {
 
     private fun currentVersion(): String =
         com.noctra.app.BuildConfig.VERSION_NAME
-
-    private fun prefs(context: Context): SharedPreferences =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-
-    private fun recordCheck(context: Context) {
-        prefs(context).edit().putLong(KEY_LAST_CHECK_AT, System.currentTimeMillis()).apply()
-    }
 }

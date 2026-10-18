@@ -381,8 +381,9 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
                         }
                         WindDownNotificationScheduler.scheduleNext(applicationContext)
 
-                        // Throttled update check — only for fully onboarded
-                        // users, so it never appears over auth or onboarding.
+                        // Update check on every cold open — only for fully
+                        // onboarded users, so it never appears over auth or
+                        // onboarding.
                         scheduleUpdateCheck()
                     } else {
                         // Mid-flow recovery: Set the Onboarding Group as start
@@ -428,15 +429,15 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
      * branch of checkOnboardingStatus (and thus only behind
      * checkConnectivityAndInit's online gate — offline never reaches this).
      *
-     * Behavior: throttled to once per 24h; completely silent on failure (a
-     * GitHub outage must never surface); delayed a few seconds so it never
-     * competes with startup navigation; and it will not stack on top of any
-     * dialog that's already on screen (morning popup, resume dialog, ...).
+     * Behavior: runs on every cold open (by design — see the release plan);
+     * completely silent on failure (a GitHub outage must never surface);
+     * delayed a few seconds so it never competes with startup navigation;
+     * and it will not stack on top of any dialog that's already on screen
+     * (morning popup, resume dialog, ...).
      */
     private fun scheduleUpdateCheck() {
         lifecycleScope.launch {
             delay(4_000) // let navigation + first frames settle
-            if (!UpdateChecker.isDue(applicationContext)) return@launch
 
             // If another dialog owns the screen, give it up to 30s to close.
             var waited = 0L
@@ -446,7 +447,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
             }
             if (anyDialogShowing() || isFinishing || isDestroyed) return@launch
 
-            when (val result = UpdateChecker.check(applicationContext)) {
+            when (val result = UpdateChecker.check()) {
                 is UpdateChecker.CheckResult.Available -> {
                     if (!isFinishing && !isDestroyed) {
                         UpdateDialogs.showAvailable(this@MainActivity, result.info)

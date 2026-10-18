@@ -68,7 +68,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             }
         }
 
-        // Check for updates row — manual path; bypasses the 24h throttle
+        // Check for updates row — manual check with immediate feedback
         view.findViewById<View>(R.id.row_check_updates).setOnClickListener {
             checkForUpdatesManually()
         }
@@ -188,17 +188,16 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     }
 
     /**
-     * Manual update check — runs regardless of the 24h throttle (the user
-     * explicitly asked) but refreshes the same timestamp, so the automatic
-     * cold-start check won't double-fire afterwards. Failures show a plain
-     * toast; the row stays live for immediate retry.
+     * Manual update check — same checker the cold-start path uses, but with
+     * talkative feedback (the startup path stays silent by design): toast on
+     * up-to-date or failure, dialog when something newer exists.
      */
     private fun checkForUpdatesManually() {
         val row = view?.findViewById<View>(R.id.row_check_updates) ?: return
         row.isEnabled = false
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                when (val result = UpdateChecker.check(requireContext())) {
+                when (val result = UpdateChecker.check()) {
                     is UpdateChecker.CheckResult.Available -> {
                         if (isAdded) {
                             UpdateDialogs.showAvailable(requireContext(), result.info)
