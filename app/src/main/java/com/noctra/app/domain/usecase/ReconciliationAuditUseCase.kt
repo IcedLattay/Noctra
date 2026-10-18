@@ -208,7 +208,12 @@ class ReconciliationAuditUseCase(
                 // runtimes — an unparseable stamp must skip the rule, never
                 // crash the audit (it bricked the companion screen for
                 // old-runtime users with an abandoned night).
-                val routineStart = DbTime.parseInstantOrNull(session.startTimestamp)
+                // Session stamps are LOCAL wall-time mislabeled "+00", while
+                // sleep stamps are true UTC (see DbTime.parseSessionInstantOrNull).
+                // Parsing both the same way made this gap 8h too negative at
+                // UTC+8 — a 21:18 start asleep at 21:56 read as -422 min instead
+                // of +38, so sleep verification could never pass east of UTC.
+                val routineStart = DbTime.parseSessionInstantOrNull(session.startTimestamp)
                 val sleepOnset = DbTime.parseInstantOrNull(sleepRecord.sleepOnsetTime)
                 
                 if (routineStart != null && sleepOnset != null) {

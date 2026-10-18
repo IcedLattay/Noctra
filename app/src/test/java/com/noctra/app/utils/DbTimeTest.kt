@@ -56,4 +56,48 @@ class DbTimeTest {
         assertNull(DbTime.parseInstantOrNull("   "))
         assertNull(DbTime.parseInstantOrNull(null))
     }
+
+    @Test
+    fun `session start stamp is local time mislabeled utc`() {
+        // The app writes LocalDateTime text into a timestamptz column;
+        // PostgREST reads it back with a bogus +00. Recovery = strip the
+        // zone and anchor in the system zone.
+        val expected = LocalDateTime.parse("2026-10-18T21:18:46.09551")
+            .atZone(java.time.ZoneId.systemDefault()).toInstant()
+        assertEquals(
+            expected,
+            DbTime.parseSessionInstantOrNull("2026-10-18 21:18:46.09551+00")
+        )
+    }
+
+    @Test
+    fun `session stamp with plain iso form and no fraction parses`() {
+        val expected = LocalDateTime.parse("2026-10-17T00:17:05")
+            .atZone(java.time.ZoneId.systemDefault()).toInstant()
+        assertEquals(
+            expected,
+            DbTime.parseSessionInstantOrNull("2026-10-17T00:17:05+00:00")
+        )
+    }
+
+    @Test
+    fun `session stamp gap against true utc sleep recovers the real window`() {
+        // Frame reconciliation, timezone-independent: whatever the device
+        // zone, the recovered session instant must differ from its raw
+        // (literal-UTC) reading by exactly the system offset — that delta
+        // is what the 1-hour rule was missing.
+        val rawStart = DbTime.parseInstantOrNull("2026-10-18T21:18:46+00")
+        val fixedStart = DbTime.parseSessionInstantOrNull("2026-10-18T21:18:46+00")
+        val zone = java.time.ZoneId.systemDefault()
+        val expectedDelta = java.time.Duration.ofSeconds(
+            zone.rules.getOffset(java.time.LocalDateTime.parse("2026-10-18T21:18:46")).totalSeconds.toLong()
+        )
+        assertEquals(expectedDelta, java.time.Duration.between(fixedStart, rawStart))
+    }
+
+    @Test
+    fun `session stamp garbage returns null`() {
+        assertNull(DbTime.parseSessionInstantOrNull("not a time"))
+        assertNull(DbTime.parseSessionInstantOrNull(null))
+    }
 }
