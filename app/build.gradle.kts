@@ -1,5 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
+import java.security.MessageDigest
 
 val localProperties = Properties().apply {
     val localFile = rootProject.file("local.properties")
@@ -135,4 +136,41 @@ dependencies {
     implementation(libs.coroutines.android)
 
     implementation(libs.kotlinx.serialization.json)
+}
+
+// ─── Release artifact ────────────────────────────────────────────────────────
+// After every assembleRelease, produce the publishable pair next to the built
+// APK:  Noctra-<version>.apk  and  Noctra-<version>.apk.sha256.
+// The updater verifies its downloads against that .sha256 when the release
+// carries it — so generating it here (instead of from memory, where it can be
+// forgotten and silently disable verification for a whole release cycle) is
+// the point of this block.
+afterEvaluate {
+    val releaseVersion: String = android.defaultConfig.versionName ?: "0"
+    val releaseApk = layout.buildDirectory.file("outputs/apk/release/app-release.apk")
+
+    tasks.matching { it.name == "assembleRelease" }.configureEach {
+        doLast {
+            val apk = releaseApk.get().asFile
+            check(apk.exists()) { "app-release.apk not found at $apk" }
+
+            val artifact = File(apk.parentFile, "Noctra-$releaseVersion.apk")
+            apk.copyTo(artifact, overwrite = true)
+
+            val digest = MessageDigest.getInstance("SHA-256")
+            artifact.inputStream().use { input ->
+                val buffer = ByteArray(64 * 1024)
+                while (true) {
+                    val n = input.read(buffer)
+                    if (n < 0) break
+                    digest.update(buffer, 0, n)
+                }
+            }
+            val hash = digest.digest().joinToString("") { "%02x".format(it) }
+            File("$artifact.sha256").writeText("$hash  ${artifact.name}\n")
+
+            logger.lifecycle("Release artifact: ${artifact.name} (${artifact.length() / (1024 * 1024)} MB)")
+            logger.lifecycle("Checksum:         ${artifact.name}.sha256")
+        }
+    }
 }
