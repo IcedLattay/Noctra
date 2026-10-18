@@ -38,6 +38,17 @@
             android:textSize="16sp"
             android:lineSpacingExtra="4sp" />
 
+        <ProgressBar
+            android:id="@+id/progress_download"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:max="100"
+            android:progressTint="@color/noctra_purple"
+            android:progressBackgroundTint="@color/noctra_gray_track"
+            android:visibility="gone" />
+
         <Button
             android:id="@+id/btn_positive"
             android:layout_width="match_parent"

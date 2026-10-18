@@ -6,6 +6,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- In-app updates: lets Noctra hand its own signed APK to the system
+         installer (the user still confirms in Android's own dialog; the
+         one-time "install unknown apps" toggle is per-app, not global) -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- Health Connect: sleep sessions + stages (movement derived from stages), heart rate -->
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
@@ -73,6 +77,18 @@
                 <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
             </intent-filter>
         </activity-alias>
+
+        <!-- In-app updates: exposes the downloaded APK to the system installer
+             (content:// URI — file:// is forbidden since Android 7) -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

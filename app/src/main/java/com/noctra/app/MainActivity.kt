@@ -36,7 +36,7 @@ import com.noctra.app.utils.PendingDeepLinkError
 import com.noctra.app.utils.UserSession
 import com.noctra.app.utils.NetworkObserver
 import com.noctra.app.update.UpdateChecker
-import com.noctra.app.ui.update.UpdateDialogs
+import com.noctra.app.update.UpdateFlowDialogFragment
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
 import kotlinx.coroutines.delay
@@ -450,7 +450,7 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
             when (val result = UpdateChecker.check()) {
                 is UpdateChecker.CheckResult.Available -> {
                     if (!isFinishing && !isDestroyed) {
-                        UpdateDialogs.showAvailable(this@MainActivity, result.info)
+                        UpdateFlowDialogFragment.launch(supportFragmentManager, result.info)
                     }
                 }
                 // UpToDate and Failed are both silent by design.

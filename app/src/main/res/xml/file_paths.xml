@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Paths the update FileProvider may expose. The updater downloads APKs to
+     the app-specific external files root (no storage permission needed);
+     "." covers that directory. -->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-files-path
+        name="external_files"
+        path="." />
+</paths>

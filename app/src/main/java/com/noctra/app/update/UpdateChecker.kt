@@ -53,14 +53,16 @@ object UpdateChecker {
         val assets: List<GhAsset> = emptyList()
     )
 
-    /** A newer release we can offer. */
+    /** A newer release we can offer. Serializable so the flow dialog can
+     *  carry it through its arguments across recreation. */
     data class UpdateInfo(
-        val version: String,        // cleaned tag, e.g. "1.2"
-        val notes: String,          // release body (may be empty)
+        val version: String,         // cleaned tag, e.g. "1.2"
+        val notes: String,           // release body (may be empty)
         val sizeBytes: Long,
-        val downloadUrl: String,    // direct APK URL (Phase 2 uses this)
-        val releasePageUrl: String  // human page (Phase 1 opens this)
-    )
+        val downloadUrl: String,     // direct APK URL
+        val releasePageUrl: String,  // human page (fallback link)
+        val checksumUrl: String? = null // optional *.sha256 release asset
+    ) : java.io.Serializable
 
     sealed class CheckResult {
         data class Available(val info: UpdateInfo) : CheckResult()
@@ -109,13 +111,20 @@ object UpdateChecker {
                 return CheckResult.Failed
             }
 
+            // Optional companion checksum asset (Noctra-X.Y.apk.sha256) —
+            // releases without one still work; verification just degrades.
+            val checksum = release.assets.firstOrNull {
+                it.name.endsWith(".sha256", ignoreCase = true)
+            }
+
             CheckResult.Available(
                 UpdateInfo(
                     version = latest,
                     notes = release.body.orEmpty(),
                     sizeBytes = apk.size,
                     downloadUrl = apk.browser_download_url,
-                    releasePageUrl = release.html_url
+                    releasePageUrl = release.html_url,
+                    checksumUrl = checksum?.browser_download_url
                 )
             )
         } catch (e: Exception) {

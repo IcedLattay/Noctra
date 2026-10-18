@@ -20,7 +20,7 @@ import com.google.android.material.materialswitch.MaterialSwitch
 import com.noctra.app.BuildConfig
 import com.noctra.app.R
 import com.noctra.app.ui.common.BedtimePickerBottomSheet
-import com.noctra.app.ui.update.UpdateDialogs
+import com.noctra.app.update.UpdateFlowDialogFragment
 import com.noctra.app.update.UpdateChecker
 import com.noctra.app.utils.NotificationPreferences
 import io.github.jan.supabase.gotrue.auth
@@ -200,7 +200,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 when (val result = UpdateChecker.check()) {
                     is UpdateChecker.CheckResult.Available -> {
                         if (isAdded) {
-                            UpdateDialogs.showAvailable(requireContext(), result.info)
+                            UpdateFlowDialogFragment.launch(parentFragmentManager, result.info)
                         }
                     }
                     UpdateChecker.CheckResult.UpToDate -> {
