@@ -5,6 +5,7 @@ import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.utils.RoutineWindowProvider
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.time.format.DateTimeFormatter
 import java.time.OffsetDateTime
 import kotlin.math.max
@@ -40,17 +41,28 @@ class RewardCalculationUseCase(
          * genuine gap (or first ever) → restart at 1. Pinned by unit test —
          * the old wall-clock version reset streaks for every routine that
          * finished after midnight.
+         *
+         * [gapNightsAllPending] covers the second false-gap: pending nights
+         * never touch the ledger (they await their grace verdict), so an
+         * unfinished-but-in-flight night between the last credited one and
+         * tonight looks like a break here. When EVERY uncredited night is
+         * still pending, the chain is suspended, not broken.
          */
         internal fun computeNewStreak(
             currentStreak: Int,
             lastSessionDate: LocalDate?,
-            nightDate: LocalDate
+            nightDate: LocalDate,
+            gapNightsAllPending: Boolean = false
         ): Int {
             val nightBefore = nightDate.minusDays(1)
             return when {
                 lastSessionDate == null -> 1
                 lastSessionDate == nightBefore -> currentStreak + 1
                 lastSessionDate == nightDate -> currentStreak
+                // Count tonight only — the audit credits or penalizes each
+                // pending night when it resolves (transition-gated there,
+                // so no double-count).
+                gapNightsAllPending -> currentStreak + 1
                 else -> 1
             }
         }
@@ -104,7 +116,12 @@ class RewardCalculationUseCase(
 
         val lastSessionDate = ledger.lastSessionDate?.let { LocalDate.parse(it, dateFormatter) }
 
-        val newStreak = computeNewStreak(ledger.currentStreak, lastSessionDate, nightDate)
+        val newStreak = computeNewStreak(
+            currentStreak = ledger.currentStreak,
+            lastSessionDate = lastSessionDate,
+            nightDate = nightDate,
+            gapNightsAllPending = gapNightsAllPending(userId, lastSessionDate, nightDate)
+        )
 
         val result = calculate(newStreak - 1)
 
@@ -137,6 +154,32 @@ class RewardCalculationUseCase(
             runCatching { LocalDate.parse(fromRow) }.getOrNull()?.let { return it }
         }
         return RoutineWindowProvider.resolveRoutineSessionDate(LocalDateTime.now())
+    }
+
+    /**
+     * True when every uncredited night between the last credited one and
+     * tonight is still PENDING. Pending nights never touch the ledger — they
+     * await their grace-period verdict — so they leave a false "gap" here:
+     * the chain is suspended, not broken. A missed or rowless night in the
+     * gap is a genuine break (the morning audit normally judges those and
+     * advances last_session_date past them before the evening completion).
+     */
+    private suspend fun gapNightsAllPending(
+        userId: String,
+        lastSessionDate: LocalDate?,
+        nightDate: LocalDate
+    ): Boolean {
+        if (lastSessionDate == null) return false
+        val firstGap = lastSessionDate.plusDays(1)
+        val lastGap = nightDate.minusDays(1)
+        if (!firstGap.isBefore(lastGap)) return false // no nights in between
+        val repo = routineSessionRepository ?: return false
+        val gap = runCatching {
+            repo.getSessionsInRange(userId, firstGap.toString(), lastGap.toString())
+        }.getOrNull() ?: return false
+        val expectedNights = ChronoUnit.DAYS.between(firstGap, lastGap).toInt() + 1
+        return gap.size == expectedNights &&
+            gap.all { it.status.equals("PENDING", ignoreCase = true) }
     }
 
     fun getMultiplier(streak: Int): Double {

@@ -45,4 +45,22 @@ class RewardCalculationUseCaseTest {
     fun `first completion starts at one`() {
         assertEquals(1, RewardCalculationUseCase.computeNewStreak(0, null, oct16))
     }
+
+    @Test
+    fun `in-flight night suspends the chain instead of breaking it`() {
+        // Last credited Oct 15, Oct 16 still pending its grace verdict,
+        // completing the Oct 17 night: count tonight, leave the pending
+        // slot open for the audit to resolve later.
+        assertEquals(3, RewardCalculationUseCase.computeNewStreak(2, oct15, oct17, gapNightsAllPending = true))
+    }
+
+    @Test
+    fun `suspended chain still starts fresh when nothing precedes it`() {
+        assertEquals(1, RewardCalculationUseCase.computeNewStreak(0, null, oct16, gapNightsAllPending = true))
+    }
+
+    @Test
+    fun `a gap that is not in flight still resets`() {
+        assertEquals(1, RewardCalculationUseCase.computeNewStreak(4, oct15, oct17, gapNightsAllPending = false))
+    }
 }

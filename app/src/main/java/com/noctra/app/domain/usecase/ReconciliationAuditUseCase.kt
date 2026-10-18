@@ -60,9 +60,18 @@ class ReconciliationAuditUseCase(
                 currentLedger = currentLedger,
                 syncSleep = true
             )
+            // Persist after every date. Verdicts are transition-gated (see
+            // auditDate), so a crash after a row write but before the ledger
+            // save would make the rerun see "no transition" and silently drop
+            // that night's verdict — per-date saves shrink that window to
+            // milliseconds.
+            rewardRepository.updateRewardLedger(currentLedger.copy(
+                lastUpdated = OffsetDateTime.now().toString()
+            ))
         }
 
-        // 4. Final Save
+        // 4. Final Save (covers a range that changed nothing, plus the
+        //    >14-day absence reset written before the loop)
         rewardRepository.updateRewardLedger(currentLedger.copy(
             lastUpdated = OffsetDateTime.now().toString()
         ))
@@ -132,15 +141,33 @@ class ReconciliationAuditUseCase(
         // B. VERDICT: Determine if the day was a success
         val finalStatus = determineStatus(userId, date, session)
 
-        // Update the session in DB if status changed
-        if (session != null && session.status != finalStatus) {
-            sessionRepository.insertSession(session.copy(status = finalStatus))
-        } else if (session == null && date.isBefore(LocalDate.now())) {
-            // Create a missed record for empty days in the past
-            sessionRepository.recordMissedSession(userId, dateString)
+        // The ledger only sees verdicts that CHANGE stored state. A row
+        // already COMPLETED was credited when the app finished it in-app —
+        // and the audit's range gets dragged back over such dates whenever
+        // an older night is still pending, so re-applying would double-count.
+        // An already-MISSED row must never re-penalize either (a repeat of
+        // an old miss could zero a streak a second time). Transitions
+        // (pending→completed, no-row→missed, pending→missed) are the only
+        // nights the counter hasn't seen yet.
+        val verdictChangedState = when {
+            session == null -> {
+                // Create a missed record for empty days in the past
+                if (date.isBefore(LocalDate.now())) {
+                    sessionRepository.recordMissedSession(userId, dateString)
+                    true
+                } else {
+                    false
+                }
+            }
+            session.status != finalStatus -> {
+                sessionRepository.insertSession(session.copy(status = finalStatus))
+                true
+            }
+            else -> false
         }
 
-        // C. AUDIT: Apply Game Rules
+        // C. AUDIT: Apply Game Rules — transitions only
+        if (!verdictChangedState) return currentLedger
         return applyPenaltyChain(currentLedger, finalStatus, date)
     }
 
@@ -199,12 +226,21 @@ class ReconciliationAuditUseCase(
     private fun applyPenaltyChain(ledger: RewardLedger, status: String, date: LocalDate): RewardLedger {
         if (status == "PENDING") return ledger // Do nothing for pendings
 
+        // The watermark never moves backward: an older night can resolve
+        // (sleep-verified, or grace-expired) AFTER newer nights were already
+        // credited in-app. Rewinding last_session_date would hand the next
+        // completion a false gap and reset the streak — the very bug the
+        // completion-side chain fix just closed.
+        val previousWatermark = ledger.lastSessionDate
+            ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        val watermark = maxOf(previousWatermark ?: date, date)
+
         return if (status == "COMPLETED") {
             ledger.copy(
                 currentStreak = ledger.currentStreak + 1,
                 longestStreak = maxOf(ledger.longestStreak, ledger.currentStreak + 1),
                 hasFirstMiss = false,
-                lastSessionDate = date.toString()
+                lastSessionDate = watermark.toString()
             )
         } else {
             // MISSED
@@ -213,13 +249,13 @@ class ReconciliationAuditUseCase(
                 ledger.copy(
                     currentStreak = 0,
                     hasFirstMiss = true, // Maintain warning
-                    lastSessionDate = date.toString()
+                    lastSessionDate = watermark.toString()
                 )
             } else {
                 // First Miss (Warning)
                 ledger.copy(
                     hasFirstMiss = true,
-                    lastSessionDate = date.toString()
+                    lastSessionDate = watermark.toString()
                 )
             }
         }
