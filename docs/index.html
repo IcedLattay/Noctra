@@ -354,6 +354,14 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* real screenshot assets — ratios match the slots exactly, cover is a no-op safety net */
+.m-card img, .slide img, .lightbox-inner img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.lightbox-inner img[hidden] { display: none; }   /* until a card is tapped */
+
 /* gutter alignment: first card left edge == button left edge,
    last card right edge == button right edge (one shared knob;
    100% = full-bleed strip width, same basis the button is centered on) */
@@ -489,13 +497,13 @@ body.lb-open { overflow: hidden; }
       <div class="rail" id="rail">
         <div class="track" id="track">
           <!-- slots duplicated by JS for the infinite loop (clones of ends) -->
-          <div class="slot"><div class="slide"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 1<small>placeholder · desktop asset</small></div></div></div>
-          <div class="slot"><div class="slide"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 2<small>placeholder · desktop asset</small></div></div></div>
-          <div class="slot"><div class="slide"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 3<small>placeholder · desktop asset</small></div></div></div>
-          <div class="slot"><div class="slide"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 4<small>placeholder · desktop asset</small></div></div></div>
-          <div class="slot"><div class="slide"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 5<small>placeholder · desktop asset</small></div></div></div>
-          <div class="slot"><div class="slide"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 6<small>placeholder · desktop asset</small></div></div></div>
-          <div class="slot"><div class="slide"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 7<small>placeholder · desktop asset</small></div></div></div>
+          <div class="slot"><div class="slide"><img src="assets/showcase/desktop/desktop-1-build.png" alt="Build your nightly routine"></div></div>
+          <div class="slot"><div class="slide"><img src="assets/showcase/desktop/desktop-2-perform.png" alt="Perform your nightly routine"></div></div>
+          <div class="slot"><div class="slide"><img src="assets/showcase/desktop/desktop-3-energy.png" alt="Help your Shleepy gain energy"></div></div>
+          <div class="slot"><div class="slide"><img src="assets/showcase/desktop/desktop-4-customize.png" alt="Customize your Shleepy"></div></div>
+          <div class="slot"><div class="slide"><img src="assets/showcase/desktop/desktop-5-streak.png" alt="Maintain your streak"></div></div>
+          <div class="slot"><div class="slide"><img src="assets/showcase/desktop/desktop-6-leaderboard.png" alt="Compete with friends"></div></div>
+          <div class="slot"><div class="slide"><img src="assets/showcase/desktop/desktop-7-performance.png" alt="View your performance"></div></div>
         </div>
       </div>
       <button class="c-arrow c-prev" id="cPrev" aria-label="Previous feature"><svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 24C14 23.4696 14.2109 22.961 14.5859 22.586L29.5859 7.58597C30.367 6.80492 31.633 6.80492 32.4141 7.58597C33.1951 8.36701 33.1951 9.63304 32.4141 10.4141L18.8281 24L32.4141 37.586C33.1951 38.367 33.1951 39.633 32.4141 40.4141C31.633 41.1951 30.367 41.1951 29.5859 40.4141L14.5859 25.4141L14.4531 25.2676C14.1615 24.9117 14 24.4642 14 24Z" fill="#FFFFFF"/></svg></button>
@@ -518,13 +526,13 @@ body.lb-open { overflow: hidden; }
   <section class="cmob" aria-label="Noctra features">
     <div class="strip" id="strip">
       <!-- captions are BAKED INTO mobile images; placeholder labels stand in -->
-      <figure class="m-card" data-label="Screenshot 1 — Build your nightly routine"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 1<small>caption baked into asset</small></div></figure>
-      <figure class="m-card" data-label="Screenshot 2 — Perform your nightly routine"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 2<small>caption baked into asset</small></div></figure>
-      <figure class="m-card" data-label="Screenshot 3 — Help your Shleepy gain energy"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 3<small>caption baked into asset</small></div></figure>
-      <figure class="m-card" data-label="Screenshot 4 — Customize your Shleepy"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 4<small>caption baked into asset</small></div></figure>
-      <figure class="m-card" data-label="Screenshot 5 — Maintain your streak"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 5<small>caption baked into asset</small></div></figure>
-      <figure class="m-card" data-label="Screenshot 6 — Compete with friends"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 6<small>caption baked into asset</small></div></figure>
-      <figure class="m-card" data-label="Screenshot 7 — View your performance"><div class="ph"><span class="glyph">&#128247;</span>Screenshot 7<small>caption baked into asset</small></div></figure>
+      <figure class="m-card" data-label="Screenshot 1 — Build your nightly routine"><img src="assets/showcase/mobile/mobile-1-build.png" alt="Build your nightly routine" loading="lazy" decoding="async"></figure>
+      <figure class="m-card" data-label="Screenshot 2 — Perform your nightly routine"><img src="assets/showcase/mobile/mobile-2-perform.png" alt="Perform your nightly routine" loading="lazy" decoding="async"></figure>
+      <figure class="m-card" data-label="Screenshot 3 — Help your Shleepy gain energy"><img src="assets/showcase/mobile/mobile-3-energy.png" alt="Help your Shleepy gain energy" loading="lazy" decoding="async"></figure>
+      <figure class="m-card" data-label="Screenshot 4 — Customize your Shleepy"><img src="assets/showcase/mobile/mobile-4-customize.png" alt="Customize your Shleepy" loading="lazy" decoding="async"></figure>
+      <figure class="m-card" data-label="Screenshot 5 — Maintain your streak"><img src="assets/showcase/mobile/mobile-5-streak.png" alt="Maintain your streak" loading="lazy" decoding="async"></figure>
+      <figure class="m-card" data-label="Screenshot 6 — Compete with friends"><img src="assets/showcase/mobile/mobile-6-leaderboard.png" alt="Compete with friends" loading="lazy" decoding="async"></figure>
+      <figure class="m-card" data-label="Screenshot 7 — View your performance"><img src="assets/showcase/mobile/mobile-7-performance.png" alt="View your performance" loading="lazy" decoding="async"></figure>
     </div>
   </section>
 
@@ -533,7 +541,7 @@ body.lb-open { overflow: hidden; }
 <!-- lightbox (mobile tap-to-enlarge) -->
 <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Screenshot preview">
   <button class="lightbox-close" id="lbClose" aria-label="Close">&#10005;</button>
-  <div class="lightbox-inner"><div class="ph" id="lbPh"><span class="glyph">&#128247;</span><span id="lbLabel">Screenshot</span></div></div>
+  <div class="lightbox-inner"><div class="ph" id="lbPh"><span class="glyph">&#128247;</span><span id="lbLabel">Screenshot</span></div><img id="lbImg" alt="" hidden></div>
 </div>
 
 <script>
@@ -729,6 +737,8 @@ body.lb-open { overflow: hidden; }
   var lb = document.getElementById('lightbox');
   var lbLabel = document.getElementById('lbLabel');
   var lbClose = document.getElementById('lbClose');
+  var lbImg = document.getElementById('lbImg');
+  var lbPh = document.getElementById('lbPh');
   if (!strip || !lb) return;
 
   var downX = 0, downY = 0, moved = false;
@@ -746,11 +756,18 @@ body.lb-open { overflow: hidden; }
     if (moved) return;                       // it was a swipe — ignore
     var card = e.target.closest('.m-card');
     if (!card) return;
-    openLb(card.getAttribute('data-label') || 'Screenshot');
+    openLb(card, card.getAttribute('data-label') || 'Screenshot');
   });
 
-  function openLb(label) {
+  function openLb(card, label) {
     lbLabel.textContent = label;
+    var shot = card.querySelector('img');
+    if (shot && lbImg) {
+      lbImg.src = shot.src;
+      lbImg.alt = shot.alt;
+      lbImg.hidden = false;
+      if (lbPh) lbPh.hidden = true;
+    }
     lb.classList.add('is-open');
     document.body.classList.add('lb-open');
     lbClose.focus();
