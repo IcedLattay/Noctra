@@ -144,6 +144,8 @@ body {
   font-size: 13px;
   line-height: 1.4;
 }
+/* author rule must outrank .ph's own display:flex — the UA [hidden] default can't */
+.ph[hidden] { display: none; }
 .ph .glyph { font-size: 30px; }
 .ph small { display: block; font-size: 11px; opacity: .75; }
 
