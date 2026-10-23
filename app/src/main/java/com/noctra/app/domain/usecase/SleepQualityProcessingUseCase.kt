@@ -15,10 +15,11 @@ class SleepQualityProcessingUseCase {
     /**
      * Calculates per-night sleep quality scores.
      *
-     * Heart rate and movement inputs are nullable: real Health Connect data may
-     * lack a learned HR baseline (first ~7 nights) or stage data entirely
-     * (coarse devices). Missing components are excluded and their weight is
-     * redistributed to the remaining components rather than assumed perfect.
+     * Heart rate and movement inputs are nullable: real Health Connect data
+     * may lack HR history entirely (the very first HR night has no baseline
+     * to deviate from) or stage data entirely (coarse devices). Missing
+     * components are excluded and their weight is redistributed to the
+     * remaining components rather than assumed perfect.
      */
     fun calculateScores(
         durationMinutes: Int,

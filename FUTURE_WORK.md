@@ -99,6 +99,31 @@ resurrect stale routine state.
 hardening and decide per-key: user id + prefs yes, routine execution cache
 probably no.
 
+### 1.8 HR baseline bootstrap from pre-app Health Connect history
+
+**Context.** Baseline learning shipped as `HrBaselineUseCase` (rolling
+median of the last 7 HR-valid nights, minimum n ≥ 1) — but the window only
+contains nights synced *since onboarding*. A participant's watch may already
+hold weeks of nocturnal HR data in Health Connect that never enters the
+window. Consequence: the first in-app HR night has no baseline, and early
+baselines (n = 1–3) carry ±3 BPM of noise, which at 5 points/BPM can swing
+the composite ~15 points — enough to flip a Good/Moderate XP tier.
+
+**Why it waits.** Decided during MVP scoping (Oct 2026): the 1-week
+validation period tolerates the noisy start, and the raw inputs
+(`avg_heart_rate_bpm`, and `hr_baseline_at_scoring` snapshots on every row)
+mean the study data can be **re-scored offline** with a properly-learned
+baseline afterwards — the MVP score doesn't have to be the final score.
+Keeps the MVP's moving parts minimal.
+
+**When to revisit.** If post-MVP data shows HR activation was too slow or
+early scores visibly noisy, read historical `HeartRateRecord`/sleep sessions
+from Health Connect at onboarding to pre-fill the 7-night window (respecting
+the existing permission gate — HR grant already requested in onboarding
+step 4). Starting points: `HrBaselineUseCase.computeBaseline` (add a
+bootstrap path), the onboarding Health Grant step, and
+`COMPANION_APP_DATA_SHARING.md` for per-device HR fidelity caveats.
+
 ---
 
 ## 2. Data Integrity & Hardening

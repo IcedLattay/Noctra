@@ -9,6 +9,7 @@ import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import com.noctra.app.NoctraApplication
 import com.noctra.app.data.model.SleepRecord
+import com.noctra.app.domain.usecase.HrBaselineUseCase
 import com.noctra.app.domain.usecase.SleepQualityProcessingUseCase
 import com.noctra.app.utils.HealthConnectPermissionHelper
 import java.time.Duration
@@ -30,6 +31,7 @@ class SleepSyncManager {
 
     private val sleepRecordRepository = SleepRecordRepository()
     private val scoreCalculator = SleepQualityProcessingUseCase()
+    private val hrBaselineUseCase = HrBaselineUseCase()
 
     sealed class SyncResult {
         data class Synced(val record: SleepRecord, val isPartial: Boolean) : SyncResult()
@@ -116,8 +118,13 @@ class SleepSyncManager {
      * Full sync pipeline for one session date:
      * Health Connect -> parse stages -> aggregate -> score -> idempotent upsert.
      *
-     * @param hrBaseline the user's learned resting HR baseline, or null while
-     *                   it is still being established (first ~7 nights).
+     * @param hrBaseline an explicit baseline override (debug/seed paths). When
+     *                   null — the normal case — the baseline is learned from
+     *                   the user's own sleep history via [HrBaselineUseCase]:
+     *                   a rolling median of the last 7 nights with valid HR,
+     *                   strictly before this session date. Stays null while
+     *                   no HR history exists, so night 1 scores without HR
+     *                   and its weight is redistributed.
      */
     suspend fun syncSessionDate(
         userId: String,
@@ -202,12 +209,22 @@ class SleepSyncManager {
                 null
             }
 
+            // 4b. HR BASELINE: learned from prior nights' averages (rolling
+            //     median). Only worth fetching history when this night actually
+            //     has HR to compare; an explicit override wins for debug/seed.
+            //     Null on the user's first-ever HR night, by design.
+            val effectiveBaseline = if (avgHeartRate != null) {
+                hrBaseline ?: hrBaselineUseCase.computeBaseline(userId, sessionDate)
+            } else {
+                null
+            }
+
             // 5. SCORE
             val scores = scoreCalculator.calculateScores(
                 durationMinutes = aggregated.durationMinutes,
                 avgHeartRate = avgHeartRate,
                 movementCount = aggregated.movementCount,
-                hrBaseline = hrBaseline
+                hrBaseline = effectiveBaseline
             )
             Log.d(TAG, "Scores — duration: ${scores.durationScore}, hr: ${scores.heartRateScore}, movement: ${scores.movementScore}, composite: ${scores.compositeScore}")
 
@@ -243,7 +260,7 @@ class SleepSyncManager {
                 sleepDurationMinutes = aggregated.durationMinutes,
                 avgHeartRateBpm = avgHeartRate,
                 movementEventCount = aggregated.movementCount,
-                hrBaselineAtScoring = hrBaseline,
+                hrBaselineAtScoring = effectiveBaseline,
                 durationScore = scores.durationScore,
                 heartRateScore = scores.heartRateScore,
                 movementScore = scores.movementScore,
