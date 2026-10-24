@@ -8,6 +8,7 @@ import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.data.repository.SleepRecordRepository
 import com.noctra.app.data.repository.SleepSyncManager
 import com.noctra.app.utils.DbTime
+import com.noctra.app.utils.RoutineWindowProvider
 import java.time.Instant
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -152,8 +153,14 @@ class ReconciliationAuditUseCase(
         // nights the counter hasn't seen yet.
         val verdictChangedState = when {
             session == null -> {
-                // Create a missed record for empty days in the past
-                if (date.isBefore(LocalDate.now())) {
+                // Create a missed record for empty days in the past — but
+                // only nights whose 4 AM attribution anchor has rolled
+                // past. Before it, the previous date is still a LIVE
+                // night (post-midnight starts back-date into it): judging
+                // it now plants a phantom MISSED row the real session then
+                // duplicates, plus a streak penalty for a night not yet
+                // performed. (See RoutineWindowProvider.isSessionDateClosed.)
+                if (RoutineWindowProvider.isSessionDateClosed(date)) {
                     sessionRepository.recordMissedSession(userId, dateString)
                     true
                 } else {
@@ -194,7 +201,10 @@ class ReconciliationAuditUseCase(
 
     private suspend fun determineStatus(userId: String, date: LocalDate, session: RoutineSession?): String {
         if (session?.status == "COMPLETED") return "COMPLETED"
-        if (session == null && date.isEqual(LocalDate.now())) return "PENDING" // Today isn't missed yet
+        // Not missed yet: today, plus the previous date while its 4 AM
+        // attribution anchor is still ahead (post-midnight starts back-date
+        // into it — see RoutineWindowProvider.isSessionDateClosed).
+        if (session == null && !RoutineWindowProvider.isSessionDateClosed(date)) return "PENDING"
         if (session == null) return "MISSED"
 
         // If PENDING, check for sleep verification

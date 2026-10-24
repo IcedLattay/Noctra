@@ -57,8 +57,28 @@ object RoutineWindowProvider {
      * 2 AM (latest start ~3 AM), every post-midnight start falls on the
      * correct side of this line — no ambiguity remains.
      */
-    fun resolveRoutineSessionDate(now: java.time.LocalDateTime): java.time.LocalDate {
+    fun resolveRoutineSessionDate(now: java.time.LocalDateTime = java.time.LocalDateTime.now()): java.time.LocalDate {
         return if (now.hour < 4) now.toLocalDate().minusDays(1) else now.toLocalDate()
+    }
+
+    /**
+     * True once [date] can no longer gain a routine row through
+     * back-attribution — i.e. the 4 AM anchor has rolled past it and a
+     * start can never again be dated to it.
+     *
+     * Miss judgers MUST consult this instead of the plain calendar:
+     * between midnight and 4 AM the previous date is still a LIVE night
+     * (post-midnight starts back-date to it), so marking an empty
+     * previous date MISSED in that window both creates a phantom row —
+     * which the later real session duplicates, desyncing every
+     * first-row-wins consumer — and folds a streak penalty onto a night
+     * the user hasn't had a chance to perform yet.
+     */
+    fun isSessionDateClosed(
+        date: java.time.LocalDate,
+        now: java.time.LocalDateTime = java.time.LocalDateTime.now()
+    ): Boolean {
+        return date.isBefore(resolveRoutineSessionDate(now))
     }
 
     /**
