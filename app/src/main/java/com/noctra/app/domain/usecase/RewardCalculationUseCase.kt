@@ -1,5 +1,6 @@
 package com.noctra.app.domain.usecase
 
+import com.noctra.app.data.model.RewardLedger
 import com.noctra.app.data.repository.RewardLedgerRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.utils.RoutineWindowProvider
@@ -64,6 +65,43 @@ class RewardCalculationUseCase(
                 // so no double-count).
                 gapNightsAllPending -> currentStreak + 1
                 else -> 1
+            }
+        }
+
+        /**
+         * The verdict→ledger fold for a MISSED night — the SINGLE source
+         * of truth shared by the open-path audit and the 9:30 morning
+         * checker. First miss = warning: streak kept, but the ANCHOR hops
+         * onto the missed night so the next completion chains instead of
+         * seeing a hole. Second consecutive miss = reset, warning stays.
+         * The anchor hop is the whole mechanic — without it the warning
+         * flag says "streak survives" while the gap rule (computeNewStreak)
+         * breaks it anyway.
+         *
+         * The checker used to run a private copy of this that never moved
+         * the anchor, so identical behavior produced two different streaks
+         * depending on which judger reached the night first. Pure: callers
+         * stamp lastUpdated themselves. Pinned by unit test.
+         */
+        internal fun applyMissPenalty(ledger: RewardLedger, missedDate: LocalDate): RewardLedger {
+            // Watermark never moves backward: an older night resolving late
+            // must not rewind past nights already credited.
+            val previousWatermark = ledger.lastSessionDate
+                ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+            val watermark = maxOf(previousWatermark ?: missedDate, missedDate)
+            return if (ledger.hasFirstMiss) {
+                // Second consecutive miss -> reset, warning maintained
+                ledger.copy(
+                    currentStreak = 0,
+                    hasFirstMiss = true,
+                    lastSessionDate = watermark.toString()
+                )
+            } else {
+                // First miss (warning): streak kept
+                ledger.copy(
+                    hasFirstMiss = true,
+                    lastSessionDate = watermark.toString()
+                )
             }
         }
     }

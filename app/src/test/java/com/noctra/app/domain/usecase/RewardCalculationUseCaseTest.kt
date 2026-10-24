@@ -1,6 +1,8 @@
 package com.noctra.app.domain.usecase
 
+import com.noctra.app.data.model.RewardLedger
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 
@@ -18,6 +20,9 @@ class RewardCalculationUseCaseTest {
     private val oct15: LocalDate = LocalDate.of(2026, 10, 15)
     private val oct16: LocalDate = LocalDate.of(2026, 10, 16)
     private val oct17: LocalDate = LocalDate.of(2026, 10, 17)
+    private val oct20: LocalDate = LocalDate.of(2026, 10, 20)
+    private val oct21: LocalDate = LocalDate.of(2026, 10, 21)
+    private val oct22: LocalDate = LocalDate.of(2026, 10, 22)
 
     @Test
     fun `after-midnight completion still chains the previous night`() {
@@ -62,5 +67,50 @@ class RewardCalculationUseCaseTest {
     @Test
     fun `a gap that is not in flight still resets`() {
         assertEquals(1, RewardCalculationUseCase.computeNewStreak(4, oct15, oct17, gapNightsAllPending = false))
+    }
+
+    // ── applyMissPenalty: shared by the audit AND the morning checker ────
+    // The checker used to run a private copy that never moved the anchor,
+    // so a single warning-miss broke the streak anyway through the gap
+    // rule. These pin the unified behavior.
+
+    private fun ledger(streak: Int, last: LocalDate?, firstMiss: Boolean) = RewardLedger(
+        userId = "test-user",
+        currentStreak = streak,
+        hasFirstMiss = firstMiss,
+        lastSessionDate = last?.toString(),
+        lastUpdated = "2026-10-25T00:00:00+00:00"
+    )
+
+    @Test
+    fun `first miss is a warning - streak kept and anchor hops onto the missed night`() {
+        val out = RewardCalculationUseCase.applyMissPenalty(ledger(2, oct20, false), oct21)
+        assertEquals(2, out.currentStreak)
+        assertTrue(out.hasFirstMiss)
+        assertEquals(oct21.toString(), out.lastSessionDate)
+    }
+
+    @Test
+    fun `anchor hop lets the next completion chain instead of resetting`() {
+        // The entire divergence in one test: with the anchor ON the missed
+        // night, completing Oct 22 chains to +1 instead of restarting.
+        val afterMiss = RewardCalculationUseCase.applyMissPenalty(ledger(2, oct20, false), oct21)
+        val anchor = LocalDate.parse(afterMiss.lastSessionDate)
+        assertEquals(3, RewardCalculationUseCase.computeNewStreak(afterMiss.currentStreak, anchor, oct22))
+    }
+
+    @Test
+    fun `second consecutive miss resets the streak but keeps the warning`() {
+        val out = RewardCalculationUseCase.applyMissPenalty(ledger(3, oct21, true), oct22)
+        assertEquals(0, out.currentStreak)
+        assertTrue(out.hasFirstMiss)
+        assertEquals(oct22.toString(), out.lastSessionDate)
+    }
+
+    @Test
+    fun `anchor never moves backward for an older miss`() {
+        val out = RewardCalculationUseCase.applyMissPenalty(ledger(4, oct22, false), oct21)
+        assertEquals(oct22.toString(), out.lastSessionDate)
+        assertEquals(4, out.currentStreak)
     }
 }

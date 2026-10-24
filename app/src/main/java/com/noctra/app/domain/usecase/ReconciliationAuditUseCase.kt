@@ -264,21 +264,10 @@ class ReconciliationAuditUseCase(
                 lastSessionDate = watermark.toString()
             )
         } else {
-            // MISSED
-            if (ledger.hasFirstMiss) {
-                // Consecutive Miss
-                ledger.copy(
-                    currentStreak = 0,
-                    hasFirstMiss = true, // Maintain warning
-                    lastSessionDate = watermark.toString()
-                )
-            } else {
-                // First Miss (Warning)
-                ledger.copy(
-                    hasFirstMiss = true,
-                    lastSessionDate = watermark.toString()
-                )
-            }
+            // MISSED — folded by the SAME shared chain the morning checker
+            // calls, so both judgers produce identical ledgers (they used
+            // to diverge on whether the anchor hops over the missed night).
+            RewardCalculationUseCase.applyMissPenalty(ledger, date)
         }
     }
 }

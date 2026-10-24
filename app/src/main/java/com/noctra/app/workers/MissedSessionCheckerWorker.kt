@@ -3,6 +3,7 @@ package com.noctra.app.workers
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.noctra.app.domain.usecase.RewardCalculationUseCase
 import com.noctra.app.data.repository.RewardLedgerRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.utils.RoutineWindowProvider
@@ -45,20 +46,17 @@ class MissedSessionCheckerWorker(
             // Missed session! Record it in the DB so it shows up in Analytics
             sessionRepository.recordMissedSession(userId, yesterday)
 
-            var newCurrentStreak = ledger.currentStreak
-            
-            if (ledger.hasFirstMiss) {
-                // Second consecutive miss -> Reset streak
-                // Note: User decided no XP loss for routine miss
-                newCurrentStreak = 0
-            }
-
-            val updatedLedger = ledger.copy(
-                currentStreak = newCurrentStreak,
-                hasFirstMiss = true, // Set/maintain warning
+            // Fold the verdict through the SAME penalty chain the audit
+            // uses (shared applyMissPenalty): first miss = warning with the
+            // anchor hopping onto the missed night, second consecutive =
+            // reset. This checker's old private copy never moved the
+            // anchor, so a warning miss broke the streak anyway via the
+            // gap rule — identical behavior, two outcomes depending on
+            // which judger reached the night first.
+            val updatedLedger = RewardCalculationUseCase.applyMissPenalty(ledger, yesterdayDate)
+            rewardRepository.updateRewardLedger(updatedLedger.copy(
                 lastUpdated = OffsetDateTime.now().toString()
-            )
-            rewardRepository.updateRewardLedger(updatedLedger)
+            ))
         }
 
         return Result.success()
