@@ -255,5 +255,23 @@ Remaining end-to-end test (needs friend):
 - Rules: request→open must be same device; don't uninstall/clear app data between (verifier lives locally)
 - Also confirm with friend whether they completed a reset on an old link (user's session was revoked server-side; account password state unknown)
 
+## 14. Pre-release row/ledger writer review (v1.2.4, 2026-10-25)
+
+Full audit of every code path that writes `routine_sessions` / `reward_ledger` before cutting 1.2.4. The three shipped fixes (4 AM gate `6fe826c`, shared miss penalty `a80c5f3`, onboarding-day count `039f497`) verified sound: audit gates correct, checker/backfill idempotent in both orders, range partition contiguous, same-night guard protects the completion path.
+
+Fixed in 1.2.4:
+- [x] `CompanionViewModel.applyXp` no longer clears `hasFirstMiss` — the "xp tweak silences warning" line wiped the flag every morning, so a second consecutive miss was judged as a fresh first miss and the streak could never reset by missing (flag is consumed by completion only)
+- [x] `MainActivity.onSimulateMissedNight` delegates to `recordMissedSession` + shared `applyMissPenalty`, with the closed-date gate — it used a private penalty copy that never advanced the anchor (the pre-`a80c5f3` audit/checker divergence) and upserted a random-id twin unconditionally
+
+Parked (known, accepted for now):
+- [ ] Half-failure double-count: `completeSession` writes ledger then row in one try/catch — ledger succeeds, row write fails → row stuck `PENDING` → later audit sleep-verifies it → `applyPenaltyChain` blind `+1` counts the night twice. Needs partial network failure (full-offline is safe: both fail → audit credits once). NOT a one-liner: the audit can't distinguish "already credited" from "first-time credit" via `last_session_date` alone, because `watermark == date` also matches the onboarding-seed-day pending case (the `039f497` collision family)
+- [ ] Audit-credits-then-late-resume re-pays **tokens** (streak is protected by the same-night guard; tokens are not) — requires resume-after-audit, which the Morning After check usually prevents
+- [ ] Offline start (`activeSessionId == null`, Flag 1 family): completion credits the ledger but no session row is ever written; the anchor shields that date from miss-judgment (verified — no phantom, no penalty), but the night is missing from history/analytics/friends
+- [ ] All ledger writers do full-row read-modify-write (completion, audit, 9:30 checker, XP settle, shop purchase, `addXp`) — concurrent writers can lose each other's fields (whole-row last-writer-wins). Narrow windows; fix shape = column-level increments or an RPC
+- [ ] Audit sleep-verified `PENDING→COMPLETED` rows keep null `completion_timestamp`/`streak_at_completion`/tokens — sorts below timestamped rows in `getLastCompletedSession` (order by completion_timestamp) and shows blank rewards in history
+- [ ] DB unique index on `routine_sessions(user_id, session_date)` — kills the phantom-twin class permanently at the database level; run only AFTER the account-wide twins cleanup (existing duplicates must be deleted first)
+- [ ] `AuditBackfillWorker` flips >14-day-old pendings to MISSED without a sleep re-check — a crashed-but-sleep-verified ancient night gets marked missed instead of completed (deliberate tradeoff per its design comment; revisit only if it generates complaints)
+
+
 
 

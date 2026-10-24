@@ -421,9 +421,13 @@ class CompanionViewModel(
             if (ledger != null) {
                 val newXp = (ledger.totalXp + amount).coerceAtLeast(0)
 
+                // XP settlement must NOT touch hasFirstMiss. Clearing it
+                // here made every morning wipe the miss-warning flag, so a
+                // second consecutive miss was judged as a fresh first miss
+                // and the streak could never be reset by missing. The flag
+                // is consumed by the next completion (execute()) only.
                 val updatedLedger = ledger.copy(
                     totalXp = newXp,
-                    hasFirstMiss = false, // xp tweak silences warning
                     lastUpdated = OffsetDateTime.now().toString()
                 )
                 rewardRepository.updateRewardLedger(updatedLedger)

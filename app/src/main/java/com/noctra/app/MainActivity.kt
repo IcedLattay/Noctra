@@ -45,10 +45,10 @@ import com.noctra.app.workers.WindDownNotificationScheduler
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.noctra.app.data.repository.RewardLedgerRepository
+import com.noctra.app.domain.usecase.RewardCalculationUseCase
 import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.data.repository.SleepRecordRepository
 import com.noctra.app.data.model.SleepRecord
-import com.noctra.app.data.model.RoutineSession
 import com.noctra.app.domain.usecase.SleepQualityProcessingUseCase
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -599,28 +599,38 @@ class MainActivity : AppCompatActivity(), DebugPanelListener {
         lifecycleScope.launch {
             try {
                 val userId = UserSession.getUserId(applicationContext) ?: return@launch
-                val yesterday = LocalDate.now().minusDays(1).toString()
+                val yesterday = LocalDate.now().minusDays(1)
 
-                // 1. Record a missed session
-                val missedSession = RoutineSession(
-                    id = UUID.randomUUID().toString(),
-                    userId = userId,
-                    sessionDate = yesterday,
-                    startTimestamp = Instant.now().minusSeconds(86400).toString(),
-                    status = "MISSED"
-                )
-                RoutineSessionRepository().insertSessions(listOf(missedSession))
+                // Follow the SAME rules the real judgers follow: between
+                // midnight and 4 AM last night's window is still open (a
+                // post-midnight start can still be dated to it), and a date
+                // that already has any session row is left alone — this
+                // button used to upsert a random-id twin unconditionally.
+                if (!com.noctra.app.utils.RoutineWindowProvider.isSessionDateClosed(yesterday)) {
+                    Toast.makeText(this@MainActivity, "Last night's window is still open.", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val sessionRepo = RoutineSessionRepository()
+                if (sessionRepo.getSessionsByDate(userId, yesterday.toString()).isNotEmpty()) {
+                    Toast.makeText(this@MainActivity, "Last night already has a session row.", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
 
-                // 2. Queue warning (or reset streak if already warned)
+                // 1. Record the missed row via the shared, existence-checked insert
+                sessionRepo.recordMissedSession(userId, yesterday.toString())
+
+                // 2. Fold through the SAME shared penalty chain the auditors
+                // use: warning vs reset decided by hasFirstMiss, anchor
+                // hopping onto the missed night. (This used to be a private
+                // copy that never moved the anchor — the exact audit/checker
+                // divergence fixed in a80c5f3.)
                 val repo = RewardLedgerRepository()
                 val ledger = repo.getRewardLedger(userId)
                 if (ledger != null) {
-                    val wasWarned = ledger.hasFirstMiss
-                    repo.updateRewardLedger(ledger.copy(
-                        currentStreak = if (wasWarned) 0 else ledger.currentStreak,
-                        hasFirstMiss = true,
-                        lastUpdated = OffsetDateTime.now().toString()
-                    ))
+                    repo.updateRewardLedger(
+                        RewardCalculationUseCase.applyMissPenalty(ledger, yesterday)
+                            .copy(lastUpdated = OffsetDateTime.now().toString())
+                    )
                 }
 
                 Toast.makeText(this@MainActivity, "Missed night simulated.", Toast.LENGTH_SHORT).show()
