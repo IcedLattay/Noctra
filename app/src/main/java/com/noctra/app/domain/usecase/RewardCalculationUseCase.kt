@@ -59,7 +59,11 @@ class RewardCalculationUseCase(
             return when {
                 lastSessionDate == null -> 1
                 lastSessionDate == nightBefore -> currentStreak + 1
-                lastSessionDate == nightDate -> currentStreak
+                // Same night re-run → unchanged, but a brand-new ledger (0)
+                // earns its opening 1: onboarding stamps the anchor with that
+                // day's date, so a first completion landing on onboarding day
+                // must still count (genuine re-runs stay ≥ 1 → untouched).
+                lastSessionDate == nightDate -> maxOf(currentStreak, 1)
                 // Count tonight only — the audit credits or penalizes each
                 // pending night when it resolves (transition-gated there,
                 // so no double-count).

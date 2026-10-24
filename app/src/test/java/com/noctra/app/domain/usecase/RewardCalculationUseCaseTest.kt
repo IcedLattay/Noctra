@@ -42,6 +42,13 @@ class RewardCalculationUseCaseTest {
     }
 
     @Test
+    fun `first completion on the seeded onboarding day counts as one`() {
+        // Onboarding stamps the anchor with its own date; completing that same
+        // night must grant the opening 1 instead of staying at 0.
+        assertEquals(1, RewardCalculationUseCase.computeNewStreak(0, oct16, oct16))
+    }
+
+    @Test
     fun `a genuine gap restarts at one`() {
         assertEquals(1, RewardCalculationUseCase.computeNewStreak(5, oct15, oct17))
     }
