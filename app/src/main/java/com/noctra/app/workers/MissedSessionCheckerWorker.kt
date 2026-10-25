@@ -10,7 +10,6 @@ import com.noctra.app.utils.RoutineWindowProvider
 import com.noctra.app.utils.UserSession
 import com.noctra.app.workers.WindDownNotificationScheduler
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.time.OffsetDateTime
 
 class MissedSessionCheckerWorker(
@@ -26,35 +25,43 @@ class MissedSessionCheckerWorker(
         WindDownNotificationScheduler.scheduleNext(applicationContext)
 
         val userId = UserSession.getUserId(applicationContext) ?: return Result.success() // Silent exit if not logged in
-        val ledger = rewardRepository.getRewardLedger(userId) ?: return Result.failure()
+        var ledger = rewardRepository.getRewardLedger(userId) ?: return Result.failure()
 
-        val yesterdayDate = LocalDate.now().minusDays(1)
-
-        // Defensive: never judge while the previous night's 4 AM
-        // attribution anchor is still ahead (WorkManager can deliver
-        // across timezone changes/reboots) — a post-midnight start can
-        // still be dated to yesterday, and judging now would plant a
-        // phantom MISSED row the real session then duplicates.
-        if (!RoutineWindowProvider.isSessionDateClosed(yesterdayDate)) {
-            return Result.success()
+        // Walk every open night after the ledger anchor (capped at 14
+        // days) instead of judging "yesterday" alone: a single skipped
+        // run used to leave that night permanently unjudged, and a later
+        // penalty's anchor-hop could seal the gap (anchor jumps forward,
+        // the audit starts at anchor+1 and never looks back). Dates are
+        // walked in order and the anchor is saved after each miss, so it
+        // advances night-by-night and can never step over an empty one.
+        val anchor = ledger.lastSessionDate?.let {
+            runCatching { LocalDate.parse(it) }.getOrNull()
         }
+        for (date in RoutineWindowProvider.missJudgementDates(anchor)) {
+            // Defensive: never judge while the night's 4 AM attribution
+            // anchor is still ahead (WorkManager can deliver across
+            // timezone changes/reboots) — a post-midnight start can
+            // still be dated to it, and judging now would plant a
+            // phantom MISSED row the real session then duplicates.
+            if (!RoutineWindowProvider.isSessionDateClosed(date)) continue
 
-        val yesterday = yesterdayDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
-        val sessions = sessionRepository.getSessionsByDate(userId, yesterday)
+            // Any existing row means this night is not ours to judge:
+            // completed/missed are final, and pending rows belong to the
+            // audit (sleep-verify / age-grace flip them).
+            if (sessionRepository.getSessionsByDate(userId, date.toString()).isNotEmpty()) continue
 
-        if (sessions.isEmpty()) {
             // Missed session! Record it in the DB so it shows up in Analytics
-            sessionRepository.recordMissedSession(userId, yesterday)
+            sessionRepository.recordMissedSession(userId, date.toString())
 
             // Fold the verdict through the SAME penalty chain the audit
             // uses (shared applyMissPenalty): first miss = warning with the
             // anchor hopping onto the missed night, second consecutive =
-            // reset. This checker's old private copy never moved the
-            // anchor, so a warning miss broke the streak anyway via the
-            // gap rule — identical behavior, two outcomes depending on
-            // which judger reached the night first.
-            val updatedLedger = RewardCalculationUseCase.applyMissPenalty(ledger, yesterdayDate)
-            rewardRepository.updateRewardLedger(updatedLedger.copy(
+            // reset. Saved immediately per date (audit's per-date
+            // persistence rationale): a crash between insert and save
+            // would otherwise lose that night's penalty forever, since
+            // the row it belongs to already exists.
+            ledger = RewardCalculationUseCase.applyMissPenalty(ledger, date)
+            rewardRepository.updateRewardLedger(ledger.copy(
                 lastUpdated = OffsetDateTime.now().toString()
             ))
         }

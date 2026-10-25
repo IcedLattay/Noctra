@@ -91,4 +91,36 @@ object RoutineWindowProvider {
     fun resolveRoutineScreenDate(now: java.time.LocalDateTime = java.time.LocalDateTime.now()): java.time.LocalDate {
         return if (now.hour < 3) now.toLocalDate().minusDays(1) else now.toLocalDate()
     }
+
+    /**
+     * Dates a miss-judgement pass must consider: (anchor, yesterday],
+     * capped at the 14-day open-path window.
+     *
+     * The old single-date check ("judge yesterday only") had a blind
+     * spot: if that one 9:30 run didn't fire, the night was never
+     * judged by anyone — and a later penalty's anchor-hop could then
+     * step over it permanently (anchor moves to the newer date, the
+     * audit starts at anchor+1, the gap is sealed). Walking the range
+     * in order fixes this: each inserted miss advances the anchor onto
+     * its own date *before* the next date is considered, so the anchor
+     * can never jump over an empty night.
+     *
+     * The 14-day floor keeps the partition with AuditBackfillWorker
+     * (which owns [onboarding, today-14)) and bounds a single pass.
+     * Null anchor → just yesterday (fresh account: nothing to walk).
+     * Callers still skip dates that already have a row (pending rows
+     * belong to the audit; completed/missed rows are final) and must
+     * consult [isSessionDateClosed] per date.
+     */
+    fun missJudgementDates(
+        anchor: java.time.LocalDate?,
+        today: java.time.LocalDate = java.time.LocalDate.now()
+    ): List<java.time.LocalDate> {
+        val yesterday = today.minusDays(1)
+        val start = maxOf(anchor?.plusDays(1) ?: yesterday, today.minusDays(14))
+        if (start.isAfter(yesterday)) return emptyList()
+        return generateSequence(start) { it.plusDays(1) }
+            .takeWhile { !it.isAfter(yesterday) }
+            .toList()
+    }
 }
