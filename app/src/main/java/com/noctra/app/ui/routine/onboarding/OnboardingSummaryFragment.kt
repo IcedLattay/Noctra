@@ -19,6 +19,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.google.android.material.snackbar.Snackbar
 import com.noctra.app.R
+import com.noctra.app.data.repository.AppLogRepository
 import com.noctra.app.data.repository.RoutineRepository
 import com.noctra.app.data.repository.UserProfileRepository
 import com.noctra.app.databinding.FragmentOnboardingSummaryBinding
@@ -183,6 +184,18 @@ class OnboardingSummaryFragment : Fragment() {
 
                 // 3. Mark onboarding complete
                 profileRepository.markOnboardingComplete(userId)
+
+                // Admin feed: the moment the routine configured above goes
+                // live. Written before the anchor seeding below so any
+                // ledger line it ever produces could hang off this entry.
+                AppLogRepository.logWith(
+                    userId = userId,
+                    runType = "onboarding_complete",
+                    eventDetail = "User, ${AppLogRepository.displayNameOf(userId)}, finished onboarding.",
+                    "target_bedtime" to (viewModel.targetBedtime.value ?: ""),
+                    "total_minutes" to viewModel.getTotalDurationMinutes().toString(),
+                    "activity_count" to viewModel.getActivitySequence().size.toString()
+                )
 
                 // 3b. Seed the audit anchor (day before today) so the audit
                 // range covers onboarding day. Best-effort: never blocks.

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.noctra.app.domain.usecase.RewardCalculationUseCase
+import com.noctra.app.data.repository.AppLogRepository
 import com.noctra.app.data.repository.RewardLedgerRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.utils.RoutineWindowProvider
@@ -37,7 +38,13 @@ class MissedSessionCheckerWorker(
         val anchor = ledger.lastSessionDate?.let {
             runCatching { LocalDate.parse(it) }.getOrNull()
         }
-        for (date in RoutineWindowProvider.missJudgementDates(anchor)) {
+
+        // One parent row per run — every verdict written below hangs off it,
+        // which is what the admin panel renders as a thread.
+        val datesToJudge = RoutineWindowProvider.missJudgementDates(anchor)
+        val checkerLogId = AppLogRepository.logCheck(userId = userId, trigger = "9:30 am")
+
+        for (date in datesToJudge) {
             // Defensive: never judge while the night's 4 AM attribution
             // anchor is still ahead (WorkManager can deliver across
             // timezone changes/reboots) — a post-midnight start can
@@ -50,8 +57,13 @@ class MissedSessionCheckerWorker(
             // audit (sleep-verify / age-grace flip them).
             if (sessionRepository.getSessionsByDate(userId, date.toString()).isNotEmpty()) continue
 
-            // Missed session! Record it in the DB so it shows up in Analytics
-            sessionRepository.recordMissedSession(userId, date.toString())
+            // Missed session! Record it in the DB so it shows up in Analytics,
+            // logging it as a sub-entry of this checker run.
+            val missedLogId = sessionRepository.recordMissedSession(
+                userId = userId,
+                sessionDate = date.toString(),
+                logParentId = checkerLogId
+            )
 
             // Fold the verdict through the SAME penalty chain the audit
             // uses (shared applyMissPenalty): first miss = warning with the
@@ -60,10 +72,14 @@ class MissedSessionCheckerWorker(
             // persistence rationale): a crash between insert and save
             // would otherwise lose that night's penalty forever, since
             // the row it belongs to already exists.
+            //
+            // updateRewardLedger writes the streak_change line itself, and
+            // nests it under the missed-night entry when there is one.
             ledger = RewardCalculationUseCase.applyMissPenalty(ledger, date)
-            rewardRepository.updateRewardLedger(ledger.copy(
-                lastUpdated = OffsetDateTime.now().toString()
-            ))
+            rewardRepository.updateRewardLedger(
+                ledger.copy(lastUpdated = OffsetDateTime.now().toString()),
+                logParentId = missedLogId ?: checkerLogId
+            )
         }
 
         return Result.success()

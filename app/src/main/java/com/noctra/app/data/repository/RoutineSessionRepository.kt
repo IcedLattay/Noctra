@@ -7,6 +7,8 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.io.IOException
 import java.net.SocketTimeoutException
 
@@ -60,7 +62,8 @@ class RoutineSessionRepository {
         streakAtCompletion: Int,
         multiplierApplied: Double,
         tokensEarned: Int,
-        xpEarned: Int
+        xpEarned: Int,
+        logParentId: String? = null
     ) {
         try {
             client
@@ -74,6 +77,7 @@ class RoutineSessionRepository {
                 )) {
                     filter { eq("id", sessionId) }
                 }
+            logStatusCompleted(sessionId, logParentId)
         } catch (e: IOException) {
             Log.e(tag, "Network error completing session", e)
             throw e
@@ -246,8 +250,10 @@ class RoutineSessionRepository {
 
     suspend fun recordMissedSession(
         userId: String,
-        sessionDate: String
-    ) {
+        sessionDate: String,
+        logParentId: String? = null
+    ): String? {
+        var loggedId: String? = null
         try {
             val existing = client
                 .from("routine_sessions")
@@ -267,6 +273,14 @@ class RoutineSessionRepository {
                         sessionDate = sessionDate,
                         startTimestamp = "${sessionDate}T00:00:00"
                     ))
+                loggedId = AppLogRepository.log(
+                    userId = userId,
+                    runType = "missed_insert",
+                    eventDetail = "System inserted a routine session row " +
+                        "marked as missed for ${AppLogRepository.prettyDate(sessionDate)}.",
+                    details = buildJsonObject { put("session_date", sessionDate) },
+                    parentId = logParentId
+                )
             }
         } catch (e: IOException) {
             Log.e(tag, "Network error recording missed session", e)
@@ -275,6 +289,50 @@ class RoutineSessionRepository {
             Log.e(tag, "Timeout recording missed session", e)
             throw e
         }
+        return loggedId
+    }
+
+    /**
+     * Writes the PENDING->COMPLETED transition and the admin-panel line for
+     * it. Reads the row back first: [sessionId] is all the caller has, but
+     * the log sentence needs the night's date.
+     */
+    suspend fun logStatusCompleted(sessionId: String, logParentId: String? = null) {
+        val row = runCatching { getSessionById(sessionId) }.getOrNull() ?: return
+        AppLogRepository.log(
+            userId = row.userId,
+            runType = "session_status",
+            eventDetail = "System updated the status of the routine session row " +
+                "for ${AppLogRepository.prettyDate(row.sessionDate)} to COMPLETED.",
+            details = buildJsonObject {
+                put("session_date", row.sessionDate)
+                put("status", "COMPLETED")
+            },
+            parentId = logParentId
+        )
+    }
+
+    /**
+     * Logs one PENDING->MISSED (or any) status flip for a session row the
+     * caller just rewrote.
+     */
+    suspend fun logStatusChanged(
+        userId: String,
+        sessionDate: String,
+        newStatus: String,
+        logParentId: String? = null
+    ) {
+        AppLogRepository.log(
+            userId = userId,
+            runType = "session_status",
+            eventDetail = "System updated the status of the routine session row " +
+                "for ${AppLogRepository.prettyDate(sessionDate)} to $newStatus.",
+            details = buildJsonObject {
+                put("session_date", sessionDate)
+                put("status", newStatus)
+            },
+            parentId = logParentId
+        )
     }
 
     /**
@@ -373,9 +431,25 @@ class RoutineSessionRepository {
         }
     }
 
-    suspend fun finalizeOldPendingSessions(userId: String) {
+    suspend fun finalizeOldPendingSessions(userId: String, logParentId: String? = null) {
         try {
             val fourteenDaysAgo = java.time.LocalDate.now().minusDays(14).toString()
+
+            // Snapshot the rows this update is about to flip — once the
+            // bulk write runs, PENDING is gone and the log can't tell
+            // which nights it touched.
+            val affected = runCatching {
+                client.from("routine_sessions")
+                    .select {
+                        filter {
+                            eq("user_id", userId)
+                            eq("status", "PENDING")
+                            lt("session_date", fourteenDaysAgo)
+                        }
+                    }
+                    .decodeList<RoutineSession>()
+            }.getOrDefault(emptyList())
+
             client.from("routine_sessions")
                 .update(mapOf("status" to "MISSED")) {
                     filter {
@@ -384,6 +458,10 @@ class RoutineSessionRepository {
                         lt("session_date", fourteenDaysAgo)
                     }
                 }
+
+            affected.forEach { row ->
+                logStatusChanged(userId, row.sessionDate, "MISSED", logParentId)
+            }
         } catch (e: IOException) {
             Log.e(tag, "Network error finalizing old pending sessions", e)
             throw e

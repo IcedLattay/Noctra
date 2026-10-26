@@ -85,6 +85,7 @@ class AuditBackfillWorker(
                 val session = sessionRepository.getSessionsByDate(userId, dateString).firstOrNull()
                 if (session != null && session.status == "PENDING") {
                     sessionRepository.insertSession(session.copy(status = "MISSED"))
+                    sessionRepository.logStatusChanged(userId, dateString, "MISSED")
                 } else if (session == null && date.isBefore(LocalDate.now())) {
                     sessionRepository.recordMissedSession(userId, dateString)
                 }

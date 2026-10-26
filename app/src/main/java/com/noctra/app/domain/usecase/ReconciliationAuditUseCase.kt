@@ -3,6 +3,7 @@ package com.noctra.app.domain.usecase
 import android.util.Log
 import com.noctra.app.data.model.RewardLedger
 import com.noctra.app.data.model.RoutineSession
+import com.noctra.app.data.repository.AppLogRepository
 import com.noctra.app.data.repository.RewardLedgerRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
 import com.noctra.app.data.repository.SleepRecordRepository
@@ -29,8 +30,13 @@ class ReconciliationAuditUseCase(
 ) {
 
     suspend fun execute(userId: String) {
+        // Admin feed: the in-app (synchronous) check. Everything this run
+        // writes — housekeeping flips, sleep pulls, verdicts, ledger moves —
+        // nests under this id so the panel shows it as one thread.
+        val checkLogId = AppLogRepository.logCheck(userId = userId, trigger = "synchronous")
+
         // 1. Housekeeping: Finalize ancient pendings
-        sessionRepository.finalizeOldPendingSessions(userId)
+        sessionRepository.finalizeOldPendingSessions(userId, checkLogId)
 
         // 2. Identify the gap
         val auditDates = auditRangeProvider.getAuditRange(userId)
@@ -52,7 +58,7 @@ class ReconciliationAuditUseCase(
         // missing sleep rows or flagged partial, and pull each from
         // Health Connect. Verdicts below then judge on fresh data.
         // Skips nights with final rows — nothing to heal.
-        refreshSleepWindow(userId)
+        refreshSleepWindow(userId, checkLogId)
 
         // 3. Sequential Audit Loop
         for (date in auditDates) {
@@ -60,23 +66,26 @@ class ReconciliationAuditUseCase(
                 userId = userId,
                 date = date,
                 currentLedger = currentLedger,
-                syncSleep = true
+                syncSleep = true,
+                logParentId = checkLogId
             )
             // Persist after every date. Verdicts are transition-gated (see
             // auditDate), so a crash after a row write but before the ledger
             // save would make the rerun see "no transition" and silently drop
             // that night's verdict — per-date saves shrink that window to
             // milliseconds.
-            rewardRepository.updateRewardLedger(currentLedger.copy(
-                lastUpdated = OffsetDateTime.now().toString()
-            ))
+            rewardRepository.updateRewardLedger(
+                currentLedger.copy(lastUpdated = OffsetDateTime.now().toString()),
+                logParentId = checkLogId
+            )
         }
 
         // 4. Final Save (covers a range that changed nothing, plus the
         //    >14-day absence reset written before the loop)
-        rewardRepository.updateRewardLedger(currentLedger.copy(
-            lastUpdated = OffsetDateTime.now().toString()
-        ))
+        rewardRepository.updateRewardLedger(
+            currentLedger.copy(lastUpdated = OffsetDateTime.now().toString()),
+            logParentId = checkLogId
+        )
     }
 
     /**
@@ -92,7 +101,7 @@ class ReconciliationAuditUseCase(
      * on nights the journey never covered, and paid it out at the
      * next morning popup as a windfall.
      */
-    private suspend fun refreshSleepWindow(userId: String) {
+    private suspend fun refreshSleepWindow(userId: String, logParentId: String? = null) {
         val today = LocalDate.now()
         val anchor = rewardRepository.getRewardLedger(userId)?.lastSessionDate
             ?.let { LocalDate.parse(it) }
@@ -109,7 +118,7 @@ class ReconciliationAuditUseCase(
             val needsPull = record == null || record.isPartialData
             if (needsPull) {
                 try {
-                    sleepSyncManager.syncSessionDate(userId, date)
+                    sleepSyncManager.syncSessionDate(userId, date, logParentId = logParentId)
                 } catch (e: Exception) {
                     Log.w("ReconciliationAudit", "Sleep refresh failed for $dateStr", e)
                 }
@@ -127,7 +136,8 @@ class ReconciliationAuditUseCase(
         userId: String,
         date: LocalDate,
         currentLedger: RewardLedger,
-        syncSleep: Boolean
+        syncSleep: Boolean,
+        logParentId: String? = null
     ): RewardLedger {
         val dateString = date.toString()
         val session = sessionRepository.getSessionsByDate(userId, dateString).firstOrNull()
@@ -137,7 +147,7 @@ class ReconciliationAuditUseCase(
         // The verdict below always re-runs, even when the sync finds nothing new.
         // Skipped by the backfill worker (ancient HC data is gone; judge stored rows).
         if (syncSleep) {
-            syncSleepForDate(userId, date)
+            syncSleepForDate(userId, date, logParentId)
         }
 
         // B. VERDICT: Determine if the day was a success
@@ -161,7 +171,11 @@ class ReconciliationAuditUseCase(
                 // duplicates, plus a streak penalty for a night not yet
                 // performed. (See RoutineWindowProvider.isSessionDateClosed.)
                 if (RoutineWindowProvider.isSessionDateClosed(date)) {
-                    sessionRepository.recordMissedSession(userId, dateString)
+                    sessionRepository.recordMissedSession(
+                        userId = userId,
+                        sessionDate = dateString,
+                        logParentId = logParentId
+                    )
                     true
                 } else {
                     false
@@ -169,6 +183,11 @@ class ReconciliationAuditUseCase(
             }
             session.status != finalStatus -> {
                 sessionRepository.insertSession(session.copy(status = finalStatus))
+                // PENDING -> COMPLETED/MISSED transition, spelled out for
+                // the admin panel.
+                sessionRepository.logStatusChanged(
+                    userId, dateString, finalStatus, logParentId
+                )
                 true
             }
             else -> false
@@ -185,11 +204,17 @@ class ReconciliationAuditUseCase(
      * tomorrow at 4:00 AM). All outcomes are non-fatal: the verdict still
      * evaluates on whatever data is stored.
      */
-    private suspend fun syncSleepForDate(userId: String, date: LocalDate) {
+    private suspend fun syncSleepForDate(
+        userId: String,
+        date: LocalDate,
+        logParentId: String? = null
+    ) {
         val windowStart = sleepSyncManager.getWakeUpAnchorWindow(date).first
         if (Instant.now() < windowStart) return
 
-        when (val result = sleepSyncManager.syncSessionDate(userId, date)) {
+        when (val result = sleepSyncManager.syncSessionDate(
+            userId, date, logParentId = logParentId
+        )) {
             is SleepSyncManager.SyncResult.Synced -> Unit // record written/refreshed
             is SleepSyncManager.SyncResult.NoData -> Unit // nothing new; verdict still re-runs
             is SleepSyncManager.SyncResult.PermissionDenied -> Unit // no sleep access; judge on stored data
