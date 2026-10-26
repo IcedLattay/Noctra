@@ -80,6 +80,12 @@ class AuthRepository {
         // redemption is a password reset, not an account milestone.
         if (type == OtpType.Email.SIGNUP) {
             auth.currentUserOrNull()?.id?.let { uid ->
+                // This is the moment the address is confirmed, so stamp the
+                // profile flag here too — the EmailVerificationSuccessFragment
+                // that used to own this write is not reachable from any
+                // navigation destination.
+                runCatching { profileRepository.updateEmailVerificationStatus(uid, true) }
+
                 AppLogRepository.logWith(
                     userId = uid,
                     runType = "email_verified",
