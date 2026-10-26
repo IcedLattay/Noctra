@@ -3,6 +3,7 @@ package com.noctra.app.workers
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.noctra.app.data.repository.AppLogRepository
 import com.noctra.app.data.repository.SleepSyncManager
 import com.noctra.app.utils.UserSession
 import java.time.LocalDate
@@ -24,10 +25,18 @@ class SleepFinalizationWorker(
     override suspend fun doWork(): Result {
         val userId = UserSession.getUserId(applicationContext) ?: return Result.success()
 
+        // Admin feed: the 5:00 PM scheduled check. Its side effects (the
+        // finalized sleep row below) nest under this id.
+        val checkLogId = AppLogRepository.logCheck(userId = userId, trigger = "5:00 pm")
+
         // Yesterday's anchor window closed at 4:00 PM today
         val sessionDate = LocalDate.now().minusDays(1)
 
-        return when (val result = sleepSyncManager.syncSessionDate(userId, sessionDate)) {
+        return when (val result = sleepSyncManager.syncSessionDate(
+            userId = userId,
+            sessionDate = sessionDate,
+            logParentId = checkLogId
+        )) {
             is SleepSyncManager.SyncResult.Synced -> Result.success()
             is SleepSyncManager.SyncResult.NoData -> Result.success()
             is SleepSyncManager.SyncResult.PermissionDenied -> Result.success()

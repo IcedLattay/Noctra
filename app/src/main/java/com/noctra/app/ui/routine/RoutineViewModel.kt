@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.noctra.app.data.model.Activity
+import com.noctra.app.data.repository.AppLogRepository
 import com.noctra.app.data.repository.RewardLedgerRepository
 import com.noctra.app.data.repository.RoutineRepository
 import com.noctra.app.data.repository.RoutineSessionRepository
@@ -242,6 +243,15 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
                 android.util.Log.e("StreakDebug", "START SESSION FAILED", e)
                 activeSessionId = null
             }
+
+            // Admin feed — fire-and-forget, never affects session state.
+            AppLogRepository.logWith(
+                userId = userId,
+                runType = "start_routine",
+                eventDetail = "User started their routine.",
+                "session_id" to (activeSessionId ?: "offline"),
+                "session_date" to todayDate
+            )
 
             // Local resume cache — updated regardless of whether the Supabase
             // insert above succeeded, so the user can still resume a
@@ -527,12 +537,24 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
 
             android.util.Log.d("StreakDebug", "COMPLETING sessionId=$activeSessionId")
 
+            // Admin feed: written first so everything this completion does
+            // (ledger moves, session status flip) nests under it. Details
+            // stay minimal — the streak/XP lines carry the numbers.
+            val completeLogId = AppLogRepository.logWith(
+                userId = userId,
+                runType = "complete_routine",
+                eventDetail = "User completed their routine.",
+                "session_id" to (activeSessionId ?: "offline"),
+                "completion_time" to completionTimestamp
+            )
+
             try {
                 // 1. Update the Reward Ledger (tokens, XP, streaks) via UseCase
                 val reward = rewardCalculationUseCase.execute(
                     userId = userId,
                     sessionId = activeSessionId ?: "",
-                    completedOnTime = true
+                    completedOnTime = true,
+                    logParentId = completeLogId
                 )
                 _rewardResult.value = reward
 
@@ -544,7 +566,8 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
                         streakAtCompletion = reward.newStreak,
                         multiplierApplied = reward.multiplierApplied,
                         tokensEarned = reward.tokensEarned,
-                        xpEarned = reward.xpEarned
+                        xpEarned = reward.xpEarned,
+                        logParentId = completeLogId
                     )
                     android.util.Log.d("StreakDebug", "COMPLETE SESSION WROTE OK")
                 }

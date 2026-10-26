@@ -142,7 +142,8 @@ class RewardCalculationUseCase(
     suspend fun execute(
         userId: String,
         sessionId: String,
-        completedOnTime: Boolean
+        completedOnTime: Boolean,
+        logParentId: String? = null
     ): RewardResult {
         val repo = rewardRepository ?: throw IllegalStateException("RewardLedgerRepository required for execute()")
         val ledger = repo.getRewardLedger(userId) ?: throw IllegalStateException("Reward ledger not found")
@@ -177,7 +178,10 @@ class RewardCalculationUseCase(
             hasFirstMiss = false
         )
 
-        repo.updateRewardLedger(updatedLedger)
+        repo.updateRewardLedger(updatedLedger, logParentId)
+        // Streak/XP deltas are logged centrally by updateRewardLedger(),
+        // nested under the completion entry when the caller passed one.
+
 
         return result
     }

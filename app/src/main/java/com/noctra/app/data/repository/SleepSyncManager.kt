@@ -12,6 +12,8 @@ import com.noctra.app.data.model.SleepRecord
 import com.noctra.app.domain.usecase.HrBaselineUseCase
 import com.noctra.app.domain.usecase.SleepQualityProcessingUseCase
 import com.noctra.app.utils.HealthConnectPermissionHelper
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -129,7 +131,8 @@ class SleepSyncManager {
     suspend fun syncSessionDate(
         userId: String,
         sessionDate: LocalDate,
-        hrBaseline: Double? = null
+        hrBaseline: Double? = null,
+        logParentId: String? = null
     ): SyncResult {
         Log.d(TAG, "syncSessionDate called for $sessionDate")
 
@@ -270,6 +273,22 @@ class SleepSyncManager {
             )
 
             sleepRecordRepository.insertRecord(record)
+            // First write for this night = a row now exists where there
+            // wasn't one. The 5 PM overwrite of the 9 AM provisional pass
+            // reuses the id, so it stays silent (per admin-panel spec).
+            if (existing == null) {
+                AppLogRepository.log(
+                    userId = userId,
+                    runType = "sleep_insert",
+                    eventDetail = "System inserted a sleep session row " +
+                        "for ${AppLogRepository.prettyDate(dateStr)}.",
+                    details = buildJsonObject {
+                        put("session_date", dateStr)
+                        put("is_partial_data", isPartial)
+                    },
+                    parentId = logParentId
+                )
+            }
             Log.d(TAG, "Sync complete — record saved: ${record.sessionDate}, composite: ${record.compositeScore}")
             SyncResult.Synced(record, isPartial)
         } catch (e: Exception) {

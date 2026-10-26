@@ -36,6 +36,14 @@ class AuthRepository {
         profileRepository.getOrCreateProfile(userId)
         profileRepository.updateDisplayName(userId, displayName)
         profileRepository.updateEmail(userId, email)
+
+        // Admin feed — the first row that will ever exist for this user.
+        AppLogRepository.logWith(
+            userId = userId,
+            runType = "account_created",
+            eventDetail = "System created an account.",
+            "email" to email
+        )
     }
 
     /**
@@ -66,6 +74,20 @@ class AuthRepository {
      */
     suspend fun verifyOtp(email: String, token: String, type: OtpType.Email) {
         auth.verifyEmailOtp(type, email, token)
+
+        // Admin feed: verification finished. Reads the id back from the
+        // session the OTP just redeemed. SIGNUP only — a recovery-code
+        // redemption is a password reset, not an account milestone.
+        if (type == OtpType.Email.SIGNUP) {
+            auth.currentUserOrNull()?.id?.let { uid ->
+                AppLogRepository.logWith(
+                    userId = uid,
+                    runType = "email_verified",
+                    eventDetail = "User, ${AppLogRepository.displayNameOf(uid)}, finished verification.",
+                    "email" to email
+                )
+            }
+        }
     }
 
     /**
