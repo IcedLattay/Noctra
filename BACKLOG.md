@@ -7,6 +7,7 @@
 Low priority (do only if time allows):
 - [ ] Verify wind-down window-flash fix on device (real flow, not debug fire): tap the actual wind-down notification outside the window → should land straight on routine home with the toast, no start-screen flash; also verify the already-completed case (complete tonight's routine, tap the notification → silent bounce to the Completed card). Fix committed on `fix/winddown-window-flash` (fragment entry gate + receiver window guard + completion bounce)
 - [x] Star icon on the XP card in the companion fragment — wireframe approved (star left of value), implemented with `ic_star` (16dp + 6dp gap), device-verified
+- [ ] Remove dead fields `health_connect_granted` and `hr_baseline_bpm` from `user_profiles` model and DB (low priority)
 
 **NEXT SESSION**: Merge remote branch into local branch to continue where we left off.
 

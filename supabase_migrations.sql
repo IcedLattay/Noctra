@@ -353,3 +353,67 @@ INSERT INTO activity_library (activity_id, label, description, instruction, acti
   ('24a8228b-f343-4593-9eb7-df8caaf30367', 'Bedtime To-Do List Writing',        'Write tomorrow''s tasks somewhere outside the app to clear mental clutter.',                          'Use a notebook or notes app to write tomorrow''s tasks. Not in this app.',                          'JOURNAL', 5,  'ic_todo',        9),
   ('cfe3b4e2-cc1e-42c5-8f96-10f4e2067d3b', 'Low-Stimulus Audio Listening',      'Gently guided meditation audio to quiet a busy mind before sleep.',                                   'Lie back and breathe slowly. Listen to the soothing rhythm of the audio.',                          'AUDIO',  10, 'ic_meditation',  10)
 ON CONFLICT (activity_id) DO NOTHING;
+-- ── Extra columns that already exist in the live DB ─────────────────────
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS health_connect_granted BOOLEAN;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS hr_baseline_bpm NUMERIC;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS is_email_verified BOOLEAN;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS draft_bedtime TEXT;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS draft_activity_ids JSONB;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS outfit_equipped UUID;
+
+ALTER TABLE sleep_records ADD COLUMN IF NOT EXISTS target_bedtime TEXT;
+ALTER TABLE sleep_records ADD COLUMN IF NOT EXISTS xp_accrued INT DEFAULT 0;
+ALTER TABLE sleep_records ADD COLUMN IF NOT EXISTS xp_settled BOOLEAN DEFAULT false;
+
+-- New tables that are already present in the DB ─────────────────────────
+CREATE TABLE IF NOT EXISTS routine_configurations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT,
+    activity_sequence JSONB,
+    total_duration_minutes INT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS monthly_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT,
+    year_month TEXT,
+    avg_adherence_rate NUMERIC,
+    routines_completed INT,
+    avg_sleep_quality_score NUMERIC,
+    week1_adherence_rate NUMERIC,
+    week2_adherence_rate NUMERIC,
+    week3_adherence_rate NUMERIC,
+    week4_adherence_rate NUMERIC,
+    month_insight_text TEXT,
+    report_storage_path TEXT,
+    generated_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS app_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID,
+    run_type TEXT,
+    event_detail TEXT,
+    event_date DATE,
+    event_time TIME,
+    details JSONB,
+    created_at TIMESTAMPTZ,
+    parent_id UUID
+);
+
+-- Row‑level security for the new tables (own‑row pattern) ───────────────
+ALTER TABLE routine_configurations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "rc_select" ON routine_configurations FOR SELECT USING (auth.uid()::text = user_id);
+
+ALTER TABLE monthly_reports ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "mr_select" ON monthly_reports FOR SELECT USING (auth.uid()::text = user_id);
+
+ALTER TABLE app_log ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "al_select" ON app_log FOR SELECT USING (auth.uid()::text = user_id);
+
+-- Migration 11: remove unused tables/columns (monthly_reports, health_connect_granted, hr_baseline_bpm)
+DROP TABLE IF EXISTS monthly_reports;
+ALTER TABLE user_profiles DROP COLUMN IF EXISTS health_connect_granted;
+ALTER TABLE user_profiles DROP COLUMN IF EXISTS hr_baseline_bpm;
