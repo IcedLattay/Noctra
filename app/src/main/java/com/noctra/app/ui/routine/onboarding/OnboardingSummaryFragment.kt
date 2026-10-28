@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.fragment.findNavController
 import androidx.navigation.navGraphViewModels
 import android.Manifest
 import android.content.Context
@@ -274,19 +273,35 @@ class OnboardingSummaryFragment : Fragment() {
         }
     }
 
-    // Re-initialize the Activity's nav graph to the main flow.
-    // Nested graphs can't navigate to destinations in other nested graphs,
-    // so the only clean way out is to rebuild the graph from the root —
-    // the same thing MainActivity does on startup.
+    // Leave onboarding for the main flow.
+    //
+    // This used to rebuild the nav graph in place (`navController.graph = freshGraph`),
+    // mirroring MainActivity's startup. That is unreliable: NavController.setGraph()
+    // decides for itself whether the incoming graph counts as "different" from the live
+    // one (NavGraph.equals covers the start destination) and whether its internal
+    // back-stack pop succeeds — and it can return normally having left currentDestination
+    // completely unchanged. Here that meant no exception, no log, and the user parked on
+    // "Saving..." forever.
+    //
+    // So don't rely on its internals: relaunch MainActivity with a cleared task. That is
+    // exactly the cold-start path that already lands onboarding-completed users on the
+    // main flow, and it runs with no saved state to restore, so the onboarding back stack
+    // can't come back with it.
     private fun reinitNavGraphToMain() {
         try {
-            val navController = findNavController()
-            val graph = navController.navInflater.inflate(R.navigation.nav_graph)
-            graph.setStartDestination(R.id.main_graph)
-            navController.graph = graph
+            val intent = Intent(requireContext(), com.noctra.app.MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            }
+            startActivity(intent)
         } catch (e: Exception) {
             android.util.Log.e("OnboardingSummary", "Graph reinit failed", e)
-            requireActivity().finish()
+            // Never leave the screen parked: put the button back so the user can
+            // retry instead of staring at a dead "Saving...".
+            _binding?.let {
+                it.btnStartNoctra.isEnabled = true
+                it.btnStartNoctra.text = if (viewModel.isEditMode) "Save Changes" else "Start Using Noctra"
+                Snackbar.make(it.root, "Couldn't finish setting up — please try again.", Snackbar.LENGTH_LONG).show()
+            }
         }
     }
 
