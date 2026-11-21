@@ -157,8 +157,8 @@ Assets such as Lottie animations and bundled audio are in `app/src/main/res/raw/
    ```
 2. **Add your Supabase keys.** Create or open `local.properties` in the project root and add:
    ```properties
-   SUPABASE_URL=https://<your-project-ref>.supabase.co
-   SUPABASE_ANON_KEY=<your-anon-key>
+   SUPABASE_URL=https: - Project Reference -
+   SUPABASE_ANON_KEY= - The Anon Key -e
    ```
    These are injected into `BuildConfig` at build time. `local.properties` is gitignored, so **never commit it**. Use only the **anon** key; never put the `service_role` key in the app.
 3. **Open the project in Android Studio** and let Gradle sync.
